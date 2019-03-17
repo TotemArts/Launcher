@@ -1,0 +1,25 @@
+<html window-icon="images/rx.ico" window-frame="extended" window-resizable>
+<head>
+<title>Minimalistic Sciter demo</title>
+<style>
+@import url(general.css);
+</style>
+<script type="text/tiscript">
+  include "menubar.tis";
+  function self.ready() {
+    stdout.println("server-options loaded");
+  }
+</script>
+</head>
+<body>
+<include src="menubar.htm" />
+<div id="flow-container">
+  <div class="top-margin"></div>
+  <div class="horizontal-margin"></div>
+  <div class="horizontal-margin"></div>
+  <div class="bottom-margin"></div>
+  <div #options-container>
+  </div>
+</div>
+</body>
+</html>

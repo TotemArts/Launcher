@@ -1,0 +1,44 @@
+namespace Emu {
+  function srchover() {
+    var picture = this[0];
+    var srcnormal = picture.attributes["src"];
+    stdout.println(srcnormal);
+    this 
+      << event mouseenter (evt) {
+        picture.attributes["src"] = this.attributes["src-hover"];
+      }
+      << event mouseleave (evt, that) { 
+        picture.attributes["src"] = srcnormal;
+      }
+  }
+  function role() {
+    this << event click (evt) {
+      var role = this.attributes["custom-role"];
+      stdout.println(role);
+      switch(role) {
+        case "close":
+          view.close();
+          break;
+        case "maximise":
+          view.windowState = View.WINDOW_MAXIMIZED;
+          break;
+        case "minimise":
+          view.windowState = View.WINDOW_HIDDEN;
+          break;
+      }
+    }
+  }
+}
+
+function alert(msg) {
+  view.msgbox(#information, msg.htmlEscape());
+}
+
+self.on("click","[onclick]",function() {
+  return eval.call(this, this.attributes["onclick"] );
+});
+
+self.on("keypress","[enter]",function(evt) {
+  if ( evt.keyCode != 13 || evt.keyCode != Event.VK_RETURN ) return;
+  eval.call(this, this.attributes["enter"]);
+});

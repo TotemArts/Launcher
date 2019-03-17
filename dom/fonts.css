@@ -1,0 +1,65 @@
+@font-face {
+  font-family: 'Roboto';
+  src: url("fonts/Roboto-Regular.ttf");
+}
+
+@font-face {
+  font-family: Roboto;
+  font-style: italic;
+  src: url("fonts/Roboto-Italic.ttf");
+}
+
+@font-face {
+  font-family: Roboto;
+  font-weight: bold;
+  src: url("fonts/Roboto-Bold.ttf");
+}
+
+@font-face {
+  font-family: Roboto;
+  font-weight: bold;
+  font-style: italic;
+  src: url("fonts/Roboto-BoldItalic.ttf");
+}
+
+@font-face {
+  font-family: Ruda;
+  src: url("fonts/Ruda-Regular.ttf");
+}
+
+@font-face {
+  font-family: Ruda;
+  font-weight: bold;
+  src: url("fonts/Ruda-Bold.ttf");
+}
+
+* {
+  font-family:Roboto, FreeMono;
+  font-size: 11px;
+}
+
+h1, h2, h3, h4, h5 {
+  font-family:Ruda, FreeMono;
+}
+
+#header > h1 {
+  margin-left:15px;
+  margin-right:15px;
+  font-size: 14px;
+}
+#header > #players {
+  color: #444B53;
+}
+
+h1 {
+  font-size: 20px;
+}
+h2 {
+  font-size: 18px;
+}
+h3 {
+  font-size: 16px;
+}
+p {
+  font-size: 12px;
+}

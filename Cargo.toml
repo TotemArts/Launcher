@@ -1,0 +1,31 @@
+[package]
+name = "RenegadeX-Launcher"
+version = "0.1.0"
+authors = ["SonnyX"]
+edition = "2018"
+build = "windows.rs"
+
+[dependencies]
+reqwest = "0.9.5"
+json = "0.11.13"
+sciter-rs = "0.5.45"
+renegadex_patcher = { git = "https://github.com/SonnyX/RenegadeX-patcher-lib" }
+xml-rs = "0.8.0"
+rust-ini = "0.13.0"
+irc = "0.13.6"
+single-instance = "0.1.1"
+chrono = "0.4.6"
+
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1.8"
+
+[target.'cfg(unix)'.dependencies]
+gag = "0.1.10"
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3.6", features = ["winbase", "wincon", "processenv", "handleapi", "namedpipeapi"] }
+
+[package.metadata.winres]
+OriginalFilename = "RenegadeX_Launcher.exe"
+FileDescription = "Launcher for RenegadeX"
+LegalCopyright = "Copyright © 2019"

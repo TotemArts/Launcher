@@ -1,0 +1,124 @@
+<html window-icon="images/rx.ico" window-frame="extended" window-resizable>
+<head>
+<title>Minimalistic Sciter demo</title>
+<style>
+@import url(general.css);
+#patch-container {
+  display:inline-block;
+  max-width: 700px;
+  margin: auto;
+  width: *;
+  background-color: #0d172190;
+  height: *;
+}
+img {
+  max-width: 700px;
+}
+</style>
+<script type="text/tiscript">
+  include "menubar.tis";
+  function self.ready() {
+    view.check_update(onDone, onErr);
+  }
+  function onDone(update, skipDownloadQuestion) {
+    if ( update ) {
+      if ( skipDownloadQuestion ) {
+        $(#load-container).load(self.url("download.htm"), false);
+        view.start_download(onProgress, onDone, onErr);
+      } else {
+        $(#load-container).load(self.url("update-available.htm"), false);
+        $(button#update).onClick = function() {
+          $(#load-container).load(self.url("download.htm"), false);
+          view.start_download(onProgress, onDone, onErr);
+        }
+        $(button#cancel).onClick = function() {
+          view.load(self.url("frontpage.htm"));
+        }
+      }
+      //getFeed();
+    } else {
+      view.load(self.url("frontpage.htm"));
+    }
+  }
+  function onErr(err) {
+    $(#message-box).html = err;
+    $(#overlay).style["visibility"] = "visible";
+    stdout.println(err);
+  }
+
+  function onProgress(progress) {
+    if ( progress["hash"][1] != 0 ) {
+      $(#hash-bar > #progress-bar).style["width"] = (progress["hash"][0]*100 / progress["hash"][1]) + "%";
+      $(#hash-bar > p).html = progress["hash"][0] + "/" + progress["hash"][1];
+    }
+    if ( progress["download"][1] != 0 ) {
+      $(#download-bar > #progress-bar).style["width"] = (progress["download"][0]*100 / progress["download"][1]) + "%";
+      $(#download-bar > p).html = progress["download"][0]/100 + " MB out of " + progress["download"][1]/100 + " MB Downloaded";
+
+    }
+    if ( progress["patch"][1] != 0 ) {
+      $(#patch-bar > #progress-bar).style["width"] = (progress["patch"][0]*100 / progress["patch"][1]) + "%";
+      $(#patch-bar > p).html = "Patched "+progress["patch"][0]+" out of "+progress["patch"][1]+" files";
+    }
+  }
+  function answerDownload(accepted) {
+    if ( accepted ) {
+      $(#load-container).load(self.url("download.htm"), false);
+      view.start_download(onProgress);
+    } else {
+      view.load(self.url("frontpage.htm"));
+    }
+  }
+  function getFeed() {
+    var rqp = { 
+      type: #get, 
+      url: "https://renegade-x.com/rss/1-recent-news.xml",
+      noCache: true,
+      success: function(result, status) {
+        stdout.println("Got a result from #get");
+        var scanner = new XMLScanner(result);
+        var depth = 0;
+        while:loop (var token = scanner.token())
+          switch( token )
+          {
+            case XMLScanner.EOF:            throw String.$(XML error at line {scanner.lineNo}, <{tag} tag is not closed );
+            case XMLScanner.ERROR:          throw String.$(XML error at line {scanner.lineNo});
+            case XMLScanner.CDATA:          $(#news-container).html = scanner.value;  return; 
+          }
+      },
+      onerror: function(err, status) {
+        stdout.println("Got a error from #get: " + err.data.response);
+      },
+      returns: true,
+    };
+    return view.request(rqp);
+  }
+</script>
+</head>
+<body model="Data">
+<div id="frame-header">
+  <div style="width:*;height:40px;" role="window-caption">
+  </div>
+  <div style="width:100px;height:40px;flow:horizontal;">
+    <button role="window-minimize" class="center-child" src-hover='images/Minimise_Rollover.svg'><picture class="centered" src="images/Minimise.svg" style="width: 10px; height: 35px;"/></button>
+    <button role="window-maximize" class="center-child" src-hover='images/Maximise_Rollover.svg'><picture class="centered" src="images/Maximise.svg" style="width: 11px; height: 35px;"/></button>
+    <button role="window-close" class="center-child" src-hover='images/Close_Rollover.svg'><picture class="centered" src="images/Close.svg" style="width: 8px; height: 35px;"/></button>
+    <div style="width: 10px"><picture /></div>
+  </div>
+</div>
+<div #overlay style="position:fixed; width:*;height:100%; background-color: #ffffff70; visibility:hidden; vertical-align: middle; ">
+  <div #message-box style="width:400px; height: 400px; margin:auto; background-color: #c0c;">
+    An error has occurred!
+  </div>
+</div>
+<div id="flow-container">
+  <div class="top-margin"></div>
+  <div class="horizontal-margin"></div>
+  <div class="horizontal-margin"></div>
+  <div class="bottom-margin"></div>
+  <div #load-container>
+    This is the initial load screen, similar to discord connecting to the servers.
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,294 @@
+@import url(fonts.css);
+
+* {
+  vertical-scrollbar: my-v-scrollbar;
+}
+
+html, body, button, textarea, input, table, thead, tbody, tr, th, td {
+  background-gradient: none;
+  background-color: none;
+  background-image: none;
+  border: 0px;
+  padding: 0px;
+  margin: 0px;
+}
+
+p, h1, div, input {
+  margin: 0px;
+  padding: 0px;
+  color: #fff;
+  text-decoration: none;
+}
+
+html {
+  min-width: min-content;
+  min-height: min-content;
+}
+body {
+
+  background-image: url(images/background.jpg);
+  background-color: #15212f;
+  background-size: cover;
+  flow: vertical;
+  height:*;
+}
+
+#flow-container {
+  flow:grid(2 1 3,
+            2 5 3,
+            4 4 4);
+  height:*;
+  min-width: min-content;
+  min-height: min-content;
+}
+.horizontal-margin {
+  display:inline-block;
+  width: 30px;
+}
+.top-margin {
+  display:inline-block;
+  height: 80px;
+  width: *;
+  flow: horizontal;
+}
+.bottom-margin {
+  display:inline-block;
+  height: 48px;
+  width: *;
+}
+.center-child {
+  width:30px;
+  height:40px;
+  vertical-align: middle;
+}
+.center-child:hover {
+  background-color: #f00;
+}
+
+.centered {
+  margin: auto;
+}
+#frame-header {
+  background-color: #0d1721;
+  height: 40px;
+  width: *;
+  min-width: min-content;
+  flow: horizontal;
+}
+
+
+#header {
+  display:block;
+  height: 40px;
+  width: *;
+  flow: horizontal;
+  border-bottom: 2px solid #CE5135;
+  vertical-align: middle;
+}
+
+#header > * {
+  vertical-align: middle;
+}
+
+#header > #players {
+  font-size: 11px;
+}
+
+#main-content {
+  display:inline-block;
+  width:*;
+  height:*;
+  max-width:1600px;
+  flow: horizontal;
+  margin: auto;
+  min-width: min-content;
+  min-height: min-content;
+}
+#server-container {
+  min-width: 530px;
+  width: *;
+  max-width: 700px;
+  background-color: #0d172190;
+  height: *;
+}
+
+#server-container > table {
+  margin:20px;
+}
+
+#search-container {
+  height:40px;
+  vertical-align: middle;
+  flow: horizontal;
+}
+
+#refresh-button {
+  height: 40px;
+  width: 10px;
+}
+
+#search-bar {
+  display: inline-block;
+  border-radius: 7px;
+  background-color: #212A31;
+  height:25px;
+  width: 150px;
+  flow: horizontal;
+  vertical-align: middle;
+
+}
+
+#server-info {
+  padding:20px;
+  width: *;
+  background-color: #06090E90;
+  min-height: 100px;
+  flow:grid(1 2,
+            3 3);
+}
+
+#server-info > * {
+  width: *;
+  height: *;
+}
+
+#server-info > button {
+  background-color: #CE5135;
+  vertical-align: middle;
+  color: #fff;
+  height: 40px;
+}
+
+button > * {
+  vertical-align: middle;
+  height: *;
+}
+
+#chat-container {
+  min-width: 200px;
+  width: *;
+  background-color: #0d172190;
+  height: *;
+  margin-left: 30px;
+  flow: vertical;
+}
+#options-container {
+  display:inline-block;
+  max-width: 800px;
+  margin: auto;
+  width: *;
+  background-color: #0d172190;
+  height: *;
+}
+#patch-container {
+  display:inline-block;
+  max-width: 700px;
+  margin: auto;
+  width: *;
+  background-color: #0d172190;
+  height: *;
+}
+
+#load-container {
+  display:inline-block;
+  max-width: 700px;
+  margin: auto;
+  width: *;
+  background-color: #0d172190;
+  height: *;
+}
+
+#menuentry {
+  vertical-align: middle;
+  margin-left: 10px;
+  height: 40px;
+  padding-left: 20px;
+  padding-right: 20px;
+  min-width: min-content;
+}
+#menuentry > p {
+  vertical-align: middle;
+  min-width: min-content;
+}
+
+#menuentry:hover {
+  margin-top:4px;
+  height: 32px;
+  //background-color: #050a0f;
+  border-bottom: 4px solid #CE5135;
+}
+
+#menuentry > p {
+  display:block;
+  vertical-align: bottom;
+  height: 40px;
+  overflow-y: hidden;
+}
+
+#chat-display {
+  height: *;
+  width:*;
+  overflow-y: auto;
+  margin: 10px;
+}
+#reply-chat {
+  height: 48px;
+  width:*;
+  background-color: #06090E00;
+}
+#reply-chat > input {
+  margin: 8px;
+  height: 30px;
+  width:*;
+  background-color: #212A31;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-radius: 8px;
+  border: 1px solid black;
+}
+
+/*
+#menuentry:selected {
+  height: 36px;
+  border-bottom: 4px solid red;
+}
+*/
+
+[src-hover] {aspect: "Emu.srchover";}
+[custom-role] {aspect: "Emu.role";}
+
+@set my-v-scrollbar
+{
+  .prev, .next
+  { 
+    display:none;
+  }
+  
+  .base,
+  .next-page, 
+  .prev-page 
+  { 
+    display:none;
+  }
+  .slider 
+  {
+    background:#CE5135;
+  }
+  
+  .next:disabled, .slider:disabled, 
+  .prev:disabled  { height:0; border:none; foreground-image:none; }
+  
+  .base:disabled
+  {
+    background-image: none; 
+    background-repeat:repeat; 
+    background-position:0 0 0 0;
+  }
+    
+  .slider:hover { background-color: #CE5135; }
+  
+  .slider:active { background-color: #CE5135; }
+  
+  .base { width: 10px; height: 0px; padding-left: 10px; padding-right: 10px;} /* explicit declaration of its width */
+  .corner { background-color: transparent; }
+}

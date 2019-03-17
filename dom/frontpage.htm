@@ -1,0 +1,259 @@
+<html window-icon="images/rx.ico" window-frame="extended" window-resizable>
+<head>
+<title>Minimalistic Sciter demo</title>
+<style>
+  @import url(general.css);
+  @import url(vgrid.css);
+  @import url(irc.css);
+</style>
+<script type="text/tiscript">
+  include "menubar.tis";
+
+  function getMirrorsCallback(result) {
+    var records = new Array(result.length);
+    for (var i=0; i<result.length; i++) {
+      records[i] = {
+        index: i,
+        name: result[i].Name,
+        map: result[i]["Current Map"].split("-")[1].replace("_", " "),
+        players: result[i]["Players"] + "/" + result[i]["Variables"]["Player Limit"],
+        latency: "0ms",
+        data: result[i],
+      };
+    }
+    var vlist = $(table);
+
+    if(vlist.value != null) {
+      var i = 0;
+      for (var record; i < records.length; i++) {
+        record = records[i];
+        if ( record["data"].IP == vlist.value[vlist.tbody.currentIndex]["data"].IP ) {
+          if ( record["data"].Port == vlist.value[vlist.tbody.currentIndex]["data"].Port ) {
+            break;
+          }
+        }
+      }
+      vlist.value = records;
+      vlist.tbody.currentIndex = i;
+      vlist.tbody.postEvent(Event.CHANGE);
+      //persistant ordering
+      if(var psort = vlist.$(th[order]) ) {
+        var name = psort.attributes["name"];
+
+        function cmpascend(a,b) {
+          if( a[name] > b[name] ) return 1;
+          else if (a[name] < b[name]) return -1;
+          return 0;
+        }
+
+        function cmpdescend(a,b) {
+          if( a[name] < b[name] ) return 1;
+          else if (a[name] > b[name]) return -1;
+          return 0;
+        }
+
+        if ( psort.attributes["order"] == "ascend" ) {
+          vlist.value.sort(cmpascend);
+        } else {
+          vlist.value.sort(cmpdescend);
+        }
+      }
+    } else {
+      vlist.value = records;
+      vlist.tbody.currentIndex = 0;
+      vlist << event change {
+        var entry = vlist.value[vlist.tbody.currentIndex].data;
+        $(#server-name).html = entry["Name"];
+        $(#mine-limit).html = entry["Variables"]["Mine Limit"].toString();
+        $(#player-limit).html = entry["Variables"]["Player Limit"].toString();
+        $(#vehicle-limit).html = entry["Variables"]["Vehicle Limit"].toString();
+        $(#time-limit).html = entry["Variables"]["Time Limit"].toString();
+        var currentMap = entry["Current Map"];
+        var mapName = currentMap.split("-",1);
+        $(#game-mode).html = mapName[0];
+        $(#map-name).html = mapName[1].replace("_", " ");
+      }
+
+      vlist.tbody.postEvent(Event.CHANGE);
+
+      vlist << event dblclick $(tr) {
+        var entry = vlist.value[vlist.tbody.currentIndex]["data"];
+        stdout.println("dblclick", vlist.tbody.currentIndex)
+        view.launch_game(entry.IP+":"+entry.Port, onGameExit, onGameError);
+      }
+
+      vlist << event click $(th.sortable) {
+        this.sortVlist();
+      }
+    }
+  }
+
+  function onGameExit() {
+    stdout.println("Game exited succesfully!");
+  }
+
+  function onGameError() {
+    stdout.println("Game exited unsuccesfully!");
+  }
+
+  function self.ready() {
+    stdout.println("frontpage loaded");
+    view.get_playername(playernameCallback);
+    view.register_irc_callback(onIrcMessage);
+    view.get_mirrors(getMirrorsCallback);
+  }
+
+  function playernameCallback(playername) {
+    $(#playername).html = playername;
+  }
+
+  function onIrcMessage(message) {
+    message = mircToHtml(message.toHtmlString());
+    stdout.println(message);
+    $(#chat-display).html += message + "<br/>";
+  }
+function mircToHtml(text) {
+    //control codes
+    var rex = /&#3;([0-9]{1,2})[,]?([0-9]{1,2})?([^&#3;]+)/,matches,colors;
+    var cp, cbg;
+    if (rex.test(text)) {
+      while (cp = rex.exec(text)) {
+        text = text.replace(cp[0],"<span class=\"fg"+cp[1]+" bg"+cp[2]+"\">"+cp[3]+"</span>");
+      }
+    }
+    //bold,italics,underline (more could be added.)
+    var bui = [
+        [/&#2;([^&#2;]+)(&#2;)?/, ["<b>","</b>"]],
+        [/&#31;([^&#31;]+)(&#31;)?/, ["<u>","</u>"]],
+        [/&#29;([^&#29;]+)(&#29;)?/, ["<i>","</i>"]]
+    ];
+    for (var i=0;i < bui.length;i++) {
+        var bc = bui[i][0];
+        var style = bui[i][1];
+        if (bc.test(text)) {
+            var bmatch;
+            while (bmatch = bc.exec(text)) {
+                text = text.replace(bmatch[0], style[0]+bmatch[1]+style[1]);
+            }
+        }
+    }
+    return text;
+}
+
+  function sendIrcMessage(message) {
+    stdout.println(message.value);
+    view.send_irc_message(message.value);
+    message.value = undefined;
+  }
+</script>
+</head>
+<body model="dom">
+<include src="menubar.htm" />
+<div id="flow-container">
+  <div class="top-margin" style="display: inline-block; margin:auto; max-width:1600px; background-image: url(images/RenX_Logo.png); background-position: center; background-repeat: stretch keep-ratio;">
+    <div #IGN-container style="flow:vertical;vertical-align:middle;">
+      <p>Welcome</p>
+      <h1 style="flow: horizontal; vertical-align: middle;">
+        <picture src="images/EditName.svg" style="width: 17px; height: 35px; margin-left: 7px; margin-right: 7px;"/>
+        <h1 #playername>Murica! Fuck yeah!</h1>
+      </h1>
+    </div>
+    <div style="width:*;"></div>
+    <div #Ver-container style="flow:vertical;text-align:right;vertical-align:middle;">
+      <p>Version</p>
+      <h1>5.373</h1>
+    </div>
+  </div>
+  <div class="horizontal-margin"></div>
+  <div class="horizontal-margin"></div>
+  <div class="bottom-margin"></div>
+  <div id="main-content">
+    <div #server-container>
+      <div #header>
+        <h1>SERVERS</h1>
+        <p#players>44 Players Online</p>
+        <div #search-container style="margin-left:auto;">
+          Filter 
+          <picture src="images/FilterDown.svg" style="width: 17px; height: 35px; margin-left: 7px; margin-right: 10px;"/>
+          <div #search-bar>
+            <picture class="centered" src="images/Search.svg" style="width: 12px; height: 35px; margin-left: 7px; margin-right: 7px;"/>
+            <input type="text" novalue="Search" style="width:*; height: 15px; margin-right: 5px;"/>
+          </div>
+          <picture src="images/Refresh.svg" onclick="view.get_mirrors(getMirrorsCallback);" style="width: 12px; height: 35px; margin-left: 10px; margin-right:3px;"/>
+        </div>
+        <div #refresh-button>
+          <picture />
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th(name).sortable>Server Name</th>
+            <th(map).sortable>Map</th>
+            <th(players).sortable>Players</th>
+            <th(latency).sortable>Ping</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td(name)></td>
+            <td(map)></td>
+            <td(players)></td>
+            <td(latency)></td>
+          </tr>
+        </tbody>
+      </table>
+      <div #server-info>
+        <div style="margin-right: 10px;">
+          <picture src="images/defaultBanner.png" style="width:100%;"></picture>
+          <h1 #server-name style="margin-top: 10px; margin-bottom: 10px; font-size: 14px; color: #CE5135;">FPI - FAIRPLAY INC</h1>
+          <div style="width:*; height:*; flow:horizontal;">
+            <div style="width:*; height:*; flow:vertical;">
+              <p>Time Limit: <span #time-limit>0</span></p>
+              <p>Vehicle Limit: <span #vehicle-limit>0</span></p>
+              <p>Player Limit: <span #player-limit>0</span></p>
+              <p>Mine Limit: <span #mine-limit>0</span></p>
+              <p>Game Mode: <span #game-mode>CNC</span></p>
+            </div>
+            <div style="width:*; height:*; flow:vertical;">
+              <p>Game Length: 0</p>
+              <p>Vehicle Limit: 8</p>
+              <p>Player Limit: 64</p>
+              <p>Mine Limit: 24</p>
+              <p>Game Mode: CNC</p>
+            </div>
+          </div>
+        </div>
+        <div style="margin-left: 10px;">
+          <picture src="images/cnc-field.png" style="width:100%;" />
+          <h1 style="margin-top: 10px; margin-bottom: 10px; font-size: 14px;">MAP: <span #map-name style="font-size: 14px; color: #CE5135;">FIELD X</span></h1>
+          <div style="flow: horizontal;">
+            <div style="flow: vertical">
+              <p>GDI: 9742</p>
+              <p>NOD: 8543</p>
+            </div>
+            <div style="margin-left: 20px; flow: vertical">
+              <p>19 players</p>
+              <p>19 players</p>
+            </div>
+          </div>
+        </div>
+        <button style="margin-top: 20px;"><h3>JOIN SERVER</h3></button>
+      </div>
+    </div>
+
+
+    <div #chat-container>
+      <div #header>
+        <h1>LOBBY CHAT</h1>
+      </div>
+      <div #chat-display readonly="true" spellcheck="false" style="behavior: htmlarea;">
+      </div>
+      <div #reply-chat>
+        <input type="text" novalue="Type here..." enter="sendIrcMessage(this)" />
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
