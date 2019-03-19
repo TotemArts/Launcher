@@ -28,6 +28,69 @@ namespace Emu {
       }
     }
   }
+  function moveSliders() {
+    var mousepressed = false;
+    var element = this.$(.start);
+    var min = this.attributes["minValue"].toInteger();
+    var max = this.attributes["maxValue"].toInteger();
+    var minPercentage = 100.0*this.attributes["min"].toFloat()/(max-min).toFloat();
+    var maxPercentage = 100.0*this.attributes["max"].toFloat()/(max-min).toFloat();
+
+    function updateRange() {
+      this.$(div#slider-range).style["width"] = maxPercentage - minPercentage + "%";
+      this.$(div#slider-range).style["left"] = minPercentage + "%";
+    }
+
+    function updateElementByValue(integerValue) {
+        var width_element = element.box(#width,#outer);
+        var percentage_offset = 100.0*(width_element/2).toFloat()/element.parent.box(#width,#inner,#parent).toFloat();
+        var snapToEvery = 100.0/(max - min).toFloat();
+        element.style["left"] = integerValue.toFloat()*snapToEvery-percentage_offset+"%";
+        if(element == this.$(.start)) {
+          if(element.parent.attributes["min"] != min + integerValue) {
+            element.parent.attributes["min"] = min + integerValue;
+            minPercentage = integerValue.toFloat()*snapToEvery-percentage_offset;
+            updateRange();
+            element.parent.sendEvent(Event.CHANGE);
+          }
+        } else {
+          if(element.parent.attributes["max"] != min + integerValue) {
+            element.parent.attributes["max"] = min + integerValue;
+            maxPercentage = integerValue.toFloat()*snapToEvery-percentage_offset;
+            updateRange();
+            element.parent.sendEvent(Event.CHANGE);
+          }
+        }
+    }
+
+    $(body) << event mousemove (evt) {
+      if(mousepressed) {
+        var left = element.parent.box(#left,#inner,#root);
+        var percentage = 100.0*(evt.x - left).toFloat()/element.parent.box(#width,#inner,#parent).toFloat();
+        var snapToEvery = 100.0/(max - min).toFloat();
+        if(percentage > 100) percentage = 100.0;
+        if(percentage < 0) percentage = 0.0;
+        var integerValue = (percentage/snapToEvery).toInteger();
+        if(element == element.parent.$(.start)) {
+          if(integerValue + 1 >= element.parent.attributes["max"].toInteger()) integerValue = element.parent.attributes["max"].toInteger() - 1;
+        } else {
+          if(integerValue - 1 <= element.parent.attributes["min"].toInteger()) integerValue = element.parent.attributes["min"].toInteger() + 1;
+        }
+        updateElementByValue(integerValue);
+      }
+    }
+    $(body) << event mouseup (evt) {
+      mousepressed = false;
+    }
+    this.$(.end) << event mousedown (evt) {
+      mousepressed = true;
+      element = this;
+    }
+    this.$(.start) << event mousedown (evt) {
+      mousepressed = true;
+      element = this;
+    }
+  }
 }
 
 function alert(msg) {

@@ -4,7 +4,8 @@
   vertical-scrollbar: my-v-scrollbar;
 }
 
-html, body, button, textarea, input, table, thead, tbody, tr, th, td {
+
+html, body, div > button, textarea, input|text, table, thead, tbody, tr, th, td {
   background-gradient: none;
   background-color: none;
   background-image: none;
@@ -13,11 +14,15 @@ html, body, button, textarea, input, table, thead, tbody, tr, th, td {
   margin: 0px;
 }
 
-p, h1, div, input {
+p, h1, div, input|text {
   margin: 0px;
   padding: 0px;
   color: #fff;
   text-decoration: none;
+}
+
+p {
+  flow: horizontal;
 }
 
 html {
@@ -108,11 +113,14 @@ body {
   min-width: 530px;
   width: *;
   max-width: 700px;
-  background-color: #0d172190;
   height: *;
 }
 
-#server-container > table {
+#server-container > div {
+  background-color: #0d172190;
+}
+
+#server-container > div > table {
   margin:20px;
 }
 
@@ -135,24 +143,16 @@ body {
   width: 150px;
   flow: horizontal;
   vertical-align: middle;
-
 }
 
 #server-info {
   padding:20px;
-  width: *;
   background-color: #06090E90;
   min-height: 100px;
-  flow:grid(1 2,
-            3 3);
+  flow: horizontal;
 }
 
-#server-info > * {
-  width: *;
-  height: *;
-}
-
-#server-info > button {
+#server-info > div > button {
   background-color: #CE5135;
   vertical-align: middle;
   color: #fff;
@@ -253,6 +253,37 @@ button > * {
   border-bottom: 4px solid red;
 }
 */
+
+#slider {
+  width: *;
+  height: 8px;
+  margin: 0px 20px;
+  position: relative;
+  background-color: #1C2B3A;
+  aspect: "Emu.moveSliders";
+}
+
+#slider > #slider-range {
+  position: relative;
+  background-color: #CE5135;
+  height: 8px;
+  top: 0px;
+  left: 0%;
+  width: 100%;
+}
+
+#slider > #slider-handle {
+  position: absolute;
+  border: 1px solid #c5c5c5;
+  background: #f6f6f6;
+  cursor: default;
+  touch-action: none;
+  width: 1.2em;
+  height: 1.2em;
+  border-radius: 3px;
+  top: -3px;
+  left: 0%;
+}
 
 [src-hover] {aspect: "Emu.srchover";}
 [custom-role] {aspect: "Emu.role";}
