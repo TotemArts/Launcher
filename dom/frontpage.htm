@@ -140,10 +140,10 @@
     $(#playername).html = playername;
   }
 
-  function onIrcMessage(message) {
+  function onIrcMessage(username, message) {
     message = mircToHtml(message.toHtmlString());
     stdout.println(message);
-    $(#chat-display).html += message + "<br/>";
+    $(#chat-display).html += "[" + username + "] " + message + "<br/>";
   }
   function mircToHtml(text) {
     //control codes
@@ -176,6 +176,7 @@
   function sendIrcMessage(message) {
     stdout.println(message.value);
     view.send_irc_message(message.value);
+    $(#chat-display).html += "[" + $(#playername).html + "] " + message.value + "<br/>";
     message.value = undefined;
   }
 
@@ -183,6 +184,11 @@
 </head>
 <body model="dom">
 <include src="menubar.htm" />
+<div #overlay style="position:fixed; width:*;height:100%; background-color: #ffffff70; visibility:hidden; vertical-align: middle; ">
+  <div #message-box style="width:400px; height: 400px; margin:auto; background-color: #c0c;">
+    An error has occurred!
+  </div>
+</div>
 <div id="flow-container">
   <div class="top-margin" style="display: inline-block; margin:auto; max-width:1600px; background-image: url(images/RenX_Logo.png); background-position: center; background-repeat: stretch keep-ratio;">
     <div #IGN-container style="flow:vertical;vertical-align:middle;">

@@ -11,6 +11,7 @@ namespace Emu {
         picture.attributes["src"] = srcnormal;
       }
   }
+
   function role() {
     this << event click (evt) {
       var role = this.attributes["custom-role"];
@@ -28,6 +29,7 @@ namespace Emu {
       }
     }
   }
+
   function moveSliders() {
     var mousepressed = false;
     var element = this.$(.start);
@@ -114,6 +116,6 @@ self.on("click","[onclick]",function() {
 });
 
 self.on("keypress","[enter]",function(evt) {
-  if ( evt.keyCode != 13 || evt.keyCode != Event.VK_RETURN ) return;
+  if ( evt.keyCode != 13 && evt.keyCode != Event.VK_RETURN ) return;
   eval.call(this, this.attributes["enter"]);
 });

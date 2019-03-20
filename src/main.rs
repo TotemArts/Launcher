@@ -177,6 +177,7 @@ impl Handler {
     *irc_callback = Some(callback.clone());
     true
   }
+
   fn get_status(&self, callback: sciter::Value) -> bool {
     let progress = self.patcher.clone().lock().unwrap().get_progress();
     std::thread::spawn(move || {
@@ -195,6 +196,15 @@ impl Handler {
       let playername = section.get("PlayerName").unwrap();
       callback.call(None, &make_args!(playername.as_str()), None).unwrap();
     });
+    true
+  }
+
+  fn set_playername(&self, username: sciter::Value) -> bool {
+    let conf_unlocked = self.conf.clone();
+    let mut conf = conf_unlocked.lock().unwrap();
+    let mut section = conf.with_section(Some("RenX_Launcher".to_owned()));
+    let playername = section.set("PlayerName", username.as_string().unwrap());
+    conf.write_to_file("RenegadeX-Launcher.ini").unwrap();
     true
   }
 
@@ -238,6 +248,7 @@ impl sciter::EventHandler for Handler {
     fn register_irc_callback(Value); //Register's the callback
     fn get_status(Value); //forgot what it was intended for, atleast two three values should be differentiated: UpToDate, Downloading, UpdateAvailable
     fn get_playername(Value);
+    fn set_playername(Value);
     fn get_mirrors(Value);
     fn launch_game(Value, Value, Value); //Parameters: (Server IP+Port, onDone, onError);
   }
@@ -312,12 +323,13 @@ fn main() {
     }
     reactor.register_client_with_handler(client, move |client, event| {
       if let Command::PRIVMSG(channel, message) = &event.command {
-        println!("{:#?}", &channel);
         if channel == "#renegadex" {
           let mut ui_option = irc_callback.lock().unwrap();
           match *ui_option {
             Some(ref ui) => {
-              ui.call(None, &make_args!(message.as_str()), None).unwrap();
+              let username = event.prefix.unwrap();
+              let username = username.split("!").nth(0).unwrap();
+              ui.call(None, &make_args!(username,message.as_str()), None).unwrap();
             },
             None => {
               println!("{:#?}", &message);
