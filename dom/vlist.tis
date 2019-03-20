@@ -16,7 +16,7 @@
 //| - list.currentIndex - integer, read/write, index of current record in records array or -1 if there is no current record
 //| - list.current - object, read/write, current record or null if there is no current record.
 //| - list.recordView(record|index) - function returns DOM element, used to render given record (or record at index). May return null if the record is out of sliding window.
-//| - list.recordIndex(element) - function returns index of record correspoding to the DOM element. 
+//| - list.recordIndex(element) - function returns index of record correspoding to the DOM element.
 //|                               DOM element here is either row or its child
 
 function VirtualList(params) {
@@ -367,7 +367,7 @@ function VirtualList(params) {
     list[#value] = property(v) 
     {
       get return records;
-      set { 
+      set {
         if(records !== v) {
           if(records)
             setupSetObserver(false);  
@@ -392,6 +392,11 @@ function VirtualList(params) {
     if(!showRecord) showRecord = function(i,r,el) 
     {
       el.value = r; // each item has behavior form so its value is an aggregate 
+      if(r.display) {
+        el.style["display"] = "block";
+      } else {
+        el.style["display"] = "none";
+      }
       el.state.current = current_record === r;
       if(setupRecord) setupRecord(i,r,el);
     };
