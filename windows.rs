@@ -15,7 +15,7 @@ fn main() {
     res.set_icon("rx.ico");
     match res.compile() {
       Err(e) => {
-        write!(std::io::stderr(), "windows.rs: 15 -> {}", e).unwrap();
+        write!(std::io::stderr(), "windows.rs:18:{}", e).unwrap();
         std::process::exit(1);
       },
       Ok(_) => {}

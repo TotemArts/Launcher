@@ -29,12 +29,13 @@
         name: result[i].Name,
         map: result[i]["Current Map"].split("-")[1].replace("_", " "),
         players: result[i]["Players"] + "/" + result[i]["Variables"]["Player Limit"],
-        latency: "0ms",
+        latency: "-",
         display: in_range && (result[i]["Game Version"] == game_version)?true:false,
         in_player_range: in_range,
         same_version: (result[i]["Game Version"] == game_version)?true:false,
         data: result[i],
       };
+      view.get_ping(result[i]["IP"]+":"+result[i]["Port"], onPingResult);
     }
     var vlist = $(table);
     $(span#players).html = players_online+"&nbsp;";
@@ -99,6 +100,15 @@
 
       vlist << event click $(th.sortable) {
         this.sortVlist();
+      }
+    }
+  }
+
+  function onPingResult(server, time_response) {
+    for ( var value in $(table).value ) {
+      if ( value.data["IP"] + ":" + value.data["Port"] == server ) {
+        value.latency = time_response + " ms";
+        break;
       }
     }
   }

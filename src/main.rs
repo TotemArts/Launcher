@@ -10,6 +10,7 @@ extern crate ini;
 extern crate irc;
 extern crate single_instance;
 extern crate chrono;
+extern crate regex;
 #[cfg(unix)]
 extern crate gag;
 
@@ -217,6 +218,38 @@ impl Handler {
     true
   }
 
+  #[cfg(windows)]
+  fn get_ping(&self, server: sciter::Value, callback: sciter::Value) -> bool {
+    std::thread::spawn(move || {
+      let server_plus_port = server.as_string().unwrap();
+      let ip = server_plus_port.split(":").nth(0).unwrap();
+      let output = std::process::Command::new("ping").arg("-n").arg("1").arg("-w").arg("2000").arg(ip).output().expect("Couldn't create new process: ");
+      if output.status.success() {
+        let regex = regex::Regex::new(r"time=(?P<time>(\d|\.)+)ms").unwrap().captures(std::str::from_utf8(&output.stdout).unwrap()).unwrap();
+        let time : String = regex["time"].to_string();
+        callback.call(None, &make_args!(server, time), None).unwrap();
+      } else {
+        println!("Couldn't ping server: {:#?}", output);
+      }
+    });
+    true
+  }
+
+  #[cfg(unix)]
+  fn get_ping(&self, server: sciter::Value, callback: sciter::Value) -> bool {
+    std::thread::spawn(move || {
+      let server_plus_port = server.as_string().unwrap();
+      let ip = server_plus_port.split(":").nth(0).unwrap();
+      let output = std::process::Command::new("ping").arg("-c1").arg("-s24").arg(ip).output().expect("Couldn't create new process: ");
+      if output.status.success() {
+        let regex = regex::Regex::new(r"time=(?P<time>(\d|\.)+) ms").unwrap().captures(std::str::from_utf8(&output.stdout).unwrap()).unwrap();
+        let time : String = regex["time"].to_string();
+        callback.call(None, &make_args!(server, time), None).unwrap();
+      }
+    });
+    true
+  }
+
   fn launch_game(&self, server: Value, done: Value, error: Value) {
     let conf = self.conf.lock().unwrap();
     let section = conf.section(Some("RenX_Launcher".to_owned())).unwrap();
@@ -251,6 +284,7 @@ impl sciter::EventHandler for Handler {
     fn set_playername(Value);
     fn get_mirrors(Value);
     fn launch_game(Value, Value, Value); //Parameters: (Server IP+Port, onDone, onError);
+    fn get_ping(Value, Value);
   }
 }
 
