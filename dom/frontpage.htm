@@ -1,6 +1,6 @@
 <html window-icon="images/rx.ico" window-frame="extended" window-resizable>
 <head>
-<title>Minimalistic Sciter demo</title>
+<title>RenegadeX-Launcher</title>
 <style>
   @import url(general.css);
   @import url(vgrid.css);
@@ -8,194 +8,19 @@
 </style>
 <script type="text/tiscript">
   include "menubar.tis";
-  var game_version = "Open Beta 5.373";
-  function updateFilter(value) {
-    value.display = (value.in_player_range && ($(input|checkbox#version).checked?value.same_version:true));
-  }
-
-  function getMirrorsCallback(result) {
-    var records = new Array(result.length);
-    var players_online = 0;
-    for (var i=0; i<result.length; i++) {
-      var in_range;
-      if(result[i]["Players"] >= $(div#slider).attributes["min"].toInteger() && result[i]["Players"] <= $(div#slider).attributes["max"].toInteger()) {
-        in_range = true;
-      } else {
-        in_range = false;
-      }
-      players_online += result[i]["Players"];
-      records[i] = {
-        index: i,
-        name: result[i].Name,
-        map: result[i]["Current Map"].split("-")[1].replace("_", " "),
-        players: result[i]["Players"] + "/" + result[i]["Variables"]["Player Limit"],
-        latency: "-",
-        display: in_range && (result[i]["Game Version"] == game_version)?true:false,
-        in_player_range: in_range,
-        same_version: (result[i]["Game Version"] == game_version)?true:false,
-        data: result[i],
-      };
-      view.get_ping(result[i]["IP"]+":"+result[i]["Port"], onPingResult);
-    }
-    var vlist = $(table);
-    $(span#players).html = players_online+"&nbsp;";
-    if(vlist.value != null) {
-      var i = 0;
-      for (var record; i < records.length; i++) {
-        record = records[i];
-        if ( record["data"].IP == vlist.value[vlist.tbody.currentIndex]["data"].IP ) {
-          if ( record["data"].Port == vlist.value[vlist.tbody.currentIndex]["data"].Port ) {
-            break;
-          }
-        }
-      }
-      vlist.value = records;
-      vlist.tbody.currentIndex = i;
-      vlist.tbody.postEvent(Event.CHANGE);
-      //persistant ordering
-      if(var psort = vlist.$(th[order]) ) {
-        var name = psort.attributes["name"];
-
-        function cmpascend(a,b) {
-          if( a[name] > b[name] ) return 1;
-          else if (a[name] < b[name]) return -1;
-          return 0;
-        }
-
-        function cmpdescend(a,b) {
-          if( a[name] < b[name] ) return 1;
-          else if (a[name] > b[name]) return -1;
-          return 0;
-        }
-
-        if ( psort.attributes["order"] == "ascend" ) {
-          vlist.value.sort(cmpascend);
-        } else {
-          vlist.value.sort(cmpdescend);
-        }
-      }
-    } else {
-      vlist.value = records;
-      vlist.tbody.currentIndex = 0;
-      vlist << event change {
-        var entry = vlist.value[vlist.tbody.currentIndex].data;
-        $(#server-name).html = entry["Name"];
-        $(#mine-limit).html = entry["Variables"]["Mine Limit"].toString();
-        $(#player-limit).html = entry["Variables"]["Player Limit"].toString();
-        $(#vehicle-limit).html = entry["Variables"]["Vehicle Limit"].toString();
-        $(#time-limit).html = entry["Variables"]["Time Limit"].toString();
-        var currentMap = entry["Current Map"];
-        var mapName = currentMap.split("-",1);
-        $(#game-mode).html = mapName[0];
-        $(#map-name).html = mapName[1].replace("_", " ");
-      }
-
-      vlist.tbody.postEvent(Event.CHANGE);
-
-      vlist << event dblclick $(tr) {
-        var entry = vlist.value[vlist.tbody.currentIndex]["data"];
-        stdout.println("dblclick", vlist.tbody.currentIndex)
-        view.launch_game(entry.IP+":"+entry.Port, onGameExit, onGameError);
-      }
-
-      vlist << event click $(th.sortable) {
-        this.sortVlist();
-      }
-    }
-  }
-
-  function onPingResult(server, time_response) {
-    for ( var value in $(table).value ) {
-      if ( value.data["IP"] + ":" + value.data["Port"] == server ) {
-        value.latency = time_response + " ms";
-        break;
-      }
-    }
-  }
-
-  function onGameExit() {
-    stdout.println("Game exited succesfully!");
-  }
-
-  function onGameError() {
-    stdout.println("Game exited unsuccesfully!");
-  }
+  include "launcher.tis";
 
   function self.ready() {
-    stdout.println("frontpage loaded");
-    view.get_playername(playernameCallback);
+    playernameCallback(view.get_playername());
     view.register_irc_callback(onIrcMessage);
-    view.get_mirrors(getMirrorsCallback);
+    view.get_servers(getServersCallback);
   }
-
-  function versionCheck() {
-    for (var value in $(table).value) {
-      updateFilter(value);
-    }
-  }
-
-  function toggleFilterBar(picture) {
-    stdout.println("toggleFilterBar");
-    stdout.println(picture);
-    stdout.println($(#filterbar));
-    stdout.println($(#filterbar).style["height"]);
-    if ($(#filterbar).style["height"] == "auto") {
-      $(#filterbar).style["height"] = "0px;";
-    } else {
-      $(#filterbar).style["height"] = "auto";
-    }
-  }
-
-  function playernameCallback(playername) {
-    $(#playername).html = playername;
-  }
-
-  function onIrcMessage(username, message) {
-    message = mircToHtml(message.toHtmlString());
-    stdout.println(message);
-    $(#chat-display).html += "[" + username + "] " + message + "<br/>";
-  }
-  function mircToHtml(text) {
-    //control codes
-    var rex = /&#3;([0-9]{1,2})[,]?([0-9]{1,2})?([^&#3;]+)/,matches,colors;
-    var cp, cbg;
-    if (rex.test(text)) {
-      while (cp = rex.exec(text)) {
-        text = text.replace(cp[0],"<span class=\"fg"+cp[1]+" bg"+cp[2]+"\">"+cp[3]+"</span>");
-      }
-    }
-    //bold,italics,underline (more could be added.)
-    var bui = [
-        [/&#2;([^&#2;]+)(&#2;)?/, ["<b>","</b>"]],
-        [/&#31;([^&#31;]+)(&#31;)?/, ["<u>","</u>"]],
-        [/&#29;([^&#29;]+)(&#29;)?/, ["<i>","</i>"]]
-    ];
-    for (var i=0;i < bui.length;i++) {
-        var bc = bui[i][0];
-        var style = bui[i][1];
-        if (bc.test(text)) {
-            var bmatch;
-            while (bmatch = bc.exec(text)) {
-                text = text.replace(bmatch[0], style[0]+bmatch[1]+style[1]);
-            }
-        }
-    }
-    return text;
-  }
-
-  function sendIrcMessage(message) {
-    stdout.println(message.value);
-    view.send_irc_message(message.value);
-    $(#chat-display).html += "[" + $(#playername).html + "] " + message.value + "<br/>";
-    message.value = undefined;
-  }
-
 </script>
 </head>
 <body model="dom">
 <include src="menubar.htm" />
-<div #overlay style="position:fixed; width:*;height:100%; background-color: #ffffff70; visibility:hidden; vertical-align: middle; ">
-  <div #message-box style="width:400px; height: 400px; margin:auto; background-color: #c0c;">
+<div #overlay style="position:fixed; width:*;height:100%; background-color: #06090Ea0; visibility:hidden; vertical-align: middle; ">
+  <div #message-box style="width:400px; margin:auto; background-color: #06090E;">
     An error has occurred!
   </div>
 </div>
@@ -204,7 +29,7 @@
     <div #IGN-container style="flow:vertical;vertical-align:middle;">
       <p>Welcome</p>
       <h1 style="flow: horizontal; vertical-align: middle;">
-        <picture src="images/EditName.svg" style="width: 17px; height: 35px; margin-left: 7px; margin-right: 7px;"/>
+        <picture onclick="changePlayernameUI();" src="images/EditName.svg" style="width: 17px; height: 35px; margin-left: 7px; margin-right: 7px;"/>
         <h1 #playername>Murica! Fuck yeah!</h1>
       </h1>
     </div>
@@ -229,10 +54,7 @@
             <picture class="centered" src="images/Search.svg" style="width: 12px; height: 35px; margin-left: 7px; margin-right: 7px;"/>
             <input type="text" novalue="Search" style="width:*; height: 15px; margin-right: 5px;"/>
           </div>
-          <picture src="images/Refresh.svg" onclick="view.get_mirrors(getMirrorsCallback);" style="width: 12px; height: 35px; margin-left: 10px; margin-right:3px;"/>
-        </div>
-        <div #refresh-button>
-          <picture />
+          <picture src="images/Refresh.svg" onclick="view.get_servers(getServersCallback);" style="width: 12px; height: 35px; margin-left: 10px; margin-right:13px;"/>
         </div>
       </div>
       <div #filterbar style="height: 0px; overflow:hidden; background-color: #06090Ec0;">
@@ -292,7 +114,7 @@
           <button style="margin-top: 20px; width:*; bottom: 0px;"><h3>JOIN SERVER</h3></button>
         </div>
         <div style="min-width: 230px; width:*; height: *; margin-left: 10px; vertical-align: bottom;">
-          <img src="CNC-Islands.gif" style="max-width: 100%;"/>
+          <img#map_image src="CNC-Islands.gif" style="max-width: 100%;"/>
         </div>
       </div>
     </div>

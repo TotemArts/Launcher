@@ -525,14 +525,30 @@ class VTh : Behavior
     var name = this.attributes["name"];
     var order = this.attributes["order"];
     function cmpascend(a,b) {
-      if( a[name] > b[name] ) return 1;
-      else if (a[name] < b[name]) return -1;
-      return 0;
+      if(a[name].toInteger()  != undefined || b[name].toInteger() != undefined) {
+        if(a[name].toInteger() == undefined) return 1;
+        if(b[name].toInteger() == undefined) return -1;
+        if(a[name].toInteger() > b[name].toInteger() ) return 1;
+        else if (a[name].toInteger() < b[name].toInteger()) return -1;
+        return 0;
+      } else {
+        if( a[name] > b[name] ) return 1;
+        else if (a[name] < b[name]) return -1;
+        return 0;
+      }
     }
     function cmpdescend(a,b) {
-      if( a[name] < b[name] ) return 1;
-      else if (a[name] > b[name]) return -1;
-      return 0;
+      if(a[name].toInteger()  != undefined || b[name].toInteger() != undefined) {
+        if(a[name].toInteger() == undefined) return 1;
+        if(b[name].toInteger() == undefined) return -1;
+        if(a[name].toInteger() < b[name].toInteger() ) return 1;
+        else if (a[name].toInteger() > b[name].toInteger()) return -1;
+        return 0;
+      } else {
+        if( a[name] < b[name] ) return 1;
+        else if (a[name] > b[name]) return -1;
+        return 0;
+      }
     }
     if ( order == "ascend" ) {
        this.attributes["order"] = "descend" ;

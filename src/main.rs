@@ -66,7 +66,7 @@ struct Handler {
 }
 
 impl Handler {
-  fn check_update(&self, done: sciter::Value, error: sciter::Value) -> bool {
+  fn check_update(&self, done: sciter::Value, error: sciter::Value) {
     {
       let progress = self.patcher.clone().lock().unwrap().get_progress();
       let update = &progress.lock().unwrap().update;
@@ -74,17 +74,17 @@ impl Handler {
         Update::UpToDate => {
           println!("No update available");
           done.call(None, &make_args!(false, false), None).unwrap();
-          return true;
+          return;
         },
         Update::Resume | Update::Full => {
           println!("Resuming download!");
           done.call(None, &make_args!(true, true), None).unwrap();
-          return true;
+          return;
         },
         Update::Delta => {
           println!("Update available");
           done.call(None, &make_args!(true, false), None).unwrap();
-          return true;
+          return;
         },
         Update::Unknown => {}
       }
@@ -124,10 +124,9 @@ impl Handler {
         error.call(None, &make_args!(result.unwrap_err().description()), None).unwrap();
       }
     });
-		true
   }
 
-  fn start_download(&self, callback: sciter::Value, callback_done: sciter::Value, error: sciter::Value) -> bool {
+  fn start_download(&self, callback: sciter::Value, callback_done: sciter::Value, error: sciter::Value) {
     let progress = self.patcher.clone().lock().unwrap().get_progress();
 		std::thread::spawn(move || {
       let mut not_finished = true;
@@ -161,65 +160,46 @@ impl Handler {
         }
       };
     });
-    true
   }
 
-  fn send_irc_message(&self, message: sciter::Value) -> bool {
+  fn send_irc_message(&self, message: sciter::Value) {
     match *self.irc_client.lock().unwrap() {
       Some(ref irc_client) => irc_client.send_privmsg("#renegadex", message.as_string().unwrap()).unwrap(),
       None => {}
     }
-    true
   }
 
-  fn register_irc_callback(&self, callback: sciter::Value) -> bool {
+  fn register_irc_callback(&self, callback: sciter::Value) {
     println!("registering irc_callback: {:#?}", &callback);
     let mut irc_callback = self.irc_callback.lock().unwrap();
     *irc_callback = Some(callback.clone());
-    true
   }
 
-  fn get_status(&self, callback: sciter::Value) -> bool {
-    let progress = self.patcher.clone().lock().unwrap().get_progress();
-    std::thread::spawn(move || {
-      let progress_locked = progress.lock().unwrap();
-      callback.call(None, &make_args!(progress_locked.finished_patching), None).unwrap();
-    });
-    true
-  }
-
-  fn get_playername(&self, callback: sciter::Value) -> bool {
+  fn get_playername(&self) -> String {
     let conf_unlocked = self.conf.clone();
-
-    std::thread::spawn(move || {
-      let conf = conf_unlocked.lock().unwrap();
-      let section = conf.section(Some("RenX_Launcher".to_owned())).unwrap();
-      let playername = section.get("PlayerName").unwrap();
-      callback.call(None, &make_args!(playername.as_str()), None).unwrap();
-    });
-    true
+    let conf = conf_unlocked.lock().unwrap();
+    let section = conf.section(Some("RenX_Launcher".to_owned())).unwrap();
+    section.get("PlayerName").unwrap().to_string()
   }
 
-  fn set_playername(&self, username: sciter::Value) -> bool {
+  fn set_playername(&self, username: sciter::Value) {
     let conf_unlocked = self.conf.clone();
     let mut conf = conf_unlocked.lock().unwrap();
     let mut section = conf.with_section(Some("RenX_Launcher".to_owned()));
     let playername = section.set("PlayerName", username.as_string().unwrap());
     conf.write_to_file("RenegadeX-Launcher.ini").unwrap();
-    true
   }
 
-  fn get_mirrors(&self, callback: sciter::Value) -> bool {
+  fn get_servers(&self, callback: sciter::Value) {
     std::thread::spawn(move || {
       //reqwest server
       let text : Value = reqwest::get("http://serverlist.renegade-x.com/servers.jsp").unwrap().text().unwrap().parse().unwrap();
       callback.call(None, &make_args!(text), None).unwrap();
     });
-    true
   }
 
   #[cfg(windows)]
-  fn get_ping(&self, server: sciter::Value, callback: sciter::Value) -> bool {
+  fn get_ping(&self, server: sciter::Value, callback: sciter::Value) {
     std::thread::spawn(move || {
       let server_plus_port = server.as_string().unwrap();
       let ip = server_plus_port.split(":").nth(0).unwrap();
@@ -232,11 +212,10 @@ impl Handler {
         println!("Couldn't ping server: {:#?}", output);
       }
     });
-    true
   }
 
   #[cfg(unix)]
-  fn get_ping(&self, server: sciter::Value, callback: sciter::Value) -> bool {
+  fn get_ping(&self, server: sciter::Value, callback: sciter::Value) {
     std::thread::spawn(move || {
       let server_plus_port = server.as_string().unwrap();
       let ip = server_plus_port.split(":").nth(0).unwrap();
@@ -247,7 +226,6 @@ impl Handler {
         callback.call(None, &make_args!(server, time), None).unwrap();
       }
     });
-    true
   }
 
   fn launch_game(&self, server: Value, done: Value, error: Value) {
@@ -279,10 +257,10 @@ impl sciter::EventHandler for Handler {
     fn start_download(Value, Value, Value);
     fn send_irc_message(Value); //Parameter is a string
     fn register_irc_callback(Value); //Register's the callback
-    fn get_status(Value); //forgot what it was intended for, atleast two three values should be differentiated: UpToDate, Downloading, UpdateAvailable
-    fn get_playername(Value);
+     //removed funtion of what I've forgot what it was intended for, atleast three values should be differentiated: UpToDate, Downloading, UpdateAvailable
+    fn get_playername();
     fn set_playername(Value);
-    fn get_mirrors(Value);
+    fn get_servers(Value);
     fn launch_game(Value, Value, Value); //Parameters: (Server IP+Port, onDone, onError);
     fn get_ping(Value, Value);
   }
@@ -342,7 +320,8 @@ fn main() {
 
   let irc_thread = std::thread::spawn(move || {
     let config = Config {
-      nickname: Some(playername.to_owned()),
+      nickname: Some("SonnyX".to_string()),//playername.to_owned()),
+      alt_nicks: Some(vec![format!("{}_", &playername)]),
       server: Some("irc.cncirc.net".to_owned()),
       channels: Some(vec!["#renegadex".to_owned()]),
       use_ssl: Some(true),

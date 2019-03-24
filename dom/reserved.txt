@@ -1,0 +1,16 @@
+input|checkbox#version
+
+/* slider-bar for filter options */
+div#slider
+
+/* Players Online */
+span#players
+
+/* For the server info box */
+#server-name
+#mine-limit
+#player-limit
+#vehicle-limit
+#time-limit
+#game-mode
+#map-name

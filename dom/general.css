@@ -2,6 +2,7 @@
 
 * {
   vertical-scrollbar: my-v-scrollbar;
+  border-radius: 0px;
 }
 
 
@@ -216,6 +217,10 @@ button > * {
   height: 32px;
   //background-color: #050a0f;
   border-bottom: 4px solid #CE5135;
+}
+
+#menuentry:disabled > * {
+  color: #4E545B;
 }
 
 #menuentry > p {

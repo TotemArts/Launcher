@@ -1,0 +1,270 @@
+  var game_version = "Open Beta 5.373";
+  var playername = "";
+
+  function updateFilter(value) {
+    value.display = (value.in_player_range && ($(input|checkbox#version).checked?value.same_version:true));
+  }
+
+  function getServersCallback(result) {
+    var records = new Array(result.length);
+    var players_online = 0;
+    for (var i=0; i<result.length; i++) {
+      var in_range;
+      if(result[i]["Players"] >= $(div#slider).attributes["min"].toInteger() && result[i]["Players"] <= $(div#slider).attributes["max"].toInteger()) {
+        in_range = true;
+      } else {
+        in_range = false;
+      }
+      players_online += result[i]["Players"];
+      records[i] = {
+        index: i,
+        name: result[i].Name,
+        map: result[i]["Current Map"].split("-")[1].replace("_", " "),
+        players: result[i]["Players"] + "/" + result[i]["Variables"]["Player Limit"],
+        latency: "-",
+        display: in_range && (result[i]["Game Version"] == game_version)?true:false,
+        in_player_range: in_range,
+        same_version: (result[i]["Game Version"] == game_version)?true:false,
+        data: result[i],
+      };
+      view.get_ping(result[i]["IP"]+":"+result[i]["Port"], onPingResult);
+    }
+    var vlist = $(table);
+    $(span#players).html = players_online+"&nbsp;";
+    if(vlist.value != null) {
+      var i = 0;
+      for (var record; i < records.length; i++) {
+        record = records[i];
+        if ( record["data"].IP == vlist.value[vlist.tbody.currentIndex]["data"].IP ) {
+          if ( record["data"].Port == vlist.value[vlist.tbody.currentIndex]["data"].Port ) {
+            break;
+          }
+        }
+      }
+      vlist.value = records;
+      vlist.tbody.currentIndex = i;
+      vlist.tbody.postEvent(Event.CHANGE);
+      //persistant ordering
+      if(var psort = vlist.$(th[order]) ) {
+        var name = psort.attributes["name"];
+
+        function cmpascend(a,b) {
+          if(a[name].toInteger()  != undefined || b[name].toInteger() != undefined) {
+            if(a[name].toInteger() == undefined) return 1;
+            if(b[name].toInteger() == undefined) return -1;
+            if(a[name].toInteger() > b[name].toInteger() ) return 1;
+            else if (a[name].toInteger() < b[name].toInteger()) return -1;
+            return 0;
+          } else {
+            if( a[name] > b[name] ) return 1;
+            else if (a[name] < b[name]) return -1;
+            return 0;
+          }
+        }
+        function cmpdescend(a,b) {
+          if(a[name].toInteger()  != undefined || b[name].toInteger() != undefined) {
+            if(a[name].toInteger() == undefined) return 1;
+            if(b[name].toInteger() == undefined) return -1;
+            if(a[name].toInteger() < b[name].toInteger() ) return 1;
+            else if (a[name].toInteger() > b[name].toInteger()) return -1;
+            return 0;
+          } else {
+            if( a[name] < b[name] ) return 1;
+            else if (a[name] > b[name]) return -1;
+            return 0;
+          }
+        }
+
+        if ( psort.attributes["order"] == "ascend" ) {
+          vlist.value.sort(cmpascend);
+        } else {
+          vlist.value.sort(cmpdescend);
+        }
+      }
+    } else {
+      vlist.value = records;
+      vlist.tbody.currentIndex = 0;
+      vlist << event change {
+        var entry = vlist.value[vlist.tbody.currentIndex].data;
+        $(#server-name).html = entry["Name"];
+        $(#mine-limit).html = entry["Variables"]["Mine Limit"].toString();
+        $(#player-limit).html = entry["Variables"]["Player Limit"].toString();
+        $(#vehicle-limit).html = entry["Variables"]["Vehicle Limit"].toString();
+        $(#time-limit).html = entry["Variables"]["Time Limit"].toString();
+        var currentMap = entry["Current Map"];
+        var mapName = currentMap.split("-",1);
+        $(#game-mode).html = mapName[0];
+        $(#map-name).html = mapName[1].replace("_", " ");
+      }
+
+      vlist.tbody.postEvent(Event.CHANGE);
+
+      vlist << event dblclick $(tr) {
+        var entry = vlist.value[vlist.tbody.currentIndex]["data"];
+        view.launch_game(entry.IP+":"+entry.Port, onGameExit, onGameError);
+        $(img#map_image).attributes["src-disabled"]=$(img#map_image).attributes["src"];
+        $(img#map_image).attributes["src"]= "";
+      }
+
+      vlist << event click $(th.sortable) {
+        this.sortVlist();
+      }
+    }
+  }
+
+  function onPingResult(server, time_response) {
+    for ( var value in $(table).value ) {
+      if ( value.data["IP"] + ":" + value.data["Port"] == server ) {
+        value.latency = time_response + " ms";
+        break;
+      }
+    }
+  }
+
+  function onGameExit() {
+    $(img#map_image).attributes["src"] = $(img#map_image).attributes["src-disabled"]
+    stdout.println("Game exited succesfully!");
+  }
+
+  function onGameError() {
+    $(img#map_image).attributes["src"] = $(img#map_image).attributes["src-disabled"]
+    stdout.println("Game exited unsuccesfully!");
+  }
+
+  function versionCheck() {
+    for (var value in $(table).value) {
+      updateFilter(value);
+    }
+  }
+
+  function toggleFilterBar(picture) {
+    stdout.println("toggleFilterBar");
+    stdout.println(picture);
+    stdout.println($(#filterbar));
+    stdout.println($(#filterbar).style["height"]);
+    if ($(#filterbar).style["height"] == "auto") {
+      $(#filterbar).style["height"] = "0px;";
+    } else {
+      $(#filterbar).style["height"] = "auto";
+    }
+  }
+
+  function playernameCallback(_playername) {
+    playername = _playername;
+    $(#playername).html = _playername;
+  }
+
+  function changePlayernameUI() {
+    $(div#message-box).load("username.htm");
+    $(div#overlay).style["visibility"] = "visible";
+    $(div#menu_entries).state.disabled = true;
+  }
+
+  function joinIPUI() {
+    $(div#message-box).load("join-ip.htm");
+    $(div#overlay).style["visibility"] = "visible";
+    $(div#menu_entries).state.disabled = true;
+  }
+
+  function setPlayername() {
+    view.set_playername($(input|text#username).value);
+    playernameCallback($(input|text#username).value);
+    clearOverlay();
+  }
+
+  function sendIrcMessage(message) {
+    stdout.println("[" + playername + "] " + message.value);
+    view.send_irc_message(message.value);
+    $(#chat-display).html += "[" + playername + "] " + message.value.toHtmlString() + "<br/>";
+    message.value = undefined;
+  }
+
+  function onIrcMessage(username, message) {
+    message = mircToHtml(message.toHtmlString());
+    stdout.println(message);
+    $(#chat-display).html += "[" + username + "] " + message + "<br/>";
+  }
+
+  function mircToHtml(text) {
+    //control codes
+    var rex = /&#3;([0-9]{1,2})[,]?([0-9]{1,2})?([^&#3;]+)/,matches,colors;
+    var cp, cbg;
+    if (rex.test(text)) {
+      while (cp = rex.exec(text)) {
+        text = text.replace(cp[0],"<span class=\"fg"+cp[1]+" bg"+cp[2]+"\">"+cp[3]+"</span>");
+      }
+    }
+    //bold,italics,underline (more could be added.)
+    var bui = [
+        [/&#2;([^&#2;]+)(&#2;)?/, ["<b>","</b>"]],
+        [/&#31;([^&#31;]+)(&#31;)?/, ["<u>","</u>"]],
+        [/&#29;([^&#29;]+)(&#29;)?/, ["<i>","</i>"]]
+    ];
+    for (var i=0;i < bui.length;i++) {
+        var bc = bui[i][0];
+        var style = bui[i][1];
+        if (bc.test(text)) {
+            var bmatch;
+            while (bmatch = bc.exec(text)) {
+                text = text.replace(bmatch[0], style[0]+bmatch[1]+style[1]);
+            }
+        }
+    }
+    return text;
+  }
+
+  function clearOverlay() {
+    $(div#message-box).html = "";
+    $(div#overlay).style["visibility"] = "hidden";
+    $(div#menu_entries).state.disabled = false;
+  }
+
+  function onDone(update, skipDownloadQuestion) {
+    if ( update ) {
+      if ( skipDownloadQuestion ) {
+        $(#load-container).load(self.url("download.htm"), false);
+        view.start_download(onProgress, onDone, onErr);
+      } else {
+        $(#load-container).load(self.url("update-available.htm"), false);
+        $(button#update).onClick = function() {
+          $(#load-container).load(self.url("download.htm"), false);
+          view.start_download(onProgress, onDone, onErr);
+        }
+        $(button#cancel).onClick = function() {
+          view.load(self.url("frontpage.htm"));
+        }
+      }
+      //getFeed();
+    } else {
+      view.load(self.url("frontpage.htm"));
+    }
+  }
+  function onErr(err) {
+    $(#message-box).html = err;
+    $(#overlay).style["visibility"] = "visible";
+    stdout.println(err);
+  }
+
+  function onProgress(progress) {
+    if ( progress["hash"][1] != 0 ) {
+      $(#hash-bar > #progress-bar).style["width"] = (progress["hash"][0]*100 / progress["hash"][1]) + "%";
+      $(#hash-bar > p).html = progress["hash"][0] + "/" + progress["hash"][1];
+    }
+    if ( progress["download"][1] != 0 ) {
+      $(#download-bar > #progress-bar).style["width"] = (progress["download"][0]*100 / progress["download"][1]) + "%";
+      $(#download-bar > p).html = progress["download"][0]/100 + " MB out of " + progress["download"][1]/100 + " MB Downloaded";
+
+    }
+    if ( progress["patch"][1] != 0 ) {
+      $(#patch-bar > #progress-bar).style["width"] = (progress["patch"][0]*100 / progress["patch"][1]) + "%";
+      $(#patch-bar > p).html = "Patched "+progress["patch"][0]+" out of "+progress["patch"][1]+" files";
+    }
+  }
+  function answerDownload(accepted) {
+    if ( accepted ) {
+      $(#load-container).load(self.url("download.htm"), false);
+      view.start_download(onProgress);
+    } else {
+      view.load(self.url("frontpage.htm"));
+    }
+  }
