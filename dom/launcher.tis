@@ -100,15 +100,37 @@
       vlist.tbody.postEvent(Event.CHANGE);
 
       vlist << event dblclick $(tr) {
-        var entry = vlist.value[vlist.tbody.currentIndex]["data"];
-        view.launch_game(entry.IP+":"+entry.Port, onGameExit, onGameError);
-        $(img#map_image).attributes["src-disabled"]=$(img#map_image).attributes["src"];
-        $(img#map_image).attributes["src"]= "";
+        joinServer();
       }
 
       vlist << event click $(th.sortable) {
         this.sortVlist();
       }
+    }
+  }
+
+  function joinServer() {
+    var entry = $(table).value[$(table).tbody.currentIndex]["data"];
+    if (entry["Variables"]["bPassworded"]) {
+      $(div#message-box).load("password.htm");
+      $(div#overlay).style["visibility"] = "visible";
+      $(div#menu_entries).state.disabled = true;
+    } else {
+      view.launch_game(entry.IP+":"+entry.Port, onGameExit, onGameError);
+      if($(img#map_image) != undefined) {
+        $(img#map_image).attributes["src-disabled"]=$(img#map_image).attributes["src"];
+        $(img#map_image).attributes["src"]= "";
+      }
+    }
+  }
+
+  function joinServerWithPassword(password) {
+    var entry = $(table).value[$(table).tbody.currentIndex]["data"];
+    clearOverlay();
+    view.launch_game(entry.IP+":"+entry.Port+"?Password="+password, onGameExit, onGameError);
+    if($(img#map_image) != undefined) {
+      $(img#map_image).attributes["src-disabled"]=$(img#map_image).attributes["src"];
+      $(img#map_image).attributes["src"]= "";
     }
   }
 
@@ -122,13 +144,20 @@
   }
 
   function onGameExit() {
-    $(img#map_image).attributes["src"] = $(img#map_image).attributes["src-disabled"]
+    if($(img#map_image) != undefined) {
+      $(img#map_image).attributes["src"] = $(img#map_image).attributes["src-disabled"];
+    }
     stdout.println("Game exited succesfully!");
   }
 
-  function onGameError() {
-    $(img#map_image).attributes["src"] = $(img#map_image).attributes["src-disabled"]
-    stdout.println("Game exited unsuccesfully!");
+  function onGameError(ErrorMessage) {
+    if($(img#map_image) != undefined) {
+      $(img#map_image).attributes["src"] = $(img#map_image).attributes["src-disabled"];
+    }
+    $(div#message-box).load("error.htm");
+    $(div#overlay).style["visibility"] = "visible";
+    $(div#menu_entries).state.disabled = true;
+    $(p#error_message).html = ErrorMessage;
   }
 
   function versionCheck() {
@@ -154,16 +183,34 @@
     $(#playername).html = _playername;
   }
 
+  function versionCallback(_version) {
+    game_version = _version;
+    $(#game-version).html = _version;
+  }
+
   function changePlayernameUI() {
     $(div#message-box).load("username.htm");
     $(div#overlay).style["visibility"] = "visible";
     $(div#menu_entries).state.disabled = true;
+    $(input|text#username).focus = true;
   }
 
   function joinIPUI() {
     $(div#message-box).load("join-ip.htm");
     $(div#overlay).style["visibility"] = "visible";
     $(div#menu_entries).state.disabled = true;
+    $(input|text#ip).focus = true;
+  }
+
+  function joinIP() {
+    var ip = $(input|text#ip).value;
+    var port = $(input|text#port).value;
+    var password = $(input|text#password).value;
+    if (password != "") {
+      password = "?Password=" + password;
+    }
+    view.launch_game(ip+":"+port+password, onGameExit, onGameError);
+    clearOverlay();
   }
 
   function setPlayername() {
@@ -219,30 +266,34 @@
     $(div#menu_entries).state.disabled = false;
   }
 
-  function onDone(update, skipDownloadQuestion) {
+  function onUpdateCallback(update, skipDownloadQuestion) {
     if ( update ) {
       if ( skipDownloadQuestion ) {
-        $(#load-container).load(self.url("download.htm"), false);
-        view.start_download(onProgress, onDone, onErr);
+        $(#server-container).load(self.url("download.htm"), false);
+        view.start_download(onProgress, onUpdateDone, onUpdateErr);
       } else {
-        $(#load-container).load(self.url("update-available.htm"), false);
+        $(#server-container).load(self.url("update-available.htm"), false);
         $(button#update).onClick = function() {
-          $(#load-container).load(self.url("download.htm"), false);
-          view.start_download(onProgress, onDone, onErr);
+          $(#server-container).load(self.url("download.htm"), false);
+          view.start_download(onProgress, onUpdateDone, onUpdateErr);
         }
         $(button#cancel).onClick = function() {
-          view.load(self.url("frontpage.htm"));
+          //view.load(self.url("frontpage.htm"));
         }
       }
       //getFeed();
     } else {
-      view.load(self.url("frontpage.htm"));
+      //view.load(self.url("frontpage.htm"));
     }
   }
-  function onErr(err) {
-    $(#message-box).html = err;
+  function onUpdateErr(err) {
+    $(#message-box).load("error.htm");
+    $(#error_message).html = err;
     $(#overlay).style["visibility"] = "visible";
-    stdout.println(err);
+  }
+
+  function onUpdateDone() {
+    view.load(this.url());
   }
 
   function onProgress(progress) {

@@ -145,9 +145,9 @@ function VirtualList(params) {
         if(item_height == 10) {
           list.onSize();
         }
-        list.first.style#margin-top = px( bsn * item_height );
+        list.first.style#margin-top = px( bsn * (item_height || 10) );
         if(niend < records.length) {
-          var extra = (records.length - niend) * item_height;
+          var extra = (records.length - niend) * (item_height || 10);
           list.last.style#margin-bottom = px(extra);
         }
       }
@@ -182,9 +182,9 @@ function VirtualList(params) {
       }
       
       if(list.first) {
-        list.first.style#margin-top = px( buffer_start * item_height );
+        list.first.style#margin-top = px( buffer_start * (item_height || 10) );
         if(buffer_start + list.length < records.length) {
-          var extra = (records.length - buffer_start - list.length) * item_height;
+          var extra = (records.length - buffer_start - list.length) * (item_height || 10);
           if(extra > 0)
             list.last.style#margin-bottom = px(extra);
         }
@@ -239,10 +239,10 @@ function VirtualList(params) {
       }
       
       if(list.first) {
-        var before = buffer_start * item_height;
+        var before = buffer_start * (item_height || 10);
         list.first.style#margin-top = px( before );
         var rest = records.length - (buffer_start + list.length);
-        var after = rest >= 0? rest * item_height : 0;
+        var after = rest >= 0? rest * (item_height || 10) : 0;
         list.last.style#margin-bottom = px(after);
       }
       list.scrollTo(0, sy);
@@ -263,7 +263,7 @@ function VirtualList(params) {
     list.onScroll = function(evt) 
     {
       if( evt.type == Event.SCROLL_POS )
-        onScrollTo( (evt.scrollPos / item_height).limit( 0 , records.length - 1 - visible_items));
+        onScrollTo( (evt.scrollPos / (item_height || 10)).limit( 0 , records.length - 1 - visible_items));
     };
     
     function onRecordsetRangeAdd(start, end) 
@@ -277,8 +277,8 @@ function VirtualList(params) {
           return;
         }
       
-        var extra = (end - start) * item_height; 
-        var topm = buffer_start * item_height;
+        var extra = (end - start) * (item_height || 10); 
+        var topm = buffer_start * (item_height || 10);
         
         var sy = list.scroll(#top);
         
@@ -289,7 +289,7 @@ function VirtualList(params) {
       } 
       else if(start >= buffer_start + BUFFER_SIZE && list.length) 
       {
-         var extra = (records.length - buffer_start - list.length) * item_height;
+         var extra = (records.length - buffer_start - list.length) * (item_height || 10);
          if(extra > 0)
             list.last.style#margin-bottom = px(extra);
       }
@@ -307,17 +307,17 @@ function VirtualList(params) {
     function onRecordsetRangeDelete(start, end) 
     {
       if( end <= buffer_start ) {
-        var oldtop = buffer_start * item_height;
+        var oldtop = buffer_start * (item_height || 10);
         buffer_start -= end - start;
         assert(buffer_start >= 0);
-        var extra = (end - start) * item_height;
+        var extra = (end - start) * (item_height || 10);
         var sy = list.scroll(#top);
         list.scrollTo(0, sy - extra);
         if(list.first)
           list.first.style#margin-top = px(Integer.max(0,oldtop-extra));
       }
       else if( start > buffer_start + BUFFER_SIZE ) {
-        var extra = (records.length - buffer_start - list.length) * item_height;
+        var extra = (records.length - buffer_start - list.length) * (item_height || 10);
         if(list.last) {
           if(extra > 0)
             list.last.style#margin-bottom = px(extra);
@@ -396,6 +396,7 @@ function VirtualList(params) {
         el.style["display"] = "block";
       } else {
         el.style["display"] = "none";
+        visible_items--;
       }
       el.state.current = current_record === r;
       if(setupRecord) setupRecord(i,r,el);
@@ -412,13 +413,13 @@ function VirtualList(params) {
       
       current_record = recordAt(index);
       
-      var y = index * item_height;
+      var y = index * (item_height || 10);
       
       if( index < buffer_start ) {
         list.scrollTo(0, y, true); 
       }
       else if( index >= buffer_start + list.length ) {
-        list.scrollTo(0, y - list.scroll(#height) + item_height,true); 
+        list.scrollTo(0, y - list.scroll(#height) + (item_height || 10),true); 
       }
       else {
         var el = list[index - buffer_start];
@@ -426,8 +427,8 @@ function VirtualList(params) {
         var sy = list.scroll(#top);
         if( y < sy )
           list.scrollTo(0, y,true); 
-        else if( y + item_height > sy + list.scroll(#height) )
-          list.scrollTo(0, y - list.scroll(#height) + item_height ,true); 
+        else if( y + (item_height || 10) > sy + list.scroll(#height) )
+          list.scrollTo(0, y - list.scroll(#height) + (item_height || 10) ,true); 
       }
       if(generateEvent)
         list.postEvent("change");
@@ -444,14 +445,41 @@ function VirtualList(params) {
     list.onKey = function(evt) {
       if( evt.type == Event.KEY_DOWN )
       {
+        var i;
         switch(evt.keyCode)
         {
-          case Event.VK_HOME:  setCurrent(0); return true;
-          case Event.VK_END:   setCurrent(records.length - 1); return true;
-          case Event.VK_UP:    setCurrent(Integer.max(0,list.currentIndex - 1)); return true;
-          case Event.VK_DOWN:  setCurrent(Integer.min(records.length - 1, list.currentIndex + 1)); return true;
-          case Event.VK_PRIOR: setCurrent(Integer.max(0,list.currentIndex - visible_items + 1)); return true;
-          case Event.VK_NEXT:  setCurrent(Integer.min(records.length - 1, list.currentIndex + visible_items - 1)); return true;
+          case Event.VK_HOME:
+            setCurrent(0);
+            return true;
+          case Event.VK_END:
+            setCurrent(records.length - 1);
+            return true;
+          case Event.VK_UP:
+            i = list.currentIndex - 1;
+            if(i<0) return false;
+            for(;i>=0;i--) {
+              if ( list[i].style["display"] != "none" ) {
+                setCurrent(Integer.max(0,i));
+                return true;
+              }
+            }
+            return false;
+          case Event.VK_DOWN:
+            i = list.currentIndex + 1;
+            if(i>=records.length) return false;
+            for(;i<records.length;i++) {
+              if ( list[i].style["display"] != "none" ) {
+                setCurrent(Integer.max(0,i));
+                return true;
+              }
+            }
+            return true;
+          case Event.VK_PRIOR:
+            setCurrent(Integer.max(0,list.currentIndex - visible_items + 1));
+            return true;
+          case Event.VK_NEXT:
+            setCurrent(Integer.min(records.length - 1, list.currentIndex + visible_items - 1));
+            return true;
         }
       } 
     }
@@ -471,10 +499,10 @@ function VirtualList(params) {
     list.firstIndex = property(v) {
       get { 
         var sy = list.scroll(#top);
-        return sy / item_height;
+        return sy / (item_height || 10);
       }
       set {
-        var y = v * item_height;
+        var y = v * (item_height || 10);
         list.scrollTo(0, y, false);
         onScrollTo(v); 
       }

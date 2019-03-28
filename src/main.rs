@@ -1,4 +1,4 @@
-#![windows_subsystem="console"]
+#![windows_subsystem="windows"]
 
 extern crate reqwest;
 extern crate json;
@@ -11,6 +11,8 @@ extern crate irc;
 extern crate single_instance;
 extern crate chrono;
 extern crate regex;
+extern crate tokio_ping;
+extern crate rand;
 #[cfg(unix)]
 extern crate gag;
 
@@ -72,17 +74,14 @@ impl Handler {
       let update = &progress.lock().unwrap().update;
       match update {
         Update::UpToDate => {
-          println!("No update available");
           done.call(None, &make_args!(false, false), None).unwrap();
           return;
         },
         Update::Resume | Update::Full => {
-          println!("Resuming download!");
           done.call(None, &make_args!(true, true), None).unwrap();
           return;
         },
         Update::Delta => {
-          println!("Update available");
           done.call(None, &make_args!(true, false), None).unwrap();
           return;
         },
@@ -100,28 +99,26 @@ impl Handler {
         }
         match update_available {
           Update::UpToDate => {
-            println!("No update available");
             done.call(None, &make_args!(false, false), None).unwrap();
           },
           Update::Resume | Update::Full => {
-            println!("Resuming download!");
             done.call(None, &make_args!(true, true), None).unwrap();
           },
           Update::Delta => {
-            println!("Update available");
             done.call(None, &make_args!(true, false), None).unwrap();
           },
           Update::Unknown => {
-            println!("Impossible");
+            eprintln!("Update::Unknown");
           }
         };
         Ok(())
 		  };
       let result : Result<(),Error> = check_update();
       if result.is_err() {
-        //println!("{:#?}", result.unwrap_err().description());
         use std::error::Error;
-        error.call(None, &make_args!(result.unwrap_err().description()), None).unwrap();
+        let err = result.unwrap_err();
+        eprintln!("{:#?}", err.description());
+        error.call(None, &make_args!(err.description()), None).unwrap();
       }
     });
   }
@@ -156,6 +153,7 @@ impl Handler {
         },
         Err(e) => {
           use std::error::Error;
+          eprintln!("{:#?}", e.description());
           error.call(None, &make_args!(e.description()), None).unwrap();
         }
       };
@@ -170,7 +168,6 @@ impl Handler {
   }
 
   fn register_irc_callback(&self, callback: sciter::Value) {
-    println!("registering irc_callback: {:#?}", &callback);
     let mut irc_callback = self.irc_callback.lock().unwrap();
     *irc_callback = Some(callback.clone());
   }
@@ -198,55 +195,54 @@ impl Handler {
     });
   }
 
-  #[cfg(windows)]
   fn get_ping(&self, server: sciter::Value, callback: sciter::Value) {
     std::thread::spawn(move || {
       let server_plus_port = server.as_string().unwrap();
       let ip = server_plus_port.split(":").nth(0).unwrap();
-      let output = std::process::Command::new("ping").arg("-n").arg("1").arg("-w").arg("2000").arg(ip).output().expect("Couldn't create new process: ");
-      if output.status.success() {
-        let regex = regex::Regex::new(r"time=(?P<time>(\d|\.)+)ms").unwrap().captures(std::str::from_utf8(&output.stdout).unwrap()).unwrap();
-        let time : String = regex["time"].to_string();
-        callback.call(None, &make_args!(server, time), None).unwrap();
-      } else {
-        println!("Couldn't ping server: {:#?}", output);
-      }
+      let result = tokio_ping::Pinger::new().wait().unwrap().ping(ip.parse().unwrap(), rand::random(), 0, std::time::Duration::from_millis(500)).wait().unwrap().unwrap();
+      callback.call(None, &make_args!(server, result), None).unwrap();
     });
   }
 
-  #[cfg(unix)]
-  fn get_ping(&self, server: sciter::Value, callback: sciter::Value) {
-    std::thread::spawn(move || {
-      let server_plus_port = server.as_string().unwrap();
-      let ip = server_plus_port.split(":").nth(0).unwrap();
-      let output = std::process::Command::new("ping").arg("-c1").arg("-s24").arg(ip).output().expect("Couldn't create new process: ");
-      if output.status.success() {
-        let regex = regex::Regex::new(r"time=(?P<time>(\d|\.)+) ms").unwrap().captures(std::str::from_utf8(&output.stdout).unwrap()).unwrap();
-        let time : String = regex["time"].to_string();
-        callback.call(None, &make_args!(server, time), None).unwrap();
+
+  fn get_game_version(&self) -> String {
+    let conf = self.conf.lock().unwrap();
+    let section = conf.section(Some("RenX_Launcher".to_owned())).unwrap();
+    let game_location = section.get("GameLocation").unwrap().clone();
+    match Ini::load_from_file(format!("{}/UDKGame/Config/DefaultRenegadeX.ini", game_location)) {
+      Ok(conf) => {
+        let section = conf.section(Some("RenX_Game.Rx_Game".to_owned())).unwrap();
+        section.get("GameVersion").unwrap().clone()
+      },
+      Err(_e) => {
+        "Not installed".to_string()
       }
-    });
+    }
   }
 
   fn launch_game(&self, server: Value, done: Value, error: Value) {
     let conf = self.conf.lock().unwrap();
     let section = conf.section(Some("RenX_Launcher".to_owned())).unwrap();
     let game_location = section.get("GameLocation").unwrap().clone();
-    let bit_version = section.get("64-bit-version").unwrap().clone();
+    let bit_version = if section.get("64-bit-version").unwrap().clone() == "true" { "64" } else { "32" };
     drop(conf);
     std::thread::spawn(move || {
-      let mut game_instance = std::process::Command::new(format!("{}/Binaries/Win{}/UDK.exe", game_location, if bit_version == "true" { "64" } else { "32" }))
-        .arg(server.as_string().unwrap())
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::inherit())
-        .spawn().expect("failed to execute child");
-      let output = game_instance.wait().expect("Failed to wait on game-instance to finish");
-      if output.success() {
-        done.call(None, &make_args!(), None);
-      } else {
-        done.call(None, &make_args!(), None);
-      }
-      
+      match std::process::Command::new(format!("{}/Binaries/Win{}/UDK.exe", game_location, bit_version)).arg(server.as_string().unwrap()).stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::inherit()).spawn() {
+        Ok(mut child) => {
+          let output = child.wait().expect("Failed to wait on game-instance to finish");
+          if output.success() {
+            done.call(None, &make_args!(), None).unwrap();
+          } else {
+            //eprintln!("{:#?}", output.unwrap_err().description());
+            error.call(None, &make_args!("The game exited in a crash"), None).unwrap();
+          }
+        },
+        Err(e) => {
+          use std::error::Error;
+          eprintln!("Failed to create child: {}", e.description());
+          error.call(None, &make_args!(format!("Failed to open game: {}", e.description())), None).unwrap();
+        }
+      };
     });
   }
 }
@@ -259,6 +255,7 @@ impl sciter::EventHandler for Handler {
     fn register_irc_callback(Value); //Register's the callback
      //removed funtion of what I've forgot what it was intended for, atleast three values should be differentiated: UpToDate, Downloading, UpdateAvailable
     fn get_playername();
+    fn get_game_version();
     fn set_playername(Value);
     fn get_servers(Value);
     fn launch_game(Value, Value, Value); //Parameters: (Server IP+Port, onDone, onError);
@@ -315,12 +312,12 @@ fn main() {
   let irc_callback : Arc<Mutex<Option<sciter::Value>>> = Arc::new(Mutex::new(None));
   let conf_arc = Arc::new(Mutex::new(conf.clone()));
   frame.event_handler(Handler{patcher: patcher.clone(), irc_client: client_clone.clone(), irc_callback: irc_callback.clone(), conf: conf_arc});
-  current_path.push(format!("{}/load-page.htm", launcher_theme));
+  current_path.push(format!("{}/frontpage.htm", launcher_theme));
   frame.load_file(current_path.to_str().unwrap());
 
   let irc_thread = std::thread::spawn(move || {
     let config = Config {
-      nickname: Some("SonnyX".to_string()),//playername.to_owned()),
+      nickname: Some(playername.to_owned()),
       alt_nicks: Some(vec![format!("{}_", &playername)]),
       server: Some("irc.cncirc.net".to_owned()),
       channels: Some(vec!["#renegadex".to_owned()]),

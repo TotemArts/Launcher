@@ -26,6 +26,10 @@ p {
   flow: horizontal;
 }
 
+p#error_message {
+  margin: 10px;
+}
+
 html {
   min-width: min-content;
   min-height: min-content;
@@ -37,6 +41,16 @@ body {
   background-size: cover;
   flow: vertical;
   height:*;
+}
+
+input|text {
+  margin: 10px;
+  height: 30px;
+  width:*;
+  background-color: #212A31;
+  padding-left: 10px;
+  padding-right: 5px;
+  border-radius: 8px;
 }
 
 #flow-container {
@@ -140,6 +154,7 @@ body {
   display: inline-block;
   border-radius: 7px;
   background-color: #212A31;
+  border: 1px solid gray;
   height:25px;
   width: 150px;
   flow: horizontal;
