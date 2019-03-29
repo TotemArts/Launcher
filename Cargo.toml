@@ -15,8 +15,7 @@ rust-ini = "0.13.0"
 irc = "0.13.6"
 single-instance = "0.1.1"
 chrono = "0.4.6"
-regex = "1.1.2"
-tokio-ping = "0.2.0"
+socket2 = "0.3.8"
 rand = "0.6.5"
 
 [target.'cfg(windows)'.build-dependencies]

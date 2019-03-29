@@ -10,9 +10,9 @@ extern crate ini;
 extern crate irc;
 extern crate single_instance;
 extern crate chrono;
-extern crate regex;
-extern crate tokio_ping;
+extern crate socket2;
 extern crate rand;
+
 #[cfg(unix)]
 extern crate gag;
 
@@ -23,6 +23,8 @@ pub mod redirect;
 use std::sync::{Arc,Mutex};
 
 use sciter::Value;
+
+use socket2::*;
 
 use renegadex_patcher::{Downloader,Update, traits::Error};
 use ini::Ini;
@@ -197,10 +199,38 @@ impl Handler {
 
   fn get_ping(&self, server: sciter::Value, callback: sciter::Value) {
     std::thread::spawn(move || {
-      let server_plus_port = server.as_string().unwrap();
-      let ip = server_plus_port.split(":").nth(0).unwrap();
-      let result = tokio_ping::Pinger::new().wait().unwrap().ping(ip.parse().unwrap(), rand::random(), 0, std::time::Duration::from_millis(500)).wait().unwrap().unwrap();
-      callback.call(None, &make_args!(server, result), None).unwrap();
+      let socket = Socket::new(Domain::ipv4(), Type::raw(), Some(Protocol::icmpv4())).unwrap();
+      use std::str::FromStr;
+      let sockAddr = std::net::SocketAddr::from_str(&server.as_string().unwrap()).unwrap().into();
+      let start_time = std::time::Instant::now();
+      let time = socket.connect_timeout(&sockAddr, std::time::Duration::from_millis(500)).unwrap();
+      let mut code = [0x08, 0x00, 0x00, 0x00, rand::random::<u8>(), rand::random::<u8>(), 0x00, 0x01, 0x02, 0x59, 0x9d, 0x5c, 0x00, 0x00, 0x00, 0x00, 0x98, 0x61, 0x0c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37];
+      let mut checksum : u64 = 0;
+      for i in (0..code.len()).step_by(2) {
+        checksum = checksum.wrapping_add(u16::from_be_bytes([code[i],code[i+1]]) as u64);
+      }
+      if code.len()%2>0 {
+        checksum = checksum.wrapping_add(code[code.len()-1] as u64);
+      }
+      while checksum.wrapping_shr(16) != 0 {
+        checksum = (checksum & 0xffff) + checksum.wrapping_shr(16);
+      }
+      checksum ^= 0xffff;
+      let checksum = (checksum as u16).to_be_bytes();
+      code[2] = checksum[0];
+      code[3] = checksum[1];
+      socket.send(&code);
+      let mut buf : [u8; 100] = [0; 100];
+      socket.set_read_timeout(Some(std::time::Duration::from_millis(500))).unwrap();
+      socket.recv(&mut buf);
+      let elapsed = start_time.elapsed().as_millis() as i32;
+      if buf[36..36+48] == code[16..] {
+        //println!("{:#?}", &elapsed);
+        callback.call(None, &make_args!(server, elapsed), None).unwrap();
+      } else {
+        //println!("{:?}", &buf[36..36+48]);
+        //println!("{:?}", &code[16..]);
+      }
     });
   }
 
