@@ -1,12 +1,12 @@
 <div #header>
   <h1>SETTINGS</h1>
+  <div style="width: *;"></div>
+  <div style="height: inherited; width: 40px;" src-hover='images/Close_Rollover.svg' onclick="clearOverlay();"><picture class="centered" src="images/Close.svg" style="width: 8px; height: 35px;"/> </div>
 </div>
 <div style="flow:vertical; width: *;">
-  <div style="flow: horizontal; width: *; margin: 10px">
-    <input|checkbox#skipmovies ><p>SKIP MOVIES</p>
-    <input|checkbox#64bit ><p>64 BIT</p>
+  <div style="flow: horizontal; width: *;">
+    <button style="width:*; background-color: #4E545B; color: #fff; height: 40px; margin: 10px;" #skipmovies>SKIP MOVIES</button>
+    <button style="width:*; background-color: #4E545B; color: #fff; height: 40px; margin: 10px;" #64bit>64 BIT</button>
   </div>
-  <button style="width:*; background-color: #4E545B; color: #fff; height: 40px; margin: 10px;" onclick="">VERIFY GAME INTEGRITY</button>
-  <button style="width:*; background-color: #CE5135; color: #fff; height: 40px; margin: 10px;" onclick="">SUBMIT</button>
-  <button style="width:*; background-color: #4E545B; color: #fff; height: 40px; margin: 10px;" onclick="clearOverlay();">CANCEL</button>
+  <button style="width:*; background-color: #4E545B; color: #fff; height: 40px; margin: 10px; margin-top: 0px;" onclick="">VERIFY GAME INTEGRITY</button>
 </div>
