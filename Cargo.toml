@@ -7,16 +7,15 @@ build = "windows.rs"
 
 [dependencies]
 reqwest = "0.9.5"
-json = "0.11.13"
 sciter-rs = "0.5.45"
 renegadex_patcher = { git = "https://github.com/SonnyX/RenegadeX-patcher-lib" }
-xml-rs = "0.8.0"
 rust-ini = "0.13.0"
 irc = "0.13.6"
 single-instance = "0.1.1"
 chrono = "0.4.6"
 socket2 = "0.3.8"
 rand = "0.6.5"
+deunicode = "1.0.0"
 
 [target.'cfg(windows)'.build-dependencies]
 winres = "0.1.8"

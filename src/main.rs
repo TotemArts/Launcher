@@ -1,22 +1,20 @@
 #![windows_subsystem="windows"]
 
 extern crate reqwest;
-extern crate json;
 #[macro_use]
 extern crate sciter;
 extern crate renegadex_patcher;
-extern crate xml;
 extern crate ini;
 extern crate irc;
 extern crate single_instance;
 extern crate chrono;
 extern crate socket2;
 extern crate rand;
+extern crate deunicode;
 
 #[cfg(unix)]
 extern crate gag;
 
-mod traits;
 #[cfg(windows)]
 pub mod redirect;
 
@@ -254,10 +252,20 @@ impl Handler {
     let conf = self.conf.lock().unwrap();
     let section = conf.section(Some("RenX_Launcher".to_owned())).unwrap();
     let game_location = section.get("GameLocation").unwrap().clone();
+    let playername = section.get("PlayerName").unwrap().clone();
+    let startup_movie_disabled = true;
     let bit_version = if section.get("64-bit-version").unwrap().clone() == "true" { "64" } else { "32" };
     drop(conf);
     std::thread::spawn(move || {
-      match std::process::Command::new(format!("{}/Binaries/Win{}/UDK.exe", game_location, bit_version)).arg(server.as_string().unwrap()).stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::inherit()).spawn() {
+      let mut args = vec![format!("-ini:UDKGame:DefaultPlayer.Name={}", playername), server.as_string().unwrap()];
+      if startup_movie_disabled {
+        args.push("-nomoviestartup".to_string());
+      }
+      match std::process::Command::new(format!("{}/Binaries/Win{}/UDK.exe", game_location, bit_version))
+                                     .args(&args)	
+                                     .stdout(std::process::Stdio::piped())
+                                     .stderr(std::process::Stdio::inherit())
+                                     .spawn() {
         Ok(mut child) => {
           let output = child.wait().expect("Failed to wait on game-instance to finish");
           if output.success() {
@@ -275,6 +283,10 @@ impl Handler {
       };
     });
   }
+
+  fn deunicode(&self, string: Value) -> String {
+    deunicode::deunicode(&string.as_string().unwrap())
+  }
 }
 
 impl sciter::EventHandler for Handler {
@@ -290,6 +302,7 @@ impl sciter::EventHandler for Handler {
     fn get_servers(Value);
     fn launch_game(Value, Value, Value); //Parameters: (Server IP+Port, onDone, onError);
     fn get_ping(Value, Value);
+    fn deunicode(Value);
   }
 }
 

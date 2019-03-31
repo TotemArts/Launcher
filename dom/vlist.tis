@@ -28,7 +28,7 @@ function VirtualList(params) {
     var   template = list.first; template.detach();
     var   item_height = 10;   // will be adjusted later
     var   buffer_start = 0;   // index of first buffer element in _records
-    var   visible_items = 0;  // number of visible items in the view
+    var   visible_items = 0;  // number of items that fit in the view
     var   current_record = undefined;  // current record z
     var   showRecord = params.renderItemView || null;      // showRecord(index,record, itemElement)
     var   setupRecord = params.setupItemView || null;  // setupItemView(index,record, itemElement)
@@ -55,12 +55,16 @@ function VirtualList(params) {
  
     list.onSize = function() 
     {
-      if(list.first)
-        item_height = list.first.box(#height,#border); // adjust real item height
+      if(list.first && list[0].value.display) {
+        item_height = list[0].box(#height,#client); // adjust real item height
+      } else if(list[1] && list[1].value.display) {
+        item_height = list[1].box(#height,#client); // adjust real item height
+      }
       var ch = list.box(#height,#client);
       var vi = ch / (item_height || 10);
-      if( vi != visible_items )
+      if( vi != visible_items ) {
         visible_items = vi;
+      }
     }
     
     function detachRecordObserver(el) {
@@ -262,8 +266,9 @@ function VirtualList(params) {
     
     list.onScroll = function(evt) 
     {
-      if( evt.type == Event.SCROLL_POS )
-        onScrollTo( (evt.scrollPos / (item_height || 10)).limit( 0 , records.length - 1 - visible_items));
+      if( evt.type == Event.SCROLL_POS ) {
+        onScrollTo( (evt.scrollPos.toFloat() / (item_height || 10).toFloat()).toInteger().limit( 0 , records.length - 1 - visible_items));
+      }
     };
     
     function onRecordsetRangeAdd(start, end) 
@@ -396,7 +401,6 @@ function VirtualList(params) {
         el.style["display"] = "block";
       } else {
         el.style["display"] = "none";
-        visible_items--;
       }
       el.state.current = current_record === r;
       if(setupRecord) setupRecord(i,r,el);

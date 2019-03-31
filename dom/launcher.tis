@@ -202,6 +202,12 @@
     $(input|text#ip).focus = true;
   }
 
+  function showSettingsUI() {
+    $(div#message-box).load("settings.htm");
+    $(div#overlay).style["visibility"] = "visible";
+    $(div#menu_entries).state.disabled = true;
+  }
+
   function joinIP() {
     var ip = $(input|text#ip).value;
     var port = $(input|text#port).value;
@@ -217,6 +223,10 @@
     view.set_playername($(input|text#username).value);
     playernameCallback($(input|text#username).value);
     clearOverlay();
+  }
+
+  function onPlayernameKey() {
+    $(input|text#ircsafe).value = view.deunicode($(input|text#username).value);
   }
 
   function sendIrcMessage(message) {
@@ -271,11 +281,13 @@
       if ( skipDownloadQuestion ) {
         $(#server-container).load(self.url("download.htm"), false);
         view.start_download(onProgress, onUpdateDone, onUpdateErr);
+        $(div#menu_entries).state.disabled = true;
       } else {
         $(#server-container).load(self.url("update-available.htm"), false);
         $(button#update).onClick = function() {
           $(#server-container).load(self.url("download.htm"), false);
           view.start_download(onProgress, onUpdateDone, onUpdateErr);
+          $(div#menu_entries).state.disabled = true;
         }
         $(button#cancel).onClick = function() {
           //view.load(self.url("frontpage.htm"));
@@ -293,7 +305,8 @@
   }
 
   function onUpdateDone() {
-    view.load(this.url());
+    $(div#menu_entries).state.disabled = false;
+    view.load("frontpage.htm"); //This makes it crash, how do we fix this :/
   }
 
   function onProgress(progress) {

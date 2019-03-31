@@ -115,6 +115,10 @@ self.on("click","[onclick]",function() {
   return eval.call(this, this.attributes["onclick"] );
 });
 
+self.on("keyup","[onkey]",function(evt) {
+  eval.call(this, this.attributes["onkey"]);
+});
+
 self.on("keypress","[enter]",function(evt) {
   if ( evt.keyCode != 13 && evt.keyCode != Event.VK_RETURN ) return;
   eval.call(this, this.attributes["enter"]);
