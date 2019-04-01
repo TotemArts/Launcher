@@ -74,15 +74,15 @@ impl Handler {
       let update = &progress.lock().unwrap().update;
       match update {
         Update::UpToDate => {
-          done.call(None, &make_args!(false, false), None).unwrap();
+          std::thread::spawn(move || {done.call(None, &make_args!(false, false), None).unwrap();});
           return;
         },
         Update::Resume | Update::Full => {
-          done.call(None, &make_args!(true, true), None).unwrap();
+          std::thread::spawn(move || {done.call(None, &make_args!(true, true), None).unwrap();});
           return;
         },
         Update::Delta => {
-          done.call(None, &make_args!(true, false), None).unwrap();
+          std::thread::spawn(move || {done.call(None, &make_args!(true, false), None).unwrap();});
           return;
         },
         Update::Unknown => {}
@@ -99,13 +99,13 @@ impl Handler {
         }
         match update_available {
           Update::UpToDate => {
-            done.call(None, &make_args!(false, false), None).unwrap();
+            std::thread::spawn(move || {done.call(None, &make_args!(false, false), None).unwrap();});
           },
           Update::Resume | Update::Full => {
-            done.call(None, &make_args!(true, true), None).unwrap();
+            std::thread::spawn(move || {done.call(None, &make_args!(true, true), None).unwrap();});
           },
           Update::Delta => {
-            done.call(None, &make_args!(true, false), None).unwrap();
+            std::thread::spawn(move || {done.call(None, &make_args!(true, false), None).unwrap();});
           },
           Update::Unknown => {
             eprintln!("Update::Unknown");
@@ -147,8 +147,14 @@ impl Handler {
 		});
     let patcher = self.patcher.clone();
     std::thread::spawn(move || {
-      match patcher.lock().unwrap().download() {
+      let result : Result<(), renegadex_patcher::traits::Error>;
+      {
+        let mut locked_patcher = patcher.lock().unwrap();
+        result = locked_patcher.download();
+      }
+      match result {
         Ok(()) => {
+          println!("Calling download done");
           callback_done.call(None, &make_args!(false,false), None).unwrap();
         },
         Err(e) => {
@@ -183,7 +189,22 @@ impl Handler {
     let conf_unlocked = self.conf.clone();
     let mut conf = conf_unlocked.lock().unwrap();
     let mut section = conf.with_section(Some("RenX_Launcher".to_owned()));
-    let playername = section.set("PlayerName", username.as_string().unwrap());
+    section.set("PlayerName", username.as_string().unwrap());
+    conf.write_to_file("RenegadeX-Launcher.ini").unwrap();
+  }
+
+  fn get_irc_nick(&self) -> String {
+    let conf_unlocked = self.conf.clone();
+    let conf = conf_unlocked.lock().unwrap();
+    let section = conf.section(Some("RenX_Launcher".to_owned())).unwrap();
+    section.get("IrcNick").unwrap().to_string()
+  }
+
+  fn set_irc_nick(&self, nick: sciter::Value) {
+    let conf_unlocked = self.conf.clone();
+    let mut conf = conf_unlocked.lock().unwrap();
+    let mut section = conf.with_section(Some("RenX_Launcher".to_owned()));
+    section.set("IrcNick", nick.as_string().unwrap());
     conf.write_to_file("RenegadeX-Launcher.ini").unwrap();
   }
 
@@ -297,8 +318,10 @@ impl sciter::EventHandler for Handler {
     fn register_irc_callback(Value); //Register's the callback
      //removed funtion of what I've forgot what it was intended for, atleast three values should be differentiated: UpToDate, Downloading, UpdateAvailable
     fn get_playername();
+    fn get_irc_nick();
     fn get_game_version();
     fn set_playername(Value);
+    fn set_irc_nick(Value);
     fn get_servers(Value);
     fn launch_game(Value, Value, Value); //Parameters: (Server IP+Port, onDone, onError);
     fn get_ping(Value, Value);
@@ -322,6 +345,7 @@ fn main() {
         .set("GameLocation", "C:/Program Files (x86)/Renegade X/")
         .set("VersionUrl", "https://static.renegade-x.com/launcher_data/version/release.json")
         .set("PlayerName", "")
+        .set("IrcNick", "UnknownPlayer")
         .set("LauncherTheme", "dom")
         .set("LastNewsGUID", "")
         .set("64-bit-version", "false");
@@ -334,7 +358,7 @@ fn main() {
   let game_location = section.get("GameLocation").unwrap();
   let version_url = section.get("VersionUrl").unwrap();
   let launcher_theme = section.get("LauncherTheme").unwrap();
-  let playername = section.get("PlayerName").unwrap().clone();
+  let irc_name = section.get("IrcNick").unwrap().clone();
 
   let mut current_path = std::env::current_exe().unwrap();
   current_path.pop();
@@ -342,7 +366,8 @@ fn main() {
     sciter::RuntimeOptions::ScriptFeatures(
       sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SYSINFO as u8 | // Enables Sciter.machineName()
       sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_FILE_IO as u8 | // Enables opening file dialog (view.selectFile())
-      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SOCKET_IO as u8
+      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SOCKET_IO as u8 |
+      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_EVAL as u8
     )
   ).unwrap(); // Enables connecting to the inspector via Ctrl+Shift+I
   let mut frame = sciter::Window::new();
@@ -360,8 +385,8 @@ fn main() {
 
   let irc_thread = std::thread::spawn(move || {
     let config = Config {
-      nickname: Some(playername.to_owned()),
-      alt_nicks: Some(vec![format!("{}_", &playername)]),
+      nickname: Some(irc_name.to_owned()),
+      alt_nicks: Some(vec![format!("{}_", &irc_name)]),
       server: Some("irc.cncirc.net".to_owned()),
       channels: Some(vec!["#renegadex".to_owned()]),
       use_ssl: Some(true),

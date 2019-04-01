@@ -2,8 +2,8 @@
   <h1>Change username</h1>
 </div>
 <div style="flow:vertical; width: *;">
-  <input|text#username enter="setPlayername();" onkey="onPlayernameKey();">
+  <input|text#username enter="setPlayername();" onkey="onPlayernameKey();" maxlength="30">
   <input|text#ircsafe novalue="How your username will be displayed in IRC" disabled>
   <button style="width:*; background-color: #CE5135; color: #fff; height: 40px; margin: 10px;" onclick="setPlayername();">SUBMIT</button>
-  <button style="width:*; background-color: #4E545B; color: #fff; height: 40px; margin: 10px;" onclick="clearOverlay();">CANCEL</button>
+  <button#cancel style="width:*; background-color: #4E545B; color: #fff; height: 40px; margin: 10px;" onclick="clearOverlay();">CANCEL</button>
 </div>

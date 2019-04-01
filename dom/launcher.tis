@@ -1,5 +1,6 @@
   var game_version = "Open Beta 5.373";
   var playername = "";
+  var irc_nick = "";
 
   function updateFilter(value) {
     value.display = (value.in_player_range && ($(input|checkbox#version).checked?value.same_version:true));
@@ -221,18 +222,36 @@
 
   function setPlayername() {
     view.set_playername($(input|text#username).value);
+    view.set_irc_nick($(input|text#ircsafe).value);
+    irc_nick = $(input|text#ircsafe).value;
     playernameCallback($(input|text#username).value);
     clearOverlay();
   }
 
   function onPlayernameKey() {
-    $(input|text#ircsafe).value = view.deunicode($(input|text#username).value);
+    $(input|text#ircsafe).value = ircUsernameCheck(view.deunicode($(input|text#username).value));
+  }
+
+  function ircUsernameCheck(nick) {
+    var nickname = "";
+    nick = nick.replace(" ", "_");
+    for(var char in nick) {
+      if(char >= 48 && char <= 57) {
+        if(nickname == "") {
+          nickname += String.fromCharCode('`');
+        }
+        nickname += String.fromCharCode(char);
+      } else if (char >= 65 && char <= 125) {
+        nickname += String.fromCharCode(char);
+      }
+    }
+    return nickname;
   }
 
   function sendIrcMessage(message) {
-    stdout.println("[" + playername + "] " + message.value);
+    stdout.println("[" + irc_nick + "] " + message.value);
     view.send_irc_message(message.value);
-    $(#chat-display).html += "[" + playername + "] " + message.value.toHtmlString() + "<br/>";
+    $(#chat-display).html += "[" + irc_nick + "] " + message.value.toHtmlString() + "<br/>";
     message.value = undefined;
   }
 
@@ -290,12 +309,9 @@
           $(div#menu_entries).state.disabled = true;
         }
         $(button#cancel).onClick = function() {
-          //view.load(self.url("frontpage.htm"));
+          view.load("frontpage.htm");
         }
       }
-      //getFeed();
-    } else {
-      //view.load(self.url("frontpage.htm"));
     }
   }
   function onUpdateErr(err) {
@@ -306,7 +322,7 @@
 
   function onUpdateDone() {
     $(div#menu_entries).state.disabled = false;
-    view.load("frontpage.htm"); //This makes it crash, how do we fix this :/
+    view.load("frontpage.htm");
   }
 
   function onProgress(progress) {
