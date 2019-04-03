@@ -1,22 +1,14 @@
-#![windows_subsystem="windows"]
+#![windows_subsystem="console"]
 
 extern crate reqwest;
-#[macro_use]
-extern crate sciter;
+#[macro_use] extern crate sciter;
 extern crate renegadex_patcher;
 extern crate ini;
 extern crate irc;
 extern crate single_instance;
-extern crate chrono;
 extern crate socket2;
 extern crate rand;
 extern crate deunicode;
-
-#[cfg(unix)]
-extern crate gag;
-
-#[cfg(windows)]
-pub mod redirect;
 
 use std::sync::{Arc,Mutex};
 
@@ -28,37 +20,6 @@ use renegadex_patcher::{Downloader,Update, traits::Error};
 use ini::Ini;
 use irc::client::prelude::*;
 use single_instance::SingleInstance;
-
-#[cfg(windows)]
-fn redirect_std(output_filename: String) {
-  std::thread::spawn(move || {
-    let mut stdout = redirect::stdout().unwrap();
-    //let mut stderr = redirect::stderr().unwrap();
-    let mut stderr = std::io::stderr();
-    use std::io::{Write,Read,Seek};
-    loop {
-      let mut output_file = std::fs::OpenOptions::new().read(true).write(true).create(true).open(output_filename.clone()).unwrap();
-      output_file.seek(std::io::SeekFrom::End(0)).unwrap();
-      let mut buf = Vec::new();
-      stdout.read_to_end(&mut buf).unwrap();
-      //stderr.read_to_end(&mut buf).unwrap();
-      output_file.write_all(&buf).unwrap();
-      stderr.write_all(&buf).unwrap();
-    }
-  });
-}
-
-#[cfg(unix)]
-fn redirect_std(output_filename: String) {
-  let file = std::fs::OpenOptions::new().read(true).write(true).create(true).open(output_filename).unwrap();
-  std::thread::spawn(move || {
-    let mut stdout = gag::Redirect::stdout(file.try_clone().unwrap()).unwrap();
-    let mut stderr = gag::Redirect::stderr(file).unwrap();
-    loop {
-      std::thread::sleep(std::time::Duration::from_millis(500));
-    }
-  });
-}
 
 struct Handler {
   patcher: Arc<Mutex<Downloader>>,
@@ -206,6 +167,10 @@ impl Handler {
     let mut section = conf.with_section(Some("RenX_Launcher".to_owned()));
     section.set("IrcNick", nick.as_string().unwrap());
     conf.write_to_file("RenegadeX-Launcher.ini").unwrap();
+    match *self.irc_client.lock().unwrap() {
+      Some(ref irc_client) => irc_client.send(Command::NICK(nick.as_string().unwrap())).unwrap(),
+      None => {}
+    }
   }
 
   fn get_servers(&self, callback: sciter::Value) {
@@ -278,7 +243,7 @@ impl Handler {
     let bit_version = if section.get("64-bit-version").unwrap().clone() == "true" { "64" } else { "32" };
     drop(conf);
     std::thread::spawn(move || {
-      let mut args = vec![format!("-ini:UDKGame:DefaultPlayer.Name={}", playername), server.as_string().unwrap()];
+      let mut args = vec![server.as_string().unwrap(), format!("-ini:UDKGame:DefaultPlayer.Name={}", playername)];
       if startup_movie_disabled {
         args.push("-nomoviestartup".to_string());
       }
@@ -332,9 +297,6 @@ impl sciter::EventHandler for Handler {
 fn main() {
   let instance = SingleInstance::new("RenegadeX-Launcher").unwrap();
   assert!(instance.is_single());
-
-  //let output_filename = format!("{}.output", chrono::Utc::now().format("%v_%X")).replace(":", "-");
-  //redirect_std(output_filename);
 
   let conf = match Ini::load_from_file("RenegadeX-Launcher.ini") {
     Ok(conf) => conf,

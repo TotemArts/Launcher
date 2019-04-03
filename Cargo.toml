@@ -12,19 +12,12 @@ renegadex_patcher = { git = "https://github.com/SonnyX/RenegadeX-patcher-lib" }
 rust-ini = "0.13.0"
 irc = "0.13.6"
 single-instance = "0.1.1"
-chrono = "0.4.6"
 socket2 = "0.3.8"
 rand = "0.6.5"
 deunicode = "1.0.0"
 
 [target.'cfg(windows)'.build-dependencies]
 winres = "0.1.8"
-
-[target.'cfg(unix)'.dependencies]
-gag = "0.1.10"
-
-[target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3.6", features = ["winbase", "wincon", "processenv", "handleapi", "namedpipeapi"] }
 
 [package.metadata.winres]
 OriginalFilename = "RenegadeX_Launcher.exe"
