@@ -272,6 +272,20 @@ impl Handler {
     });
   }
 
+  fn get_setting(&self, setting: sciter::Value) -> String {
+    let conf_unlocked = self.conf.clone();
+    let conf = conf_unlocked.lock().unwrap();
+    let section = conf.section(Some("RenX_Launcher".to_owned())).unwrap();
+    section.get(&setting.as_string().unwrap()).unwrap().to_string()
+  }
+  fn set_setting(&self, setting: sciter::Value, value: sciter::Value) {
+    let conf_unlocked = self.conf.clone();
+    let mut conf = conf_unlocked.lock().unwrap();
+    let mut section = conf.with_section(Some("RenX_Launcher".to_owned()));
+    section.set(setting.as_string().unwrap(), value.as_string().unwrap());
+    conf.write_to_file("RenegadeX-Launcher.ini").unwrap();
+  }
+
   fn deunicode(&self, string: Value) -> String {
     deunicode::deunicode(&string.as_string().unwrap())
   }
@@ -293,6 +307,8 @@ impl sciter::EventHandler for Handler {
     fn launch_game(Value, Value, Value); //Parameters: (Server IP+Port, onDone, onError);
     fn get_ping(Value, Value);
     fn deunicode(Value);
+    fn get_setting(Value);
+    fn set_setting(Value, Value);
   }
 }
 
@@ -308,11 +324,12 @@ fn main() {
       conf.with_section(Some("RenX_Launcher"))
         .set("GameLocation", "C:/Program Files (x86)/Renegade X/")
         .set("VersionUrl", "https://static.renegade-x.com/launcher_data/version/release.json")
-        .set("PlayerName", "")
+        .set("PlayerName", "UnknownPlayer")
         .set("IrcNick", "UnknownPlayer")
         .set("LauncherTheme", "dom")
         .set("LastNewsGUID", "")
-        .set("64-bit-version", "true");
+        .set("64-bit-version", "true")
+        .set("skipMovies", "false");
       let conf_arc = Arc::new(Mutex::new(conf.clone()));
       {
         sciter::set_options(
