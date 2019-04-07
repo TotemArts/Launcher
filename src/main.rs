@@ -1,4 +1,4 @@
-#![windows_subsystem="console"]
+#![windows_subsystem="windows"]
 
 extern crate reqwest;
 #[macro_use] extern crate sciter;

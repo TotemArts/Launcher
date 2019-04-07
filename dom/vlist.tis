@@ -402,6 +402,9 @@ function VirtualList(params) {
       } else {
         el.style["display"] = "none";
       }
+      if ( r.locked ) {
+        el[0].attributes.addClass("locked");
+      }
       el.state.current = current_record === r;
       if(setupRecord) setupRecord(i,r,el);
     };

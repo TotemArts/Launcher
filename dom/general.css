@@ -137,6 +137,7 @@ input|text {
 
 #server-container > div > table {
   margin:20px;
+  margin-left:10px;
 }
 
 #search-container {

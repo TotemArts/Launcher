@@ -33,6 +33,13 @@
     text-overflow:ellipsis;
     line-height:1.8em; padding:0 4dip;
   }
+
+  td.locked {
+    background-image: url(images/padlock.svg);
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: auto 11px;
+  }
   
   table:root > thead > tr > th { text-align:left; }
   

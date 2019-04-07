@@ -19,7 +19,7 @@
       players_online += result[i]["Players"];
       records[i] = {
         index: i,
-        locked: "<img src=\"dickface.jpg\"/>",
+        locked: result[i]["Variables"]["bPassworded"],
         name: result[i].Name,
         map: result[i]["Current Map"].split("-")[1].replace("_", " "),
         players: result[i]["Players"] + "/" + result[i]["Variables"]["Player Limit"],
