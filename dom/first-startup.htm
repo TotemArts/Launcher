@@ -1,0 +1,69 @@
+<html window-icon="images/rx.ico" window-frame="extended" window-resizable>
+<head>
+<title>Minimalistic Sciter demo</title>
+<style>
+@import url(general.css);
+
+html, body {
+  width: 400px;
+  height: 100px;
+  background: none;
+  background-image: none;
+  background-color: #06090E;
+}
+</style>
+<script type="text/tiscript">
+  function setPlayername() {
+    if ($(input|text#username).value != "") {
+      view.set_playername($(input|text#username).value);
+      view.set_irc_nick($(input|text#ircsafe).value);
+      view.close();
+    }
+  }
+
+  function onPlayernameKey() {
+    $(input|text#ircsafe).value = ircUsernameCheck(view.deunicode($(input|text#username).value));
+  }
+
+  function ircUsernameCheck(nick) {
+    var nickname = "";
+    nick = nick.replace(" ", "_");
+    for(var char in nick) {
+      if(char >= 48 && char <= 57) {
+        if(nickname == "") {
+          nickname += String.fromCharCode('`');
+        }
+        nickname += String.fromCharCode(char);
+      } else if (char >= 65 && char <= 125) {
+        nickname += String.fromCharCode(char);
+      }
+    }
+    return nickname;
+  }
+
+  self.on("click","[onclick]",function() {
+    return eval.call(this, this.attributes["onclick"] );
+  });
+
+  self.on("keyup","[onkey]",function(evt) {
+    eval.call(this, this.attributes["onkey"]);
+  });
+
+  self.on("keypress","[enter]",function(evt) {
+    if ( evt.keyCode != 13 && evt.keyCode != Event.VK_RETURN ) return;
+    eval.call(this, this.attributes["enter"]);
+  });
+</script>
+</head>
+<body>
+<div #header role="window-caption">
+  <h1>Choose username</h1>
+</div>
+<div style="flow:vertical; width: *;">
+  <input|text#username enter="setPlayername();" onkey="onPlayernameKey();" maxlength="30">
+  <input|text#ircsafe novalue="How your username will be displayed in IRC" disabled>
+  <button style="width:*; background-color: #CE5135; color: #fff; height: 40px; margin: 10px;" onclick="setPlayername();">SUBMIT</button>
+</div>
+
+</body>
+</html>

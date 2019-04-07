@@ -9,6 +9,7 @@ extern crate single_instance;
 extern crate socket2;
 extern crate rand;
 extern crate deunicode;
+extern crate percent_encoding;
 
 use std::sync::{Arc,Mutex};
 
@@ -79,7 +80,7 @@ impl Handler {
         use std::error::Error;
         let err = result.unwrap_err();
         eprintln!("{:#?}", err.description());
-        error.call(None, &make_args!(err.description()), None).unwrap();
+        std::thread::spawn(move || {error.call(None, &make_args!(err.description()), None).unwrap();});
       }
     });
   }
@@ -102,7 +103,8 @@ impl Handler {
             progress_locked.patch_files.1.clone()
           ).parse().unwrap();
           not_finished = !progress_locked.finished_patching;
-          callback.call(None, &make_args!(me), None).unwrap();
+          let callback_clone = callback.clone();
+          std::thread::spawn(move || {callback_clone.call(None, &make_args!(me), None).unwrap();});
         }
       }
 		});
@@ -116,12 +118,12 @@ impl Handler {
       match result {
         Ok(()) => {
           println!("Calling download done");
-          callback_done.call(None, &make_args!(false,false), None).unwrap();
+          std::thread::spawn(move || {callback_done.call(None, &make_args!(false,false), None).unwrap();});
         },
         Err(e) => {
           use std::error::Error;
           eprintln!("{:#?}", e.description());
-          error.call(None, &make_args!(e.description()), None).unwrap();
+          std::thread::spawn(move || {error.call(None, &make_args!(e.description()), None).unwrap();});
         }
       };
     });
@@ -177,7 +179,7 @@ impl Handler {
     std::thread::spawn(move || {
       //reqwest server
       let text : Value = reqwest::get("http://serverlist.renegade-x.com/servers.jsp").unwrap().text().unwrap().parse().unwrap();
-      callback.call(None, &make_args!(text), None).unwrap();
+      std::thread::spawn(move || {callback.call(None, &make_args!(text), None).unwrap();});
     });
   }
 
@@ -210,7 +212,7 @@ impl Handler {
       let elapsed = start_time.elapsed().as_millis() as i32;
       if buf[36..36+48] == code[16..] {
         //println!("{:#?}", &elapsed);
-        callback.call(None, &make_args!(server, elapsed), None).unwrap();
+        std::thread::spawn(move || {callback.call(None, &make_args!(server, elapsed), None).unwrap();});
       } else {
         //println!("{:?}", &buf[36..36+48]);
         //println!("{:?}", &code[16..]);
@@ -255,16 +257,16 @@ impl Handler {
         Ok(mut child) => {
           let output = child.wait().expect("Failed to wait on game-instance to finish");
           if output.success() {
-            done.call(None, &make_args!(), None).unwrap();
+            std::thread::spawn(move || {done.call(None, &make_args!(), None).unwrap();});
           } else {
             //eprintln!("{:#?}", output.unwrap_err().description());
-            error.call(None, &make_args!("The game exited in a crash"), None).unwrap();
+            std::thread::spawn(move || {error.call(None, &make_args!("The game exited in a crash"), None).unwrap();});
           }
         },
         Err(e) => {
           use std::error::Error;
           eprintln!("Failed to create child: {}", e.description());
-          error.call(None, &make_args!(format!("Failed to open game: {}", e.description())), None).unwrap();
+          std::thread::spawn(move || {error.call(None, &make_args!(format!("Failed to open game: {}", e.description())), None).unwrap();});
         }
       };
     });
@@ -310,8 +312,36 @@ fn main() {
         .set("IrcNick", "UnknownPlayer")
         .set("LauncherTheme", "dom")
         .set("LastNewsGUID", "")
-        .set("64-bit-version", "false");
-      conf.write_to_file("RenegadeX-Launcher.ini").unwrap();
+        .set("64-bit-version", "true");
+      let conf_arc = Arc::new(Mutex::new(conf.clone()));
+      {
+        sciter::set_options(
+          sciter::RuntimeOptions::ScriptFeatures(
+            sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SOCKET_IO as u8 | // Enables connecting to the inspector via Ctrl+Shift+I
+            sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_EVAL as u8  // Enables execution of Eval inside of TI-Script
+          )
+        ).unwrap(); 
+        let mut frame = sciter::Window::new();
+        let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(Downloader::new()));
+        let client_clone : Arc<Mutex<Option<irc::client::IrcClient>>> = Arc::new(Mutex::new(None));
+        let irc_messages : Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+        let irc_callback : Arc<Mutex<Option<sciter::Value>>> = Arc::new(Mutex::new(None));
+        frame.event_handler(Handler{patcher: patcher.clone(), irc_client: client_clone.clone(), irc_callback: irc_callback.clone(), conf: conf_arc.clone()});
+        let mut current_path = std::env::current_exe().unwrap();
+        current_path.pop();
+        current_path.push(format!("dom/first-startup.htm"));
+        frame.load_file(&percent_encoding::utf8_percent_encode(current_path.to_str().unwrap(), percent_encoding::DEFAULT_ENCODE_SET).to_string());
+        frame.run_app();
+      }
+      //conf.write_to_file("RenegadeX-Launcher.ini").unwrap();
+      conf = match Arc::try_unwrap(conf_arc) {
+        Ok(conf_mutex) => {
+          conf_mutex.into_inner().unwrap().clone()
+        },
+        Err(_e) => {
+          panic!("No way to deal with this for now");
+        }
+      };
       conf
     }
   };
@@ -326,12 +356,10 @@ fn main() {
   current_path.pop();
   sciter::set_options(
     sciter::RuntimeOptions::ScriptFeatures(
-      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SYSINFO as u8 | // Enables Sciter.machineName()
-      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_FILE_IO as u8 | // Enables opening file dialog (view.selectFile())
-      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SOCKET_IO as u8 |
-      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_EVAL as u8
+      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SOCKET_IO as u8 | // Enables connecting to the inspector via Ctrl+Shift+I
+      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_EVAL as u8  // Enables execution of Eval inside of TI-Script
     )
-  ).unwrap(); // Enables connecting to the inspector via Ctrl+Shift+I
+  ).unwrap(); 
   let mut frame = sciter::Window::new();
   let mut downloader = Downloader::new();
   downloader.set_location(game_location.to_string());
@@ -343,7 +371,8 @@ fn main() {
   let conf_arc = Arc::new(Mutex::new(conf.clone()));
   frame.event_handler(Handler{patcher: patcher.clone(), irc_client: client_clone.clone(), irc_callback: irc_callback.clone(), conf: conf_arc});
   current_path.push(format!("{}/frontpage.htm", launcher_theme));
-  frame.load_file(current_path.to_str().unwrap());
+  println!("{:?}", &current_path);
+  frame.load_file(&percent_encoding::utf8_percent_encode(current_path.to_str().unwrap(), percent_encoding::DEFAULT_ENCODE_SET).to_string());
 
   let irc_thread = std::thread::spawn(move || {
     let config = Config {
