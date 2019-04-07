@@ -180,6 +180,26 @@ button > * {
   height: *;
 }
 
+div > button.boolSetting {
+  background-color: #4E545B;
+}
+
+div > button.boolSetting.true {
+  background-color: #28a964;
+  background-image: url(images/Tick.svg);
+  background-position: 10px center;
+  background-repeat: no-repeat;
+  background-size: auto 10px;
+}
+
+div > button.boolSetting.false {
+  background-color: #ce5135;
+  background-image: url(images/Cross.svg);
+  background-position: 10px center;
+  background-repeat: no-repeat;
+  background-size: auto 10px;
+}
+
 #chat-container {
   min-width: 200px;
   width: *;

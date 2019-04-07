@@ -369,7 +369,7 @@ function VirtualList(params) {
       }
     }
  
-    list[#value] = property(v) 
+    list[#value] = property(v)
     {
       get return records;
       set {

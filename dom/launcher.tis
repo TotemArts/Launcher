@@ -19,6 +19,7 @@
       players_online += result[i]["Players"];
       records[i] = {
         index: i,
+        locked: "<img src=\"dickface.jpg\"/>",
         name: result[i].Name,
         map: result[i]["Current Map"].split("-")[1].replace("_", " "),
         players: result[i]["Players"] + "/" + result[i]["Variables"]["Player Limit"],
@@ -207,6 +208,28 @@
     $(div#message-box).load("settings.htm");
     $(div#overlay).style["visibility"] = "visible";
     $(div#menu_entries).state.disabled = true;
+    var list = $$(.boolSetting);
+    for ( var button in list ) {
+      var setting = button.attributes["setting"];
+      button.attributes.addClass(view.get_setting(setting));
+    }
+  }
+
+  function toggleSetting(button) {
+    var setting = button.attributes["setting"];
+    var current = view.get_setting(setting);
+    switch(current) {
+      case "true":
+        button.attributes.removeClass("true");
+        button.attributes.addClass("false");
+        view.set_setting(setting, "false");
+        break;
+      case "false":
+        button.attributes.removeClass("false");
+        button.attributes.addClass("true");
+        view.set_setting(setting, "true");
+        break;
+    }
   }
 
   function joinIP() {
