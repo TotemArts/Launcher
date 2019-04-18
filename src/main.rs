@@ -22,6 +22,8 @@ use ini::Ini;
 use irc::client::prelude::*;
 use single_instance::SingleInstance;
 
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
 struct Handler {
   patcher: Arc<Mutex<Downloader>>,
   irc_client: Arc<Mutex<Option<irc::client::IrcClient>>>,
@@ -89,19 +91,22 @@ impl Handler {
     let progress = self.patcher.clone().lock().unwrap().get_progress();
 		std::thread::spawn(move || {
       let mut not_finished = true;
+      let mut last_download_size : u64 = 0;
       while not_finished {
         std::thread::sleep(std::time::Duration::from_millis(500));
         {
           let progress_locked = progress.lock().unwrap();
           let me : Value = format!(
-            "{{\"hash\": [{},{}],\"download\": [{},{}],\"patch\": [{},{}]}}",
+            "{{\"hash\": [{},{}],\"download\": [{},{}],\"patch\": [{},{}],\"download_speed\": {}}}",
             progress_locked.hashes_checked.0.clone(),
             progress_locked.hashes_checked.1.clone(),
             progress_locked.download_size.0.clone()/10000,
             progress_locked.download_size.1.clone()/10000,
             progress_locked.patch_files.0.clone(),
-            progress_locked.patch_files.1.clone()
+            progress_locked.patch_files.1.clone(),
+            (progress_locked.download_size.0 - last_download_size) as f64 / 500000.0
           ).parse().unwrap();
+          last_download_size = progress_locked.download_size.0.clone();
           not_finished = !progress_locked.finished_patching;
           let callback_clone = callback.clone();
           std::thread::spawn(move || {callback_clone.call(None, &make_args!(me), None).unwrap();});

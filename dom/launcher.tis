@@ -21,7 +21,7 @@
         index: i,
         locked: result[i]["Variables"]["bPassworded"],
         name: result[i].Name,
-        map: result[i]["Current Map"].split("-")[1].replace("_", " "),
+        map: result[i]["Current Map"].substr(result[i]["Current Map"].indexOf("-")+1).replace("_", " "),
         players: result[i]["Players"] + "/" + result[i]["Variables"]["Player Limit"],
         latency: "-",
         display: in_range && (result[i]["Game Version"] == game_version)?true:false,
@@ -348,6 +348,8 @@
     view.load("frontpage.htm");
   }
 
+  var download_old = 0;
+
   function onProgress(progress) {
     if ( progress["hash"][1] != 0 ) {
       $(#hash-bar > #progress-bar).style["width"] = (progress["hash"][0]*100 / progress["hash"][1]) + "%";
@@ -355,13 +357,13 @@
     }
     if ( progress["download"][1] != 0 ) {
       $(#download-bar > #progress-bar).style["width"] = (progress["download"][0]*100 / progress["download"][1]) + "%";
-      $(#download-bar > p).html = progress["download"][0]/100 + " MB out of " + progress["download"][1]/100 + " MB Downloaded";
-
+      $(#download-bar > p).html = progress["download"][0]/100 + " MB out of " + progress["download"][1]/100 + " MB Downloaded, "  + progress["download_speed"] + " Mb/s";
     }
     if ( progress["patch"][1] != 0 ) {
       $(#patch-bar > #progress-bar).style["width"] = (progress["patch"][0]*100 / progress["patch"][1]) + "%";
       $(#patch-bar > p).html = "Patched "+progress["patch"][0]+" out of "+progress["patch"][1]+" files";
     }
+    download_old = progress["download"][0];
   }
   function answerDownload(accepted) {
     if ( accepted ) {
