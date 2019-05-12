@@ -404,6 +404,8 @@ function VirtualList(params) {
       }
       if ( r.locked ) {
         el[0].attributes.addClass("locked");
+      } else {
+        el[0].attributes.removeClass("locked");
       }
       el.state.current = current_record === r;
       if(setupRecord) setupRecord(i,r,el);
