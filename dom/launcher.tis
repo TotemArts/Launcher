@@ -373,3 +373,58 @@
       view.load(self.url("frontpage.htm"));
     }
   }
+
+  function onVerifyDone() {
+    $(#message-box).load("success.htm");
+    $(#success_message).html = "Done verifying files!";
+    $(#overlay).style["visibility"] = "visible";
+  }
+
+  function verifyFilesUI() {
+    $(div#message-box).load("verify-files.htm");
+    $(div#overlay).style["visibility"] = "visible";
+    $(div#menu_entries).state.disabled = true;
+    view.start_download(onProgress, onVerifyDone, onUpdateErr);
+  }
+
+  function resetGameUI() {
+    $(div#message-box).load("verify-reset.htm");
+    $(div#overlay).style["visibility"] = "visible";
+    $(div#menu_entries).state.disabled = true;
+  }
+ 
+  function resetGame() {
+    $(div#message-box).load("verify-files.htm");
+    $(div#overlay).style["visibility"] = "visible";
+    $(div#menu_entries).state.disabled = true;
+    view.remove_unversioned(verifyFilesUI, onUpdateErr);
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

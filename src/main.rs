@@ -118,6 +118,7 @@ impl Handler {
       let result : Result<(), renegadex_patcher::traits::Error>;
       {
         let mut locked_patcher = patcher.lock().unwrap();
+        locked_patcher.poll_progress();
         result = locked_patcher.download();
       }
       match result {
@@ -128,6 +129,28 @@ impl Handler {
         Err(e) => {
           use std::error::Error;
           eprintln!("{:#?}", e.description());
+          std::thread::spawn(move || {error.call(None, &make_args!(e.description()), None).unwrap();});
+        }
+      };
+    });
+  }
+
+  fn remove_unversioned(&self, callback_done: sciter::Value, error: sciter::Value) {
+    let patcher = self.patcher.clone();
+    std::thread::spawn(move || {
+      let result : Result<(), renegadex_patcher::traits::Error>;
+      {
+        let mut locked_patcher = patcher.lock().unwrap();
+        result = locked_patcher.remove_unversioned();
+      }
+      match result {
+        Ok(()) => {
+          println!("Calling remove unversioned done");
+          std::thread::spawn(move || {callback_done.call(None, &make_args!(false,false), None).unwrap();});
+        },
+        Err(e) => {
+          use std::error::Error;
+          eprintln!("Error in remove_unversioned(): {:#?}", e.description());
           std::thread::spawn(move || {error.call(None, &make_args!(e.description()), None).unwrap();});
         }
       };
@@ -192,9 +215,9 @@ impl Handler {
     std::thread::spawn(move || {
       let socket = Socket::new(Domain::ipv4(), Type::raw(), Some(Protocol::icmpv4())).unwrap();
       use std::str::FromStr;
-      let sockAddr = std::net::SocketAddr::from_str(&server.as_string().unwrap()).unwrap().into();
+      let sock_addr = std::net::SocketAddr::from_str(&server.as_string().unwrap()).unwrap().into();
       let start_time = std::time::Instant::now();
-      let time = socket.connect_timeout(&sockAddr, std::time::Duration::from_millis(500)).unwrap();
+      socket.connect_timeout(&sock_addr, std::time::Duration::from_millis(500)).unwrap();
       let mut code = [0x08, 0x00, 0x00, 0x00, rand::random::<u8>(), rand::random::<u8>(), 0x00, 0x01, 0x02, 0x59, 0x9d, 0x5c, 0x00, 0x00, 0x00, 0x00, 0x98, 0x61, 0x0c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37];
       let mut checksum : u64 = 0;
       for i in (0..code.len()).step_by(2) {
@@ -210,10 +233,10 @@ impl Handler {
       let checksum = (checksum as u16).to_be_bytes();
       code[2] = checksum[0];
       code[3] = checksum[1];
-      socket.send(&code);
+      socket.send(&code).unwrap();
       let mut buf : [u8; 100] = [0; 100];
       socket.set_read_timeout(Some(std::time::Duration::from_millis(500))).unwrap();
-      socket.recv(&mut buf);
+      socket.recv(&mut buf).unwrap();
       let elapsed = start_time.elapsed().as_millis() as i32;
       if buf[36..36+48] == code[16..] {
         //println!("{:#?}", &elapsed);
@@ -294,12 +317,17 @@ impl Handler {
   fn deunicode(&self, string: Value) -> String {
     deunicode::deunicode(&string.as_string().unwrap())
   }
+
+  fn get_launcher_version(&self) -> &str {
+    return VERSION;
+  }
 }
 
 impl sciter::EventHandler for Handler {
 	dispatch_script_call! {
 		fn check_update(Value, Value);
     fn start_download(Value, Value, Value);
+    fn remove_unversioned(Value, Value);
     fn send_irc_message(Value); //Parameter is a string
     fn register_irc_callback(Value); //Register's the callback
      //removed funtion of what I've forgot what it was intended for, atleast three values should be differentiated: UpToDate, Downloading, UpdateAvailable
@@ -314,6 +342,7 @@ impl sciter::EventHandler for Handler {
     fn deunicode(Value);
     fn get_setting(Value);
     fn set_setting(Value, Value);
+    fn get_launcher_version();
   }
 }
 
@@ -415,7 +444,7 @@ fn main() {
     reactor.register_client_with_handler(client, move |client, event| {
       if let Command::PRIVMSG(channel, message) = &event.command {
         if channel == "#renegadex" {
-          let mut ui_option = irc_callback.lock().unwrap();
+          let ui_option = irc_callback.lock().unwrap();
           match *ui_option {
             Some(ref ui) => {
               let username = event.prefix.unwrap();

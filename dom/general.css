@@ -30,6 +30,10 @@ p#error_message {
   margin: 10px;
 }
 
+p#success_message {
+  margin: 10px;
+}
+
 html {
   min-width: min-content;
   min-height: min-content;
