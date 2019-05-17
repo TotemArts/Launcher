@@ -320,10 +320,13 @@
     $(div#menu_entries).state.disabled = false;
   }
 
-  function prompt_launcher_update() {
+  function prompt_launcher_update(new_version) {
+    launcher_update = true;
     $(div#message-box).load("prompt-launcher-update.htm");
     $(div#overlay).style["visibility"] = "visible";
     $(div#menu_entries).state.disabled = true;
+    $(p#current).html = view.get_launcher_version();
+    $(p#available).html = new_version;
   }
 
   function launcher_progress(partial, full) {
@@ -345,10 +348,7 @@
   }
 
   function onUpdateCallback(update, skipDownloadQuestion) {
-    if ( view.check_launcher_update() ) {
-      launcher_update = true;
-      prompt_launcher_update();
-    }
+    view.check_launcher_update(prompt_launcher_update);
     if ( update ) {
       if ( skipDownloadQuestion ) {
         $(#server-container).load(self.url("download.htm"), false);

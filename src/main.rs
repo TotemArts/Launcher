@@ -360,9 +360,11 @@ impl Handler {
     return VERSION;
   }
 
-  fn check_launcher_update(&self) -> bool {
+  fn check_launcher_update(&self, callback: Value) {
     let launcher_info = self.patcher.lock().unwrap().get_launcher_info().unwrap();
-    VERSION != launcher_info.version_name && !launcher_info.prompted
+    if VERSION != launcher_info.version_name && !launcher_info.prompted {
+      std::thread::spawn(move || {callback.call(None, &make_args!(launcher_info.version_name), None).unwrap();});
+    }
   }
 
   fn update_launcher(&self, progress: Value) {
@@ -456,7 +458,7 @@ impl sciter::EventHandler for Handler {
     fn get_setting(Value);
     fn set_setting(Value, Value);
     fn get_launcher_version();
-    fn check_launcher_update();
+    fn check_launcher_update(Value);
     fn update_launcher(Value);
   }
 }
