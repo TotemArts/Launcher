@@ -1,6 +1,9 @@
 #![windows_subsystem="windows"]
 
-extern crate reqwest;
+extern crate hyper;
+extern crate tokio;
+extern crate tokio_reactor;
+#[macro_use] extern crate futures;
 #[macro_use] extern crate sciter;
 extern crate renegadex_patcher;
 extern crate ini;
@@ -10,6 +13,7 @@ extern crate socket2;
 extern crate rand;
 extern crate deunicode;
 extern crate percent_encoding;
+extern crate unzip;
 
 use std::sync::{Arc,Mutex};
 
@@ -21,6 +25,10 @@ use renegadex_patcher::{Downloader,Update, traits::Error};
 use ini::Ini;
 use irc::client::prelude::*;
 use single_instance::SingleInstance;
+use hyper::rt::Future;
+use std::net::ToSocketAddrs;
+use std::str::FromStr;
+use std::io::Write;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -205,9 +213,39 @@ impl Handler {
 
   fn get_servers(&self, callback: sciter::Value) {
     std::thread::spawn(move || {
-      //reqwest server
-      let text : Value = reqwest::get("http://serverlist.renegade-x.com/servers.jsp").unwrap().text().unwrap().parse().unwrap();
-      std::thread::spawn(move || {callback.call(None, &make_args!(text), None).unwrap();});
+      let mut future;
+      {
+        let url = "http://serverlist.renegade-x.com/servers.jsp".parse::<hyper::Uri>().unwrap();
+        let host_port = format!("{}:{}",url.host().unwrap(),url.port_u16().unwrap_or(80_u16));
+        let tcpstream = std::net::TcpStream::connect(host_port).unwrap();
+        future = tokio::net::TcpStream::from_std(tcpstream, &tokio_reactor::Handle::default()).map(|tcp| {
+          hyper::client::conn::handshake(tcp)
+        }).unwrap().and_then(move |(mut client, conn)| {
+          let mut req = hyper::Request::builder();
+          req.uri(url.path()).header("host", url.host().unwrap()).header("User-Agent", "sonny-launcher/1.0");
+          let req = req.body(hyper::Body::empty()).unwrap();
+          let res = client.send_request(req).and_then(|res| {
+            use hyper::rt::*;
+            let abort_in_error = res.status() != 200 && res.status() != 206;
+            res.into_body().concat2()
+          }).and_then(move |body| {
+            std::thread::spawn(move || {
+              let text : Value = ::std::str::from_utf8(&body).expect("Expected an utf-8 string").parse().unwrap();
+              callback.call(None, &make_args!(text), None).unwrap();
+            });
+            Ok(())
+          });
+          // Put in an Option so poll_fn can return it later
+          let mut conn = Some(conn);
+          let until_upgrade = futures::future::poll_fn(move || {
+            try_ready!(conn.as_mut().unwrap().poll_without_shutdown());
+            Ok(futures::Async::Ready(conn.take().unwrap()))
+          });
+
+          res.join(until_upgrade)
+        });
+      }
+      tokio::runtime::current_thread::Runtime::new().unwrap().block_on(future).unwrap();
     });
   }
 
@@ -321,6 +359,81 @@ impl Handler {
   fn get_launcher_version(&self) -> &str {
     return VERSION;
   }
+
+  fn check_launcher_update(&self) -> bool {
+    let launcher_info = self.patcher.lock().unwrap().get_launcher_info().unwrap();
+    VERSION != launcher_info.version_name && !launcher_info.prompted
+  }
+
+  fn update_launcher(&self, progress: Value) {
+    let launcher_info = self.patcher.lock().unwrap().get_launcher_info().unwrap();
+    if VERSION != launcher_info.version_name {
+      std::thread::spawn(move || {
+        let mut future;
+        let mut download_contents = Arc::new(Mutex::new(Vec::new()));
+        let download_contents_clone = download_contents.clone();
+        {
+          //let bw = std::io::BufWriter::new();
+          let url = launcher_info.patch_url.parse::<hyper::Uri>().unwrap();
+          let host_port = format!("{}:{}",url.host().unwrap(),url.port_u16().unwrap_or(80_u16));
+          let tcpstream = std::net::TcpStream::connect(host_port).unwrap();
+          future = tokio::net::TcpStream::from_std(tcpstream, &tokio_reactor::Handle::default()).map(|tcp| {
+            hyper::client::conn::handshake(tcp)
+          }).unwrap().and_then(move |(mut client, conn)| {
+            let mut req = hyper::Request::builder();
+            req.uri(url.path()).header("host", url.host().unwrap()).header("User-Agent", "sonny-launcher/1.0");
+            let req = req.body(hyper::Body::empty()).unwrap();
+            let res = client.send_request(req).and_then(move |res| {
+              use hyper::rt::*;
+              let abort_in_error = res.status() != 200 && res.status() != 206;
+              let content_length : usize = res.headers().get("content-length").unwrap().to_str().unwrap().parse().unwrap();
+              let progress_clone = progress.clone();
+              std::thread::spawn(move || {progress.call(None, &make_args!(Value::null(), content_length as i32), None).unwrap();});
+              //println!("{:?}", res.headers().get("content-length").unwrap());
+              *download_contents_clone.lock().unwrap() = Vec::with_capacity(content_length);
+
+              res.into_body().for_each(move |chunk| {
+                let chunk_size : i32 = chunk.len() as i32;
+                let progress_clone = progress_clone.clone();
+                std::thread::spawn(move || {progress_clone.call(None, &make_args!(chunk_size, Value::null()), None).unwrap();});
+                download_contents_clone.lock().unwrap().write_all(&chunk).map_err(|e| panic!("Writer encountered an error: {}", e))
+              })
+            });
+            // Put in an Option so poll_fn can return it later
+            let mut conn = Some(conn);
+            let until_upgrade = futures::future::poll_fn(move || {
+              try_ready!(conn.as_mut().unwrap().poll_without_shutdown());
+              Ok(futures::Async::Ready(conn.take().unwrap()))
+            });
+            res.join(until_upgrade)
+          });
+        }
+        tokio::runtime::current_thread::Runtime::new().unwrap().block_on(future).unwrap();
+        let download_contents = std::io::Cursor::new(Arc::try_unwrap(download_contents).unwrap().into_inner().unwrap());
+        let mut output_path = std::env::current_exe().unwrap();
+        output_path.pop();
+        let target_dir = output_path.clone();
+        output_path.pop();
+        output_path.push("launcher_update_extracted/");
+        println!("{:?}", output_path);
+        let mut SUE = output_path.clone();
+        unzip::Unzipper::new(download_contents, output_path).unzip().unwrap();
+        let working_dir = SUE.clone();
+        SUE.push("SelfUpdateExecutor.exe");
+        let mut args = vec![format!("--pid={}",std::process::id()), format!("--target={}", target_dir.to_str().unwrap())];
+        std::process::Command::new(SUE)
+                                     .current_dir(working_dir)
+                                     .args(&args)
+                                     .stdout(std::process::Stdio::piped())
+                                     .stderr(std::process::Stdio::inherit())
+                                     .spawn().unwrap();
+        std::process::exit(0);
+        //download file
+        //extract files
+        //run updater program and quit this.
+      });
+    }
+  }
 }
 
 impl sciter::EventHandler for Handler {
@@ -343,6 +456,8 @@ impl sciter::EventHandler for Handler {
     fn get_setting(Value);
     fn set_setting(Value, Value);
     fn get_launcher_version();
+    fn check_launcher_update();
+    fn update_launcher(Value);
   }
 }
 

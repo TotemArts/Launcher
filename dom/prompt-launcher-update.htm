@@ -1,0 +1,18 @@
+<div #header>
+  <h1>Launcher update available</h1>
+</div>
+<div style="flow:vertical; width: *;">
+  <p style="margin: 10px;">A new version of the Launcher is available!</p>
+  <div#version style="margin-left: 10px; flow:horizontal;">
+    <div style="flow:vertical;">
+      <p>Current version: </p>
+      <p>New version: </p>
+    </div>
+    <div style="margin-left: 10px; flow:vertical;">
+      <p#current>0.6.0</p>
+      <p#available>0.6.1</p>
+    </div>
+  </div>
+  <button style="width:*; background-color: #CE5135; color: #fff; height: 40px; margin: 10px;" onclick="update_launcher();">UPDATE</button>
+  <button#cancel style="width:*; background-color: #4E545B; color: #fff; height: 40px; margin: 10px;" onclick="clearOverlay();">CANCEL</button>
+</div>

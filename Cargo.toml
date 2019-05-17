@@ -1,12 +1,16 @@
 [package]
 name = "RenegadeX-Launcher"
-version = "0.6.0"
+version = "0.6.1"
 authors = ["SonnyX"]
 edition = "2018"
 build = "windows.rs"
 
 [dependencies]
-reqwest = "0.9.5"
+hyper = "0.12.27"
+tokio = "0.1.18"
+tokio-reactor = "0.1.9"
+url = "1.7.2"
+futures = "0.1.27"
 sciter-rs = "0.5.45"
 renegadex_patcher = { git = "https://github.com/SonnyX/RenegadeX-patcher-lib" }
 rust-ini = "0.13.0"
@@ -16,6 +20,7 @@ socket2 = "0.3.8"
 rand = "0.6.5"
 deunicode = "1.0.0"
 percent-encoding = "1.0.1"
+unzip = "0.1.0"
 
 [target.'cfg(windows)'.build-dependencies]
 winres = "0.1.8"

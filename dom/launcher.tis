@@ -1,6 +1,8 @@
   var game_version = "Open Beta 5.373";
   var playername = "";
   var irc_nick = "";
+  var launcher_update = false;
+  var game_update = false;
 
   function updateFilter(value) {
     value.display = (value.in_player_range && ($(input|checkbox#version).checked?value.same_version:true));
@@ -318,7 +320,35 @@
     $(div#menu_entries).state.disabled = false;
   }
 
+  function prompt_launcher_update() {
+    $(div#message-box).load("prompt-launcher-update.htm");
+    $(div#overlay).style["visibility"] = "visible";
+    $(div#menu_entries).state.disabled = true;
+  }
+
+  function launcher_progress(partial, full) {
+    if(partial!=null) {
+      var size = $(b#partial).html.toInteger();
+      size += partial;
+      $(b#partial).html = ""+size;
+    }
+    if(full!=null) {
+      $(b#full).html = ""+full;
+    }
+  }
+
+  function update_launcher() {
+    $(div#message-box).load("launcher-update.htm");
+    $(div#overlay).style["visibility"] = "visible";
+    $(div#menu_entries).state.disabled = true;
+    view.update_launcher(launcher_progress);
+  }
+
   function onUpdateCallback(update, skipDownloadQuestion) {
+    if ( view.check_launcher_update() ) {
+      launcher_update = true;
+      prompt_launcher_update();
+    }
     if ( update ) {
       if ( skipDownloadQuestion ) {
         $(#server-container).load(self.url("download.htm"), false);
@@ -365,6 +395,7 @@
     }
     download_old = progress["download"][0];
   }
+
   function answerDownload(accepted) {
     if ( accepted ) {
       $(#load-container).load(self.url("download.htm"), false);
