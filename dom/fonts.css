@@ -1,6 +1,7 @@
 @font-face {
-  font-family: 'Roboto';
+  font-family: Roboto;
   src: url("fonts/Roboto-Regular.ttf");
+  color: #C2E3EE;
 }
 
 @font-face {
@@ -25,6 +26,7 @@
 @font-face {
   font-family: Ruda;
   src: url("fonts/Ruda-Regular.ttf");
+  color: #D9E9EE;
 }
 
 @font-face {
@@ -33,33 +35,67 @@
   src: url("fonts/Ruda-Bold.ttf");
 }
 
-* {
+text, p, div {
   font-family:Roboto, FreeMono;
-  font-size: 11px;
+  font-size: 9pt;
+  color: #C2E3EE;
+}
+
+button, toggle {
+  font-family:Ruda, FreeMono;
+  font-size: 11pt;
+  color: #C2E3EE;
+}
+
+input {
+  font-family:Roboto, FreeMono;
+  font-size: 9pt;
+  color: #C2E3EE;
+}
+
+output {
+  width: auto;
+  height: *;
+}
+
+th {
+  font-family:Roboto, FreeMono;
+  font-weight: bold;
+  font-size: 9pt;
+  color: #C2E3EE;
+}
+
+td {
+  font-family:Roboto, FreeMono;
+  font-size: 9pt;
+  color: #C2E3EE;
 }
 
 h1, h2, h3, h4, h5 {
   font-family:Ruda, FreeMono;
+  font-weight: normal;
+  vertical-align: middle;
+  color: #D9E9EE;
+  white-space: nowrap;
+  overflow-x:hidden;
+  text-overflow:ellipsis;
+  text-transform: uppercase;
 }
 
-#header > h1 {
-  margin-left:15px;
-  margin-right:15px;
-  font-size: 14px;
+.uppercase {
+  text-transform: uppercase;
 }
-#header > #players {
-  color: #444B53;
+
+.nowrap {
+  white-space: nowrap;
 }
 
 h1 {
-  font-size: 20px;
+  font-size: 15pt;
 }
 h2 {
-  font-size: 18px;
+  font-size: 13pt;
 }
 h3 {
-  font-size: 16px;
-}
-p {
-  font-size: 12px;
+  font-size: 11pt;
 }

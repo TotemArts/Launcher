@@ -2,135 +2,65 @@
 <head>
 <title>RenegadeX-Launcher</title>
 <style>
-  @import url(general.css);
-  @import url(vgrid.css);
-  @import url(irc.css);
+  @import url(elements.css);
+  @import url(containers.css);
+  @import url(fonts.css);
 </style>
 <script type="text/tiscript">
-  include "menubar.tis";
-  include "launcher.tis";
+  include "events.tis";
+  include "functional.tis";
 
   function self.ready() {
-    playernameCallback(view.get_playername());
-    versionCallback(view.get_game_version());
-    irc_nick = view.get_irc_nick();
-    view.register_irc_callback(onIrcMessage);
-    view.get_servers(getServersCallback);
-    view.check_update(onUpdateCallback, onUpdateErr);
+    $(#content).load($(div.current).attributes["page"]);
+    current_page = $(div.current);
+    var records = new Array(6);
+    var maps = ["Fun Map!","Silly me...","There are no","Fun Maps","Only serious", "games allowed"];
+    var i;
+    for (i = 0; i < 6; i++) {
+      records[i] = {
+        index: i,
+        locked: i==2,
+        name: "Renegade X Server",
+        map: maps[i],
+        players: "0/40",
+        latency: "-",
+        display: true,
+        in_player_range: true,
+        same_version: true,
+        data: 1,
+      };
+    }
+    $(table).value = records;
+    $(table) << event click $(th.sortable) {
+      this.sortVlist();
+    }
+    if(view.connectToInspector) view.connectToInspector();
   }
 </script>
 </head>
-<body model="dom">
-<include src="menubar.htm" />
-<div id="flow-container">
-  <div class="top-margin" style="display: inline-block; margin:auto; max-width:1600px; background-image: url(images/RenX_Logo.png); background-position: center; background-repeat: stretch keep-ratio;">
-    <div #IGN-container style="flow:vertical; vertical-align: middle;">
-      <p>Welcome</p>
-      <h1 style="flow: horizontal; vertical-align: middle;">
-        <picture onclick="changePlayernameUI();" src="images/EditName.svg" style="width: 17px; height: 35px; margin-left: 7px; margin-right: 7px;"/>
-        <h1 #playername>Murica! Fuck yeah!</h1>
-      </h1>
+<body model="Data">
+  <div#header style="background-color: #0D1721; margin-top: 2px;">
+    <div.headerSpacer.left>
+      <button.facebook external="http://www.facebook.com"></button>
+      <button.twitter></button>
+      <button.discord></button>
+      <button.youtube></button>
     </div>
-    <div style="width:*;"></div>
-    <div #Ver-container style="flow: vertical; text-align: right; vertical-align: middle;">
-      <p style="text-align: right; width: *; float:right;">Version</p>
-      <h1 #game-version>5.373</h1>
+    <div.spacer role="window-caption"></div>
+    <div.menuEntries>
+      <div page="news.htm">NEWS</div>
+      <div.current page="game.htm">PLAY GAME</div>
+      <div overlay="settings.htm">SETTINGS</div>
     </div>
-  </div>
-  <div .horizontal-margin></div>
-  <div .horizontal-margin></div>
-  <div .bottom-margin></div>
-  <div #main-content>
-    <div #server-container>
-      <div #header>
-        <h1>SERVERS</h1>
-        <p #players><span #players>0&nbsp;</span> Players Online</p>
-        <div #search-container style="margin-left:auto;">
-          Filter 
-          <picture src="images/FilterDown.svg" style="width: 17px; height: 35px; margin-left: 7px; margin-right: 10px;" onclick="toggleFilterBar(this);"/>
-          <div #search-bar>
-            <picture class="centered" src="images/Search.svg" style="width: 12px; height: 35px; margin-left: 7px;"/>
-            <input#search type="text" novalue="Search" style="width:*; height: *; margin-left: 0px; margin-right: 5px;"/>
-          </div>
-          <picture src="images/Refresh.svg" onclick="view.get_servers(getServersCallback);" style="width: 12px; height: 35px; margin-left: 10px; margin-right:13px;"/>
-        </div>
-      </div>
-      <div #filterbar style="height: 0px; overflow:hidden; background-color: #06090Ec0;">
-        <div style="height: 40px; width: *; flow: horizontal; vertical-align: middle;">
-          <p style="margin-left: 10px;">Player-range: </p>
-          <div #slider minValue="0" maxValue="64" min="0" max="64">
-            <div #slider-range style="left: 0%; width: 100%;"></div>
-            <div #slider-handle.start style="left: -6px;"></div>
-            <div #slider-handle.end style="left: 100%; margin-right: 6px;"></div>
-          </div>
-          <p style="margin-right:5px;">Same version:</p>
-          <input|checkbox#version checked=true onclick="versionCheck();" style="margin-right: 12px;">
-        </div>
-      </div>
-      <div style="width:*;height:*;">
-      <table>
-        <thead>
-          <tr>
-            <th(locked)></th>
-            <th(name).sortable>Server Name</th>
-            <th(map).sortable>Map</th>
-            <th(players).sortable>Players</th>
-            <th(latency).sortable>Ping</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td(locked)></td>
-            <td(name)></td>
-            <td(map)></td>
-            <td(players)></td>
-            <td(latency)></td>
-          </tr>
-        </tbody>
-      </table>
-      </div>
-      <div #header style="margin-top: 20px;">
-        <h1 #server-name>SERVERS</h1>
-      </div>
-      <div #server-info style="width:*;">
-        <div style="min-width: 230px; width:*; height:*; margin-right: 10px; ">
-          <h1 style="margin-bottom: 10px; font-size: 14px;">MAP: <span #map-name style="font-size: 14px; color: #CE5135;">FIELD X</span></h1>
-          <div style="flow:horizontal; height: *; vertical-align: bottom;">
-            <div style="width:*; height:*; flow:vertical;">
-              <p>Time Limit: <span #time-limit>0</span></p>
-              <p>Vehicle Limit: <span #vehicle-limit>0</span></p>
-              <p>Player Limit: <span #player-limit>0</span></p>
-              <p>Mine Limit: <span #mine-limit>0</span></p>
-              <p>Game Mode: <span #game-mode>CNC</span></p>
-            </div>
-            <div style="width:*;height:*; flow:vertical;">
-              <p>Game Length: 0</p>
-              <p>Vehicle Limit: 8</p>
-              <p>Player Limit: 64</p>
-              <p>Mine Limit: 24</p>
-              <p>Game Mode: CNC</p>
-            </div>
-          </div>
-          <button style="margin-top: 20px; width:*; bottom: 0px;" onclick="joinServer();"><h3>JOIN SERVER</h3></button>
-        </div>
-        <div style="min-width: 230px; width:*; height: *; margin-left: 10px; vertical-align: bottom;">
-          <img#map_image src="CNC-Islands.gif" style="max-width: 100%;"/>
-        </div>
-      </div>
-    </div>
-
-
-    <div #chat-container>
-      <div #header>
-        <h1>LOBBY CHAT</h1>
-      </div>
-      <div #chat-display readonly="true" spellcheck="false" style="behavior: htmlarea;">
-      </div>
-      <div #reply-chat>
-        <input type="text" novalue="Type here..." enter="sendIrcMessage(this)" />
-      </div>
+    <div.spacer role="window-caption"></div>
+    <div.headerSpacer.right>
+      <button.minimize role="window-minimize"></button>
+      <button.maximize role="window-maximize"></button>
+      <button.close role="window-close"></button>
     </div>
   </div>
-</div>
+
+  <div#overlay></div>
+  <div#content></div>
 </body>
 </html>

@@ -1,0 +1,226 @@
+* {
+  min-width: min-content;
+  min-height: min-content;
+}
+
+html, body {
+  min-width: min-content;
+  min-height: min-content;
+  background-color: #0D1721;
+  width: *;
+  height: *;
+}
+
+div#header {
+  width: *;
+  height: 33dip;
+  background-color: #0D1721;
+  flow: horizontal;
+}
+
+div.headerSpacer {
+  height:33dip;
+  flow:horizontal;
+}
+
+div.headerSpacer.left:first-child {
+  margin-left: 20dip;
+}
+
+div.headerSpacer.right:last-child {
+  margin-right: 20dip;
+}
+
+div.menuEntries {
+  height:33dip;
+  flow: horizontal;
+  text-align: center;
+  vertical-align: middle;
+}
+
+div.menuEntries:first-child {
+  margin-left: 0dip;
+}
+
+div.menuEntries:last-child {
+  margin-right: 0dip;
+}
+
+
+div.menuEntries > div {
+  margin: 0dip 10dip;
+  height: 33dip;
+  text-align: center;
+  vertical-align: middle;
+  color: #899497;
+  white-space: nowrap;
+}
+
+div.menuEntries > div.current {
+  height: 27dip;
+  margin-top: 3dip;
+  border-bottom: 3dip solid #ce5135;
+  color: #C2E3EE;
+}
+
+div.menuEntries > div:hover {
+  color: #fff;
+}
+
+div.spacer {
+  display: inline-block;
+  width: *;
+  height: *;
+}
+
+div.titlebar {
+  width: *;
+  height: 33dip;
+  padding: 0dip 5dip;
+  background-color: #0c2e3f;
+  flow: horizontal;
+  vertical-align: middle;
+}
+
+div.titlebar > .close {
+  background-size: auto 12dip;
+}
+
+div.titlebar > .title {
+  margin-left: 10dip;
+  vertical-align: middle;
+}
+
+#overlay {
+  position:fixed;
+  width:*;
+  height:100%;
+  background-color: #000000a0;
+  visibility:hidden;
+  vertical-align: middle; 
+}
+
+.settings-window {
+  width: 485dip;
+  margin: auto auto;
+  background-color: #0c151e;
+}
+
+.username-window {
+  width: 400dip;
+  margin: auto auto;
+  background-color: #0c151e;
+}
+
+#content {
+  width: *;
+  min-height: min-content;
+  height: *;
+  min-height: 360dip;
+  background-image: url(images/background.jpg);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  overflow: auto;
+}
+
+.grid {
+  flow:grid(2 1 3,
+            2 5 3,
+            2 4 3);
+  width: *;
+  height: *;
+}
+
+.grid > div:nth-child(1), .grid > div:nth-child(4) {
+  height: 80dip;
+  width: *;
+}
+
+.grid > div:nth-child(2), .grid > div:nth-child(3) {
+  height: *;
+  width: 20dip;
+}
+
+.grid > div:nth-child(4) {
+  vertical-align: middle;
+}
+
+.grid > div:nth-child(4) * {
+  text-transform: uppercase;
+}
+
+.grid > div:nth-child(5) {
+  width: *;
+  height: *;
+  padding: -10dip;
+  aspect: fillHeight;
+}
+
+.grid > div:nth-child(5) > * {
+  margin: 10dip;
+  -min: 500dip;
+  width: *;
+  height: *;
+}
+
+.logo {
+  background-image: url(images/RenX_Logo.png);
+  background-position: center;
+  background-repeat: stretch keep-ratio;
+}
+
+.hflow {
+  flow: horizontal;
+}
+
+.vflow {
+  flow: vertical;
+}
+
+.center {
+  vertical-align: middle;
+  text-align: center;
+}
+
+.filterbar {
+  width: *;
+  height: 33dip;
+  visibility: collapse;
+  background-color: #0c151ee6;
+  margin-bottom: 1dip;
+  vertical-align: middle;
+  flow: horizontal;
+}
+
+.filterbar > * {
+  margin: 0dip 10dip;
+}
+
+.body {
+  background-color: #0c151ee6;
+  padding: 10dip;
+  margin-bottom: 10dip;
+  height: *;
+}
+
+.chat {
+  height: *;
+  width: *;
+}
+
+.reply {
+  background-color: #0c2e3f;
+  width:*;
+  height: 30dip;
+  margin: -10dip;
+  padding: 5dip;
+}
+
+.child-padding>*,.child-padding>input|text{
+  margin: 10dip;
+}
+
+.padding {
+  padding: 10dip;
+}

@@ -1,15 +1,13 @@
-<div #header>
-  <h1>SETTINGS</h1>
-  <div style="width: *;"></div>
-  <div style="height: inherited; width: 40px;" src-hover='images/Close_Rollover.svg' onclick="clearOverlay();"><picture class="centered" src="images/Close.svg" style="width: 8px; height: 35px;"/> </div>
-</div>
-<div style="flow:vertical; width: *;">
-  <div style="flow: horizontal; width: *;">
-    <button.boolSetting style="width:*; color: #fff; height: 40px; margin: 10px;" onclick="toggleSetting(this);" setting="skipMovies">SKIP MOVIES</button>
-    <button.boolSetting style="width:*; color: #fff; height: 40px; margin: 10px;" onclick="toggleSetting(this);" setting="64-bit-version">64 BIT</button>
+<div.settings-window>
+  <div.titlebar>
+    <h3.title.center.uppercase style="width: *;">Settings</h3>
+    <div.close close></div>
   </div>
-  <div style="flow: horizontal; width: *;">
-    <button style="width:*; background-color: #0c2e3f; color: #fff; height: 40px; margin: 10px; margin-top: 0px;" onclick="verifyFilesUI();">VERIFY GAME INTEGRITY</button>
-    <button style="width:*; background-color: #0c2e3f; color: #fff; height: 40px; margin: 10px; margin-top: 0px;" onclick="resetGameUI();">SUCK IT</button>
+  <div.child-padding.center.padding>
+      <button.bool setting="skipMovies">SKIP MOVIES</button>
+      <button.bool setting="64-bit-version">64 BIT</button>
+      <button.setting onclick="verifyFilesUI();" overlay="verify.htm">VERIFY GAME INTEGRITY</button>
+      <button.setting onclick="resetGameUI();">SUCK IT</button>
   </div>
+  <div.center.uppercase.padding style="font-size: 7pt;">Launcher version 0.61</div>
 </div>

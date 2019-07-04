@@ -1,0 +1,83 @@
+<div.grid>
+  <div.logo.hflow>
+    <div.vflow style="vertical-align: middle;">
+      <p style="font-size: 7pt;">Welcome</p>
+      <h1.change overlay="username.htm">
+        <output(username)/>SonnyX
+      </h1>
+    </div>
+    <div style="width:*;"></div>
+    <div style="flow: vertical; text-align: right; vertical-align: middle;">
+      <p style="font-size: 7pt; line-height:100%;">Version</p>
+      <h1 style="line-height:100%;"><output(version)/>5.380</h1>
+    </div>
+  </div>
+  <div.left-margin></div>
+  <div.right-margin></div>
+  <div>
+    <div.downloadBar><div.indicator></div></div>
+    <p style="float:left;">Downloading update: <span.green>34%</span></p>
+    <p style="float:right;">more details</p>
+  </div>
+  <div>
+    <div.servers>
+      <div.titlebar>
+        <h3.title>Servers</h3>
+        <div.spacer></div>
+        <div.filter.down></div>
+        <input|text.searchbar>
+        <div.refresh></div>
+      </div>
+      <div.filterbar>
+        <p.nowrap>Players: 5 - 64</p>
+        <div.slider minValue="0" maxValue="64" min="0" max="64">
+          <div.range style="left: 0%; width: *; margin-right: 6dip;"></div>
+          <div.handle.start style="left: -3dip;"></div>
+          <div.handle.end style="left: auto; right: 0dip; margin-right: 0dip;"></div>
+        </div>
+        <div.checkmark.checked></div><p.nowrap>Same version</p>
+      </div>
+      <div.body>
+        <table.servers>
+          <thead>
+            <tr>
+              <th(locked).locked.sortable></th>
+              <th(name).sortable>Server Name</th>
+              <th(map).sortable>Map</th>
+              <th(players).sortable>Players</th>
+              <th(latency).sortable>Ping</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td(locked)></td>
+              <td(name)></td>
+              <td(map)></td>
+              <td(players)></td>
+              <td(latency)></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div.titlebar>
+        <h3.title>I have no clue what this is</h3>
+        <div.spacer></div>
+        <div style="white-space: nowrap; margin-right: 10dip;">A menu goes here</div>
+      </div>
+      <div.body>but obviously we gonna use it</div>
+    </div>
+    <div.chat>
+      <div.titlebar>
+        <h3.title>Chat</h3>
+        <div.spacer></div>
+        <div style="white-space: nowrap; margin-right: 10dip;">connect disconnect users</div>
+      </div>
+      <div.body>
+        <div.chat readonly="true" spellcheck="false" style="behavior: htmlarea;"></div>
+        <div.reply>
+          <input|text novalue="Type here..." enter="sendIrcMessage(this)" />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,129 @@
+<html window-icon="images/rx.ico" window-frame="extended" window-resizable>
+<head>
+<title>RenegadeX-Launcher</title>
+<style>
+  @import url(containers.css);
+  @import url(elements.css);
+  @import url(fonts.css);
+body {
+  background-color: #15212f;
+  flow: vertical;
+  height:*;
+  padding: 20px;
+}
+
+</style>
+<script type="text/tiscript">
+  include "events.tis";
+  function self.ready() {
+    var records = new Array(6);
+    var maps = ["Fun Map!","Silly me...","There are no","Fun Maps","Only serious", "games allowed"];
+    var i;
+    for (i = 0; i < 6; i++) {
+      records[i] = {
+        index: i,
+        locked: i==2,
+        name: "Renegade X Server",
+        map: maps[i],
+        players: "0/40",
+        latency: "-",
+        display: true,
+        in_player_range: true,
+        same_version: true,
+        data: 1,
+      };
+    }
+    $(table).value = records;
+  }
+</script>
+</head>
+<body>
+  <p>header-bar</p>
+  <div.header style="background-color: #0D1721;">
+    <div.headerSpacer.left>
+      <div.facebook></div>
+      <div.twitter></div>
+      <div.discord></div>
+    </div>
+    <div.spacer role="window-caption"></div>
+    <div.menuEntries>
+      <div>NEWS</div>
+      <div.current>PLAY GAME</div>
+      <div>PATCH</div>
+      <div>SETTINGS</div>
+    </div>
+    <div.spacer role="window-caption"></div>
+    <div.headerSpacer.right>
+      <button.minimize role="window-minimize"></button>
+      <button.maximize role="window-maximize"></button>
+      <button.close role="window-close"></button>
+    </div>
+  </div>
+  <p>title-bar</p>
+  <div style="width: 600dip; height: 100dip; background-color: #0D1721;">
+    <div.titlebar>
+      <h3.title>Title</h3>
+      <div.spacer></div>
+      <div.close onclick="clearOverlay();"></div>
+    </div>
+  </div>
+  <p>Checkmarks:</p>
+  <div style="flow:horizontal;">
+    <div.checkmark style="margin: 0 10dip;"></div>
+    <div.checkmark.checked style="margin: 0 10dip;"></div>
+    <div.checkmark.crossed style="margin: 0 10dip;"></div>
+  </div>
+  <p>Close button:</p>
+  <div.close></div>
+  <p>Searchbar:</p>
+  <input|text.searchbar>
+  <p>Refresh button:</p>
+  <div.refresh></div>
+  <p>Text input:</p>
+  <div.input><input|text></div>
+  <p>Range slider:</p>
+  <div.slider minValue="0" maxValue="64" min="0" max="64">
+    <div.range style="left: 0%; width: *; margin-right: 6dip;"></div>
+    <div.handle.start style="left: -3dip;"></div>
+    <div.handle.end style="left: auto; right: 0dip; margin-right: 0dip;"></div>
+  </div>
+  <p>Link:</p>
+  <a>Patch</a>
+  <p>Buttons:</p>
+  <div>
+    <button disabled>DISABLED</button>
+    <button.boolSetting>boolSetting</button>
+    <button.boolSetting.true>TRUE</button>
+    <button.boolSetting.false>FALSE</button>
+    <button.accept>ACCEPT</button>
+    <button.cancel>CANCEL</button>
+  </div>
+  <p>Download bar</p>
+  <div.downloadBar style="width: 400dip"><div.indicator></div></div>
+  <p>DOWNLOADING UPDATE: <span.green>50%</span></p>
+
+  <p>server list</p>
+  <div style="width: 500dip; height:100dip; border: 1px solid #000; background-color: #0D1721;">
+      <table.servers>
+        <thead>
+          <tr>
+            <th(locked).locked.sortable></th>
+            <th(name).sortable>Server Name</th>
+            <th(map).sortable>Map</th>
+            <th(players).sortable>Players</th>
+            <th(latency).sortable>Ping</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td(locked)></td>
+            <td(name)></td>
+            <td(map)></td>
+            <td(players)></td>
+            <td(latency)></td>
+          </tr>
+        </tbody>
+      </table>
+  </div>
+</body>
+</html>

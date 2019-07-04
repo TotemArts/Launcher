@@ -1,0 +1,4 @@
+namespace Data {
+  var username = "Not Set";
+  var version = "Not Installed";
+}

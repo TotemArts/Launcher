@@ -7,13 +7,13 @@ extern crate tokio_reactor;
 #[macro_use] extern crate sciter;
 extern crate renegadex_patcher;
 extern crate ini;
-extern crate irc;
 extern crate single_instance;
 extern crate socket2;
 extern crate rand;
-extern crate deunicode;
-extern crate percent_encoding;
+
 extern crate unzip;
+
+//mod chat;
 
 use std::sync::{Arc,Mutex};
 
@@ -23,19 +23,14 @@ use socket2::*;
 
 use renegadex_patcher::{Downloader,Update, traits::Error};
 use ini::Ini;
-use irc::client::prelude::*;
 use single_instance::SingleInstance;
 use hyper::rt::Future;
-use std::net::ToSocketAddrs;
-use std::str::FromStr;
 use std::io::Write;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 struct Handler {
   patcher: Arc<Mutex<Downloader>>,
-  irc_client: Arc<Mutex<Option<irc::client::IrcClient>>>,
-  irc_callback: Arc<Mutex<Option<sciter::Value>>>,
   conf: Arc<Mutex<ini::Ini>>,
 }
 
@@ -165,18 +160,6 @@ impl Handler {
     });
   }
 
-  fn send_irc_message(&self, message: sciter::Value) {
-    match *self.irc_client.lock().unwrap() {
-      Some(ref irc_client) => irc_client.send_privmsg("#renegadex", message.as_string().unwrap()).unwrap(),
-      None => {}
-    }
-  }
-
-  fn register_irc_callback(&self, callback: sciter::Value) {
-    let mut irc_callback = self.irc_callback.lock().unwrap();
-    *irc_callback = Some(callback.clone());
-  }
-
   fn get_playername(&self) -> String {
     let conf_unlocked = self.conf.clone();
     let conf = conf_unlocked.lock().unwrap();
@@ -190,25 +173,6 @@ impl Handler {
     let mut section = conf.with_section(Some("RenX_Launcher".to_owned()));
     section.set("PlayerName", username.as_string().unwrap());
     conf.write_to_file("RenegadeX-Launcher.ini").unwrap();
-  }
-
-  fn get_irc_nick(&self) -> String {
-    let conf_unlocked = self.conf.clone();
-    let conf = conf_unlocked.lock().unwrap();
-    let section = conf.section(Some("RenX_Launcher".to_owned())).unwrap();
-    section.get("IrcNick").unwrap().to_string()
-  }
-
-  fn set_irc_nick(&self, nick: sciter::Value) {
-    let conf_unlocked = self.conf.clone();
-    let mut conf = conf_unlocked.lock().unwrap();
-    let mut section = conf.with_section(Some("RenX_Launcher".to_owned()));
-    section.set("IrcNick", nick.as_string().unwrap());
-    conf.write_to_file("RenegadeX-Launcher.ini").unwrap();
-    match *self.irc_client.lock().unwrap() {
-      Some(ref irc_client) => irc_client.send(Command::NICK(nick.as_string().unwrap())).unwrap(),
-      None => {}
-    }
   }
 
   fn get_servers(&self, callback: sciter::Value) {
@@ -326,7 +290,7 @@ impl Handler {
             std::thread::spawn(move || {done.call(None, &make_args!(), None).unwrap();});
           } else {
             //eprintln!("{:#?}", output.unwrap_err().description());
-            std::thread::spawn(move || {error.call(None, &make_args!("The game exited in a crash"), None).unwrap();});
+            std::thread::spawn(move || {error.call(None, &make_args!(format!("The game exited in a crash: {}", output.code().unwrap())), None).unwrap();});
           }
         },
         Err(e) => {
@@ -352,10 +316,6 @@ impl Handler {
     conf.write_to_file("RenegadeX-Launcher.ini").unwrap();
   }
 
-  fn deunicode(&self, string: Value) -> String {
-    deunicode::deunicode(&string.as_string().unwrap())
-  }
-
   fn get_launcher_version(&self) -> &str {
     return VERSION;
   }
@@ -371,11 +331,11 @@ impl Handler {
     let launcher_info = self.patcher.lock().unwrap().get_launcher_info().unwrap();
     if VERSION != launcher_info.version_name {
       std::thread::spawn(move || {
+        //download file
         let mut future;
-        let mut download_contents = Arc::new(Mutex::new(Vec::new()));
+        let download_contents = Arc::new(Mutex::new(Vec::new()));
         let download_contents_clone = download_contents.clone();
         {
-          //let bw = std::io::BufWriter::new();
           let url = launcher_info.patch_url.parse::<hyper::Uri>().unwrap();
           let host_port = format!("{}:{}",url.host().unwrap(),url.port_u16().unwrap_or(80_u16));
           let tcpstream = std::net::TcpStream::connect(host_port).unwrap();
@@ -411,6 +371,8 @@ impl Handler {
           });
         }
         tokio::runtime::current_thread::Runtime::new().unwrap().block_on(future).unwrap();
+
+        //extract files
         let download_contents = std::io::Cursor::new(Arc::try_unwrap(download_contents).unwrap().into_inner().unwrap());
         let mut output_path = std::env::current_exe().unwrap();
         output_path.pop();
@@ -418,21 +380,20 @@ impl Handler {
         output_path.pop();
         output_path.push("launcher_update_extracted/");
         println!("{:?}", output_path);
-        let mut SUE = output_path.clone();
+        let mut self_update_executor = output_path.clone();
         unzip::Unzipper::new(download_contents, output_path).unzip().unwrap();
-        let working_dir = SUE.clone();
-        SUE.push("SelfUpdateExecutor.exe");
-        let mut args = vec![format!("--pid={}",std::process::id()), format!("--target={}", target_dir.to_str().unwrap())];
-        std::process::Command::new(SUE)
+
+        //run updater program and quit this.
+        let working_dir = self_update_executor.clone();
+        self_update_executor.push("SelfUpdateExecutor.exe");
+        let args = vec![format!("--pid={}",std::process::id()), format!("--target={}", target_dir.to_str().unwrap())];
+        std::process::Command::new(self_update_executor)
                                      .current_dir(working_dir)
                                      .args(&args)
                                      .stdout(std::process::Stdio::piped())
                                      .stderr(std::process::Stdio::inherit())
                                      .spawn().unwrap();
         std::process::exit(0);
-        //download file
-        //extract files
-        //run updater program and quit this.
       });
     }
   }
@@ -443,18 +404,16 @@ impl sciter::EventHandler for Handler {
 		fn check_update(Value, Value);
     fn start_download(Value, Value, Value);
     fn remove_unversioned(Value, Value);
-    fn send_irc_message(Value); //Parameter is a string
-    fn register_irc_callback(Value); //Register's the callback
-     //removed funtion of what I've forgot what it was intended for, atleast three values should be differentiated: UpToDate, Downloading, UpdateAvailable
+
     fn get_playername();
-    fn get_irc_nick();
+
     fn get_game_version();
     fn set_playername(Value);
-    fn set_irc_nick(Value);
+
     fn get_servers(Value);
     fn launch_game(Value, Value, Value); //Parameters: (Server IP+Port, onDone, onError);
     fn get_ping(Value, Value);
-    fn deunicode(Value);
+
     fn get_setting(Value);
     fn set_setting(Value, Value);
     fn get_launcher_version();
@@ -470,13 +429,11 @@ fn main() {
   let conf = match Ini::load_from_file("RenegadeX-Launcher.ini") {
     Ok(conf) => conf,
     Err(_e) => {
-      //TODO spawn dialog that gets PlayerName
       let mut conf = Ini::new();
       conf.with_section(Some("RenX_Launcher"))
         .set("GameLocation", "C:/Program Files (x86)/Renegade X/")
-        .set("VersionUrl", "https://static.renegade-x.com/launcher_data/version/release.json")
+        .set("VersionUrl", "https://static.renegade-x.com/launcher_data/version/launcher.json")
         .set("PlayerName", "UnknownPlayer")
-        .set("IrcNick", "UnknownPlayer")
         .set("LauncherTheme", "dom")
         .set("LastNewsGUID", "")
         .set("64-bit-version", "true")
@@ -491,17 +448,12 @@ fn main() {
         ).unwrap(); 
         let mut frame = sciter::Window::new();
         let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(Downloader::new()));
-        let client_clone : Arc<Mutex<Option<irc::client::IrcClient>>> = Arc::new(Mutex::new(None));
-        let irc_messages : Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
-        let irc_callback : Arc<Mutex<Option<sciter::Value>>> = Arc::new(Mutex::new(None));
-        frame.event_handler(Handler{patcher: patcher.clone(), irc_client: client_clone.clone(), irc_callback: irc_callback.clone(), conf: conf_arc.clone()});
+        frame.event_handler(Handler{patcher: patcher.clone(), conf: conf_arc.clone()});
         let mut current_path = std::env::current_exe().unwrap();
         current_path.pop();
-        current_path.push(format!("dom/first-startup.htm"));
-        frame.load_file(&percent_encoding::utf8_percent_encode(current_path.to_str().unwrap(), percent_encoding::DEFAULT_ENCODE_SET).to_string());
+        frame.load_file(&format!("file://{}/dom/first-startup.htm", current_path.to_str().unwrap()));
         frame.run_app();
       }
-      //conf.write_to_file("RenegadeX-Launcher.ini").unwrap();
       conf = match Arc::try_unwrap(conf_arc) {
         Ok(conf_mutex) => {
           conf_mutex.into_inner().unwrap().clone()
@@ -518,7 +470,6 @@ fn main() {
   let game_location = section.get("GameLocation").unwrap();
   let version_url = section.get("VersionUrl").unwrap();
   let launcher_theme = section.get("LauncherTheme").unwrap();
-  let irc_name = section.get("IrcNick").unwrap().clone();
 
   let mut current_path = std::env::current_exe().unwrap();
   current_path.pop();
@@ -533,110 +484,8 @@ fn main() {
   downloader.set_location(game_location.to_string());
   downloader.set_version_url(version_url.to_string());
   let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(downloader));
-  let client_clone : Arc<Mutex<Option<irc::client::IrcClient>>> = Arc::new(Mutex::new(None));
-  let irc_messages : Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
-  let irc_callback : Arc<Mutex<Option<sciter::Value>>> = Arc::new(Mutex::new(None));
   let conf_arc = Arc::new(Mutex::new(conf.clone()));
-  frame.event_handler(Handler{patcher: patcher.clone(), irc_client: client_clone.clone(), irc_callback: irc_callback.clone(), conf: conf_arc});
-  current_path.push(format!("{}/frontpage.htm", launcher_theme));
-  println!("{:?}", &current_path);
-  frame.load_file(&percent_encoding::utf8_percent_encode(current_path.to_str().unwrap(), percent_encoding::DEFAULT_ENCODE_SET).to_string());
-
-  let irc_thread = std::thread::spawn(move || {
-    let config = Config {
-      nickname: Some(irc_name.to_owned()),
-      alt_nicks: Some(vec![format!("{}_", &irc_name)]),
-      server: Some("irc.cncirc.net".to_owned()),
-      channels: Some(vec!["#renegadex".to_owned()]),
-      use_ssl: Some(true),
-      ..Config::default()
-    };
-    let mut reactor = IrcReactor::new().unwrap();
-    let client = reactor.prepare_client_and_connect(&config).unwrap();
-    client.identify().unwrap();
-    {
-      let mut client_lock = client_clone.lock().unwrap();
-      *client_lock = Some(client.clone());
-    }
-    reactor.register_client_with_handler(client, move |client, event| {
-      if let Command::PRIVMSG(channel, message) = &event.command {
-        if channel == "#renegadex" {
-          let ui_option = irc_callback.lock().unwrap();
-          match *ui_option {
-            Some(ref ui) => {
-              let username = event.prefix.unwrap();
-              let username = username.split("!").nth(0).unwrap();
-              ui.call(None, &make_args!(username,message.as_str()), None).unwrap();
-            },
-            None => {
-              println!("{:#?}", &message);
-            }
-          }
-        }
-      }
-      // And here we can do whatever we want with the messages.
-      Ok(())
-    });
-    reactor.run().unwrap();
-  });
+  frame.event_handler(Handler{patcher: patcher.clone(), conf: conf_arc});
+  frame.load_file(&format!("file://{}/{}/frontpage.htm", current_path.to_str().unwrap(), launcher_theme));
   frame.run_app();
 }
-
-/*
-pub struct Launcher {
-  //for example: ~/RenegadeX/
-  RenegadeX_location: Option<String>,
-  //For example: DRI_PRIME=1
-  env_arguments: Option<String>,
-  player_name: Option<String>,
-  servers: Option<json::JsonValue>,
-  ping: Option<json::JsonValue>,
-  x64_bit: bool
-}
-
-impl Launcher {
-  pub fn new(game_folder: String) -> Launcher {
-    Launcher {
-      RenegadeX_location: Some(game_folder),
-      env_arguments: None,
-      player_name: None,
-      servers: None,
-      ping: None,
-      x64_bit: true
-    }
-  }
-
-  pub fn refresh_server_list(&mut self) {
-    
-  }
-
-  pub fn launch_game(&mut self, server_index: Option<u16>) -> std::process::Child {
-    if server_index == None {
-      let mut wine_location = self.RenegadeX_location.clone().unwrap();
-      wine_location.push_str("libs/wine/bin/wine64");
-      let mut game_location = self.RenegadeX_location.clone().unwrap();
-      game_location.push_str("game_files/Binaries/Win64/UDK.exe");
-
-      let mut wine_prefix = self.RenegadeX_location.clone().unwrap();
-      wine_prefix.push_str("wine_instance/");
-      return process::Command::new(wine_location)
-        .arg(game_location)
-        //.arg("5.39.74.177:7777")
-        .arg("-nomoviestartup")
-        .arg("-ini:UDKGame:DefaultPlayer.Name=SonnyX")	
-        .stdout(process::Stdio::piped())
-        .stderr(process::Stdio::inherit())
-        .spawn().expect("failed to execute child");
-
-    } else {
-      let mut game_location = self.RenegadeX_location.clone().unwrap();
-      game_location.push_str("C:/Program Files (x86)/Renegade X/Binaries/Win64/UDK.exe");
-      return process::Command::new(game_location)
-        .arg("some server")
-        .stdout(process::Stdio::piped())
-        .stderr(process::Stdio::inherit())
-        .spawn().expect("failed to execute child");
-    }
-  }
-}
-*/

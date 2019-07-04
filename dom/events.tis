@@ -1,0 +1,200 @@
+namespace Emu {
+  function moveSliders() {
+    var mousepressed = false;
+    var element = this.$(.start);
+    var min = this.attributes["minValue"].toInteger();
+    var max = this.attributes["maxValue"].toInteger();
+    var minPercentage = 100.0*this.attributes["min"].toFloat()/(max-min).toFloat();
+    var maxPercentage = 100.0*this.attributes["max"].toFloat()/(max-min).toFloat();
+
+    function updateRange() {
+      this.$(div.slider > div.range).style["width"] = maxPercentage - minPercentage + "%";
+      this.$(div.slider > div.range).style["left"] = minPercentage + "%";
+      this.$(div.slider > div.range).style["right"] = "auto";
+    }
+
+    function updateElementByValue(integerValue) {
+        var width_element = element.box(#width,#outer);
+        var percentage_offset = 100.0*(width_element/2).toFloat()/element.parent.box(#width,#inner,#parent).toFloat();
+        var snapToEvery = 100.0/(max - min).toFloat();
+        element.style["left"] = integerValue.toFloat()*snapToEvery-percentage_offset+"%";
+        element.style["right"] = "auto";
+        if(element == this.$(.start)) {
+          if(element.parent.attributes["min"] != min + integerValue) {
+            element.parent.attributes["min"] = min + integerValue;
+            minPercentage = integerValue.toFloat()*snapToEvery-percentage_offset;
+            updateRange();
+            element.parent.sendEvent(Event.CHANGE);
+          }
+        } else {
+          if(element.parent.attributes["max"] != min + integerValue) {
+            element.parent.attributes["max"] = min + integerValue;
+            maxPercentage = integerValue.toFloat()*snapToEvery-percentage_offset;
+            updateRange();
+            element.parent.sendEvent(Event.CHANGE);
+          }
+        }
+    }
+
+    $(body) << event mousemove (evt) {
+      if(mousepressed) {
+        var left = element.parent.box(#left,#outer,#parent);
+        var percentage = 100.0*(evt.x - left).toFloat()/element.parent.box(#width,#inner,#body).toFloat();
+        var snapToEvery = 100.0/(max - min).toFloat();
+        if(percentage > 100) percentage = 100.0;
+        if(percentage < 0) percentage = 0.0;
+        var integerValue = (percentage/snapToEvery).toInteger();
+        if(element == element.parent.$(.start)) {
+          if(integerValue + 1 >= element.parent.attributes["max"].toInteger()) integerValue = element.parent.attributes["max"].toInteger() - 1;
+        } else {
+          if(integerValue - 1 <= element.parent.attributes["min"].toInteger()) integerValue = element.parent.attributes["min"].toInteger() + 1;
+        }
+        updateElementByValue(integerValue);
+      }
+    }
+    $(body) << event mouseup (evt) {
+      mousepressed = false;
+    }
+    this.$(.end) << event mousedown (evt) {
+      mousepressed = true;
+      element = this;
+    }
+    this.$(.start) << event mousedown (evt) {
+      mousepressed = true;
+      element = this;
+    }
+    this << event change (evt) {
+      var vlist = $(table);
+      for (var value in vlist.value ) {
+        //stdout.println(value);
+        if( value.data["Players"] >= element.parent.attributes["min"].toInteger() && value.data["Players"] <= element.parent.attributes["max"].toInteger()) {
+          value.in_player_range = true;
+        } else {
+          value.in_player_range = false;
+        }
+        updateFilter(value);
+      }
+    }
+  }
+}
+
+function bool_setting() {
+  stdout.println("Attached!");
+  this.post(::this.attributes.addClass("true"));
+
+  this << event click (evt) {
+    if(this.attributes.hasClass("true")) {
+      this.attributes.removeClass("true");
+      this.attributes.addClass("false");
+    } else if (this.attributes.hasClass("false")) {
+      this.attributes.removeClass("false");
+      this.attributes.addClass("true");
+    }
+  }
+}
+
+function filter() {
+  var filterbar = $(.filterbar);
+
+  this << event click (evt) {
+    if(this.attributes.hasClass("down")) {
+      this.attributes.removeClass("down");
+      this.attributes.addClass("up");
+      filterbar.style["visibility"] = "visible";
+    } else if (this.attributes.hasClass("up")) {
+      this.attributes.removeClass("up");
+      this.attributes.addClass("down");
+      filterbar.style["visibility"] = "collapse";
+    }
+  }
+}
+
+event keydown (evt) {
+  if ( evt.keyCode == Event.VK_F5 ) {
+    self.reload();
+  }
+}
+
+event ~click $(a[href^=http]) (evt) {
+  var url = evt.target.attributes["href"];
+  Sciter.launch(url);
+  return true;
+}
+
+function Element.reload() {
+  if( this.parent ) this.parent.load( this.url() );
+  else view.load(this.url());
+}
+
+function fillHeight() {
+  this.onSize = function() {
+    var min_width = 0;
+    for (var child in this) {
+      min_width += child.toPixels(child.style["-min"]);
+    }
+    var parent_width = this.box(#width, #border, #parent);
+    for (var child in this) {
+      if( parent_width >= min_width ) {
+        if(this.style["flow"] != "horizontal") {
+          this.style["flow"] = "horizontal";
+        }
+      } else {
+        if(this.style["flow"] != "vertical") {
+          this.style["flow"] = "vertical";
+        }
+      }
+    }
+  };
+  this.onSize();
+}
+
+self.on("click","[onclick]",function() {
+  return eval.call(this, this.attributes["onclick"] );
+});
+
+var current_page;
+
+self.on("click","[page]",function() {
+  $(div.menuEntries > .current).attributes.removeClass("current");
+  this.attributes.addClass("current");
+  current_page = this;
+  $(#content).load(this.attributes["page"]);
+  return true;
+});
+
+self.on("click","[overlay]",function() {
+  $(div.menuEntries > .current).attributes.removeClass("current");
+  this.attributes.addClass("current");
+  var overlay = $(#overlay);
+  overlay.load(this.attributes["overlay"]);
+  overlay.style["visibility"] = "visible";
+  $(div.menuEntries).state.disabled = true;
+  return true;
+});
+
+self.on("click","[close]",function() {
+  if ($(div.menuEntries > .current)) {
+    $(div.menuEntries > .current).attributes.removeClass("current");
+  }
+  current_page.attributes.addClass("current");
+  var overlay = $(#overlay);
+  overlay.text = "";
+  overlay.style["visibility"] = "hidden";
+  $(div.menuEntries).state.disabled = false;
+  return true;
+});
+
+self.on("click","[external]",function() {
+  stdout.println(this.attributes["external"]);
+  Sciter.launch(this.attributes["external"]);
+  return true;
+});
+
+self.on("keyup","[onkey]",function(evt) {
+  eval.call(this, this.attributes["onkey"]);
+});
+
+self.on("keypress","[enter]",function(evt) {
+  if ( evt.keyCode != 13 && evt.keyCode != Event.VK_RETURN ) return;
+  eval.call(this, this.attributes["enter"]);
+});

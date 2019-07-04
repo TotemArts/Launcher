@@ -1,0 +1,403 @@
+html, body, button, toggle, textarea, input|text, table, thead, tbody, tr, th, td, text, p, h1, h2, h3, h4, h5 {
+  background-gradient: none;
+  background-color: none;
+  background-image: none;
+  border: 0px;
+  padding: 0px;
+  margin: 0px;
+  border-radius: 0px;
+}
+
+p.green, span.green, text.green {
+  color: #28a964;
+}
+
+a {
+  color: #ce5135;
+}
+
+a:hover {
+  text-decoration: underline;
+  color: #ce5135;
+}
+
+input|text {
+  height: 30dip;
+  width:*;
+  background-color: #0d1721;
+  padding-left: 10dip;
+  padding-right: 5dip;
+  border-radius: 8dip;
+}
+
+input|text.searchbar {
+  height: 22dip;
+  font-size: 9pt;
+  padding-left: 25dip;
+  width: 100dip;
+  background-color: #0d1721;
+  background-image: url(images/Search.svg);
+  background-position: 8dip center;
+  background-repeat: no-repeat;
+  background-size: 8dip auto;
+}
+
+.change {
+  text-transform: none;
+  vertical-align: middle;
+  padding-left: 20dip;
+  background-image: url(images/EditName.svg);
+  background-position: 0dip center;
+  background-repeat: no-repeat;
+  background-size: 12dip 12dip;
+}
+
+button {
+  height: 33dip;
+  width: *;
+}
+
+button :disabled {
+ background-color: #a0a0a0;
+ color: #000;
+}
+
+button > p,
+button > text {
+  vertical-align: middle;
+  height: *;
+}
+
+button.setting {
+  width: 210dip;
+  background-color: #0c2e3f;
+}
+
+button.bool {
+  width: 210dip;
+  background-color: #4E545B;
+  background-position: 10dip center;
+  background-repeat: no-repeat;
+  background-size: auto 10dip;
+  aspect: "bool_setting";
+}
+button.bool:hover {
+}
+
+button.bool.true {
+  background-color: #28a964;
+  background-image: url(images/Tick.svg);
+}
+button.bool.true:hover {
+  background-color: #69C393;
+}
+
+button.bool.false {
+  background-color: #ce5135;
+  background-image: url(images/Cross.svg);
+}
+button.bool.false:hover {
+  background-color: #DD8572;
+}
+
+button.green {
+  background-color: #28a964;
+}
+button.green:hover {
+  color: #fff;
+  background-color: #69C393;
+}
+
+button.orange {
+  background-color: #ce5135;
+}
+button.orange:hover {
+  color: #fff;
+  background-color: #DD8572;
+}
+
+button.gray {
+  background-color: #ce5135;
+}
+button.gray:hover {
+  color: #fff;
+  background-color: #DD8572;
+}
+
+button.minimize, div.minimize {
+  width:22dip;
+  height:33dip;
+  background-image: url(images/Minimize.svg);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: auto auto;
+}
+
+button.minimize:hover, div.minimize:hover {
+  background-image: url(images/Minimize_Rollover.svg);
+}
+
+button.maximize, div.maximize {
+  width:22dip;
+  height:33dip;
+  background-image: url(images/Maximize.svg);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: auto auto;
+}
+
+button.maximize:hover, div.maximize:hover {
+  background-image: url(images/Maximize_Rollover.svg);
+}
+
+button.close, div.close {
+  width:22dip;
+  height:33dip;
+  background-image: url(images/Close.svg);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: auto auto;
+}
+
+button.close:hover, div.close:hover {
+  background-image: url(images/Close_Rollover.svg);
+}
+
+.twitter {
+  width:22dip;
+  height:33dip;
+  background-image: url(images/TwitterGrey.svg);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 12dip 12dip;
+}
+
+.twitter:hover {
+  background-image: url(images/TwitterColour.svg);
+}
+
+.facebook {
+  width:22dip;
+  height:33dip;
+  background-image: url(images/FacebookGrey.svg);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 12dip 12dip;
+}
+
+.facebook:hover {
+  background-image: url(images/FacebookColour.svg);
+}
+
+.discord {
+  width:22dip;
+  height:33dip;
+  background-image: url(images/DiscordGrey.svg);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 12dip 12dip;
+}
+
+.discord:hover {
+  background-image: url(images/DiscordColour.svg);
+}
+
+.youtube {
+  width:22dip;
+  height:33dip;
+  background-image: url(images/YoutubeGrey.svg);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 12dip 12dip;
+}
+
+.youtube:hover {
+  background-image: url(images/YoutubeColour.svg);
+}
+
+.refresh {
+  width:22dip;
+  height:33dip;
+  background-image: url(images/Refresh.svg);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 8dip 8dip;
+}
+
+.refresh:hover {
+  background-image: url(images/Refresh_Rollover.svg);
+}
+
+.filter {
+  width:22dip;
+  height:33dip;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: auto 12dip;
+  aspect: "filter";
+}
+
+.filter.down {
+  background-image: url(images/FilterDown.svg);
+}
+
+.filter.down:hover {
+  background-image: url(images/FilterDown_Rollover.svg);
+}
+
+.filter.up {
+  background-image: url(images/FilterUp.svg);
+}
+
+.filter.up:hover {
+  background-image: url(images/FilterUp_Rollover.svg);
+}
+
+div.checkmark {
+  width:20dip;
+  height:20dip;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: 10dip 10dip;
+  background-color: #070e14;
+  border-radius: 2dip;
+}
+
+div.checkmark.checked {
+  background-size: 12dip 12dip;
+  background-image: url(images/Tick.svg);
+}
+
+div.checkmark.crossed {
+  background-image: url(images/Cross.svg);
+}
+
+div.slider {
+  width: *;
+  height: 8dip;
+  position: relative;
+  background-color: #0C151E;
+  aspect: "Emu.moveSliders";
+}
+
+div.slider > div.range {
+  position: relative;
+  background-color: #CE5135;
+  height: 8dip;
+  top: 0dip;
+  left: 0%;
+  width: 100%;
+}
+
+div.slider > div.handle {
+  position: absolute;
+  border: 1dip solid #c5c5c5;
+  background: #f6f6f6;
+  cursor: default;
+  width: 5dip;
+  height: 12dip;
+  border-radius: 3dip;
+  top: -3dip;
+  left: 0%;
+}
+
+div.downloadBar {
+  background-color: #3a3b3f;
+  height: 8dip;
+  margin: 10dip 0dip;
+  width: *;
+}
+div.downloadBar > .indicator {
+  width: 50%;
+  height: *;
+  background-color: #28a964;
+}
+
+/*
+ * Server tables:
+ */
+table.servers {
+  style-set: serverTable;
+  width: *;
+  height: *;
+  min-height: 100dip;
+}
+
+@set serverTable {
+  table:root {
+    prototype: VGrid url(vlist.tis);  
+    flow:table-fixed;
+    border-spacing:0;
+    padding:0;
+  }
+
+  th, td {
+    height: 18dip;
+    line-height: 18dip;
+    text-align: left;
+    padding:0 4dip;
+    white-space: nowrap;
+    overflow-x:hidden;
+    text-overflow:ellipsis;
+  }
+
+  table:root[resizeable] > thead {
+    behavior:column-resizer;
+  }
+
+  th {
+    behavior:clickable;
+  }
+  th.sortable {
+    prototype: VTh url(vlist.tis);
+  }
+  
+  table:root[resizeable] > thead {
+    behavior:column-resizer;
+  }
+
+  table:root > tbody { 
+    overflow-y: auto;
+    scroll-manner: scroll-manner(
+      animation:false,
+      step:auto
+    );
+  }
+  table:root > tbody > tr.highlighted,
+  table:root > tbody > tr:current,
+  table:root > tbody > tr:checked {
+    background-color: #0c2e3f;
+  }
+
+  table:root > tbody > tr:hover {
+    background-color: #0c2e3f90;
+  }
+
+  .locked {
+    background-image: url(images/padlock.svg);
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: auto 10dip;
+  }
+  table:root > tbody > tr {
+    behavior:form; /* mission critical: each repeated child is treated as a form so it can accept object values  */
+  }
+  table:root > tbody > tr > td:nth-child(1) { max-width:5dip; }
+
+  table:root > thead > tr > th:nth-child(1) { width:5dip; }
+  table:root > thead > tr > th:nth-child(2) { width:50%; }
+  table:root > thead > tr > th:nth-child(3) { width:21%; }
+  table:root > thead > tr > th:nth-child(4) { width:12%; }
+  table:root > thead > tr > th:nth-child(5) { width:12%; }
+
+  table:root th[order=ascend]  {
+    foreground-image:url(stock:arrow-down);
+    foreground-repeat:no-repeat;
+    foreground-position:100% middle;
+  } 
+  table:root th[order=descend]  {
+    foreground-image:url(stock:arrow-up);
+    foreground-repeat:no-repeat;
+    foreground-position: 100% middle;
+  }
+}
