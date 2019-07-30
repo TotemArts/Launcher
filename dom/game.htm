@@ -3,20 +3,20 @@
     <div.vflow style="vertical-align: middle;">
       <p style="font-size: 7pt;">Welcome</p>
       <h1.change overlay="username.htm">
-        <output(username)/>SonnyX
+        <output username/>
       </h1>
     </div>
     <div style="width:*;"></div>
     <div style="flow: vertical; text-align: right; vertical-align: middle;">
       <p style="font-size: 7pt; line-height:100%;">Version</p>
-      <h1 style="line-height:100%;"><output(version)/>5.380</h1>
+      <h1><output game_version/></h1>
     </div>
   </div>
   <div.left-margin></div>
   <div.right-margin></div>
-  <div>
-    <div.downloadBar><div.indicator></div></div>
-    <p style="float:left;">Downloading update: <span.green>34%</span></p>
+  <div.footer-margin>
+    <div.downloadBar><progressbar.indicator download_progress/></div>
+    <p style="float:left;">Downloading update: <span.green><output download_progress/></span></p>
     <p style="float:right;">more details</p>
   </div>
   <div>
@@ -24,6 +24,7 @@
       <div.titlebar>
         <h3.title>Servers</h3>
         <div.spacer></div>
+        filter
         <div.filter.down></div>
         <input|text.searchbar>
         <div.refresh></div>

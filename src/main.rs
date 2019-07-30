@@ -179,14 +179,14 @@ impl Handler {
     std::thread::spawn(move || {
       let mut future;
       {
-        let url = "http://serverlist.renegade-x.com/servers.jsp".parse::<hyper::Uri>().unwrap();
+        let url = "http://serverlist.renegade-x.com/servers.jsp?id=launcher".parse::<hyper::Uri>().unwrap();
         let host_port = format!("{}:{}",url.host().unwrap(),url.port_u16().unwrap_or(80_u16));
         let tcpstream = std::net::TcpStream::connect(host_port).unwrap();
         future = tokio::net::TcpStream::from_std(tcpstream, &tokio_reactor::Handle::default()).map(|tcp| {
           hyper::client::conn::handshake(tcp)
         }).unwrap().and_then(move |(mut client, conn)| {
           let mut req = hyper::Request::builder();
-          req.uri(url.path()).header("host", url.host().unwrap()).header("User-Agent", "sonny-launcher/1.0");
+          req.uri(url.path()).header("host", url.host().unwrap()).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
           let req = req.body(hyper::Body::empty()).unwrap();
           let res = client.send_request(req).and_then(|res| {
             use hyper::rt::*;
@@ -442,6 +442,8 @@ fn main() {
       {
         sciter::set_options(
           sciter::RuntimeOptions::ScriptFeatures(
+            sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_FILE_IO as u8 |
+            sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SYSINFO as u8 |
             sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SOCKET_IO as u8 | // Enables connecting to the inspector via Ctrl+Shift+I
             sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_EVAL as u8  // Enables execution of Eval inside of TI-Script
           )
@@ -475,6 +477,8 @@ fn main() {
   current_path.pop();
   sciter::set_options(
     sciter::RuntimeOptions::ScriptFeatures(
+            sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_FILE_IO as u8 |
+            sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SYSINFO as u8 |
       sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SOCKET_IO as u8 | // Enables connecting to the inspector via Ctrl+Shift+I
       sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_EVAL as u8  // Enables execution of Eval inside of TI-Script
     )

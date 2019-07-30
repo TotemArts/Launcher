@@ -1,4 +1,50 @@
-namespace Data {
-  var username = "Not Set";
-  var version = "Not Installed";
+var output_variables = {
+  "username":"Not Set",
+  "launcher_version":"0.61",
+  "game_version":"Not Installed",
+  "download_progress":"80%"
+};
+
+var server_list = [];
+
+function variable_observer(changeDefinition) {
+  if(changeDefinition[0] == "update" || changeDefinition[0] == "add") {
+    for(var element in $$(output[{changeDefinition[2]}]) ) {
+      element.value = changeDefinition[3];
+    }
+    for(var element in $$(progressbar[{changeDefinition[2]}]) ) {
+      stdout.println("found progressbar");
+      element.style["width"] = changeDefinition[3];
+    }
+  }
+}
+
+Object.addObserver(output_variables, variable_observer);
+
+function server_list_observer(changeDefinition) {
+  $(table).value = server_list;
+}
+
+Object.addObserver(server_list, server_list_observer);
+
+function set_username(username) {
+  output_variables["username"] = username;
+  view.set_playername(username);
+}
+
+function close_overlay() {
+  if ($(div.menuEntries > .current)) {
+    $(div.menuEntries > .current).attributes.removeClass("current");
+  }
+  current_page.attributes.addClass("current");
+  var overlay = $(#overlay);
+  overlay.text = "";
+  overlay.style["visibility"] = "hidden";
+  $(div.menuEntries).state.disabled = false;
+}
+
+function initialize_variables() {
+  output_variables["username"] = view.get_playername();
+  output_variables["launcher_version"] = view.get_launcher_version();
+  output_variables["game_version"] = view.get_game_version();
 }

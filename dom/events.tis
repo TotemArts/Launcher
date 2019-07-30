@@ -1,4 +1,26 @@
 namespace Emu {
+  function loadOutput() {
+    for(var attribute in this.attributes) {
+      if(output_variables[attribute]) {
+        switch (this.tag) {
+          case "output":
+            this.value = output_variables[attribute];
+            break;
+          case "progressbar":
+            this.style["width"] = output_variables[attribute];
+            break;
+        }
+      }
+    }
+  }
+
+  function server_table() {
+    this.value = server_list;
+    this << event click $(th.sortable) {
+      this.sortVlist();
+    }
+  }
+
   function moveSliders() {
     var mousepressed = false;
     var element = this.$(.start);
@@ -79,16 +101,17 @@ namespace Emu {
 }
 
 function bool_setting() {
-  stdout.println("Attached!");
-  this.post(::this.attributes.addClass("true"));
+  this.post(::this.attributes.addClass(view.get_setting(this.@["setting"])));
 
   this << event click (evt) {
     if(this.attributes.hasClass("true")) {
       this.attributes.removeClass("true");
       this.attributes.addClass("false");
+      view.set_setting(this.@["setting"], "false");
     } else if (this.attributes.hasClass("false")) {
       this.attributes.removeClass("false");
       this.attributes.addClass("true");
+      view.set_setting(this.@["setting"], "true");
     }
   }
 }
@@ -149,7 +172,8 @@ function fillHeight() {
 }
 
 self.on("click","[onclick]",function() {
-  return eval.call(this, this.attributes["onclick"] );
+  eval.call(this, this.attributes["onclick"] );
+  return false;
 });
 
 var current_page;
@@ -159,7 +183,7 @@ self.on("click","[page]",function() {
   this.attributes.addClass("current");
   current_page = this;
   $(#content).load(this.attributes["page"]);
-  return true;
+  return false;
 });
 
 self.on("click","[overlay]",function() {
@@ -169,25 +193,18 @@ self.on("click","[overlay]",function() {
   overlay.load(this.attributes["overlay"]);
   overlay.style["visibility"] = "visible";
   $(div.menuEntries).state.disabled = true;
-  return true;
+  return false;
 });
 
 self.on("click","[close]",function() {
-  if ($(div.menuEntries > .current)) {
-    $(div.menuEntries > .current).attributes.removeClass("current");
-  }
-  current_page.attributes.addClass("current");
-  var overlay = $(#overlay);
-  overlay.text = "";
-  overlay.style["visibility"] = "hidden";
-  $(div.menuEntries).state.disabled = false;
-  return true;
+  close_overlay();
+  return false;
 });
 
 self.on("click","[external]",function() {
   stdout.println(this.attributes["external"]);
   Sciter.launch(this.attributes["external"]);
-  return true;
+  return false;
 });
 
 self.on("keyup","[onkey]",function(evt) {

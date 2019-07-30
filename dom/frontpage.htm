@@ -30,11 +30,10 @@
         data: 1,
       };
     }
-    $(table).value = records;
-    $(table) << event click $(th.sortable) {
-      this.sortVlist();
-    }
+    server_list = records;
+
     if(view.connectToInspector) view.connectToInspector();
+    initialize_variables();
   }
 </script>
 </head>

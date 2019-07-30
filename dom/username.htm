@@ -5,8 +5,8 @@
   </div>
   <div.child-padding.vflow>
     <p.uppercase>Username</p>
-    <input|text.username />
-    <button.green>Submit</button>
+    <input|text.username enter="set_username($(input.username).value); close_overlay();"/>
+    <button.green onclick="set_username($(input.username).value); close_overlay();">Submit</button>
     <button.gray close>Cancel</button>
   </div>
 </div>

@@ -8,6 +8,31 @@ html, body, button, toggle, textarea, input|text, table, thead, tbody, tr, th, t
   border-radius: 0px;
 }
 
+output {
+  font: inherit;
+  background-gradient: inherit;
+  background-color: inherit;
+  background-image: inherit;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  border-radius: 0;
+  color: inherit;
+  font-family: inherit;
+  font-weight: inherit;
+  vertical-align: inherit;
+  white-space: inherit;
+  overflow-x:inherit;
+  text-overflow:inherit;
+  text-transform: inherit;
+  white-space: inherit;
+  aspect: "Emu.loadOutput";
+}
+
+progressbar {
+  aspect: "Emu.loadOutput";
+}
+
 p.green, span.green, text.green {
   color: #28a964;
 }
@@ -117,11 +142,11 @@ button.orange:hover {
 }
 
 button.gray {
-  background-color: #ce5135;
+  background-color: #505050;
 }
 button.gray:hover {
   color: #fff;
-  background-color: #DD8572;
+  background-color: #505050;
 }
 
 button.minimize, div.minimize {
@@ -308,6 +333,7 @@ div.downloadBar {
   width: *;
 }
 div.downloadBar > .indicator {
+  display:block;
   width: 50%;
   height: *;
   background-color: #28a964;
@@ -321,6 +347,7 @@ table.servers {
   width: *;
   height: *;
   min-height: 100dip;
+  aspect: "Emu.server_table";
 }
 
 @set serverTable {
