@@ -2,7 +2,10 @@ var output_variables = {
   "username":"Not Set",
   "launcher_version":"0.61",
   "game_version":"Not Installed",
-  "download_progress":"80%"
+  "download_progress":"80%",
+  "server_filter_players_min":0,
+  "server_filter_players_max":64,
+  "server_filter_same_game_version":true,
 };
 
 var server_list = [];
@@ -20,15 +23,6 @@ function variable_observer(changeDefinition) {
 }
 
 Object.addObserver(output_variables, variable_observer);
-
-function server_list_observer(changeDefinition) {
-  stdout.println(changeDefinition[0]);
-  stdout.println(changeDefinition[2]);
-  stdout.println(changeDefinition[3]);
-  $(table).value = server_list;
-}
-
-Object.addObserver(server_list, server_list_observer);
 
 function set_username(username) {
   output_variables["username"] = username;
@@ -52,13 +46,42 @@ function initialize_variables() {
   output_variables["game_version"] = view.get_game_version();
 }
 
+function onPingResult(server, time_response) {
+  for ( var i = 0; i < server_list.length; i++ ) {
+    if ( server_list[i].data["IP"] + ":" + server_list[i].data["Port"] == server ) {
+      server_list[i].latency = time_response + " ms";
+      break;
+    }
+  }
+}
+
 function getServersCallback(results) {
-  for(var result in results) {
+  var updated = [];
+  var old_length = server_list.length;
+  output_variables["players_online"] = 0;
+  for (var i = 0; i < old_length; i++) updated[i] = false;
+  for(var changed in results) {
+    var in_range = changed["Players"] >= output_variables["server_filter_players_min"] &&  changed["Players"] <= output_variables["server_filter_players_max"];
+    var result = {
+      locked: changed["Variables"]["bPassworded"],
+      name: changed["Name"],
+      map: changed["Current Map"].substr(changed["Current Map"].indexOf("-")+1).replace("_", " "),
+      players: changed["Players"] + "/" + changed["Variables"]["Player Limit"],
+      latency: "-",
+
+      display: in_range && changed["Game Version"] == output_variables["game_version"],
+      in_player_range: in_range,
+      same_version: changed["Game Version"] == output_variables["game_version"],
+      data: changed,
+    }
+    output_variables["players_online"] += changed["Players"].toInteger();
+    view.get_ping(result.data["IP"]+":"+result.data["Port"], onPingResult);
     var exists = false;
-    for (var i = 0; i < server_list.length; i++) {
-      if (result.IP == server_list[i].IP && result.Port == server_list[i].Port) {
+    for (var i = 0; i < old_length; i++) {
+      if (result.data.IP == server_list[i].data.IP && result.data.Port == server_list[i].data.Port) {
         exists = true;
         server_list[i] = result;
+        updated[i] = true;
         break;
       }
     }
@@ -66,4 +89,6 @@ function getServersCallback(results) {
       server_list.push(result);
     }
   }
+  for (var i = old_length-1; i > 0; i--) if( !updated[i] ) server_list.remove(i);
+  stdout.println("refreshed servers");
 }

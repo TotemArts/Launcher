@@ -23,6 +23,7 @@
     <div.servers>
       <div.titlebar>
         <h3.title>Servers</h3>
+        <p.nowrap>There are currently <output players_online/> players online</p>
         <div.spacer></div>
         filter
         <div.filter.down></div>
@@ -30,7 +31,7 @@
         <div.refresh onclick="view.get_servers(getServersCallback);"></div>
       </div>
       <div.filterbar>
-        <p.nowrap>Players: 5 - 64</p>
+        <p.nowrap>Players: <output server_filter_players_min /> - <output server_filter_players_max /></p>
         <div.slider minValue="0" maxValue="64" min="0" max="64">
           <div.range style="left: 0%; width: *; margin-right: 6dip;"></div>
           <div.handle.start style="left: -3dip;"></div>
