@@ -22,6 +22,9 @@ function variable_observer(changeDefinition) {
 Object.addObserver(output_variables, variable_observer);
 
 function server_list_observer(changeDefinition) {
+  stdout.println(changeDefinition[0]);
+  stdout.println(changeDefinition[2]);
+  stdout.println(changeDefinition[3]);
   $(table).value = server_list;
 }
 
@@ -47,4 +50,20 @@ function initialize_variables() {
   output_variables["username"] = view.get_playername();
   output_variables["launcher_version"] = view.get_launcher_version();
   output_variables["game_version"] = view.get_game_version();
+}
+
+function getServersCallback(results) {
+  for(var result in results) {
+    var exists = false;
+    for (var i = 0; i < server_list.length; i++) {
+      if (result.IP == server_list[i].IP && result.Port == server_list[i].Port) {
+        exists = true;
+        server_list[i] = result;
+        break;
+      }
+    }
+    if(!exists) {
+      server_list.push(result);
+    }
+  }
 }

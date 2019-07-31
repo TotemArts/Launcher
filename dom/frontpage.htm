@@ -13,6 +13,8 @@
   function self.ready() {
     $(#content).load($(div.current).attributes["page"]);
     current_page = $(div.current);
+
+/*
     var records = new Array(6);
     var maps = ["Fun Map!","Silly me...","There are no","Fun Maps","Only serious", "games allowed"];
     var i;
@@ -31,9 +33,10 @@
       };
     }
     server_list = records;
-
+*/
     if(view.connectToInspector) view.connectToInspector();
     initialize_variables();
+    view.get_servers(getServersCallback);
   }
 </script>
 </head>

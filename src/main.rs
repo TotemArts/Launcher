@@ -1,7 +1,10 @@
 #![windows_subsystem="windows"]
 
+extern crate native_tls;
 extern crate hyper;
+extern crate hyper_tls;
 extern crate tokio;
+extern crate tokio_tls;
 extern crate tokio_reactor;
 #[macro_use] extern crate futures;
 #[macro_use] extern crate sciter;
@@ -177,39 +180,24 @@ impl Handler {
 
   fn get_servers(&self, callback: sciter::Value) {
     std::thread::spawn(move || {
-      let mut future;
-      {
-        let url = "http://serverlist.renegade-x.com/servers.jsp?id=launcher".parse::<hyper::Uri>().unwrap();
-        let host_port = format!("{}:{}",url.host().unwrap(),url.port_u16().unwrap_or(80_u16));
-        let tcpstream = std::net::TcpStream::connect(host_port).unwrap();
-        future = tokio::net::TcpStream::from_std(tcpstream, &tokio_reactor::Handle::default()).map(|tcp| {
-          hyper::client::conn::handshake(tcp)
-        }).unwrap().and_then(move |(mut client, conn)| {
-          let mut req = hyper::Request::builder();
-          req.uri(url.path()).header("host", url.host().unwrap()).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
-          let req = req.body(hyper::Body::empty()).unwrap();
-          let res = client.send_request(req).and_then(|res| {
-            use hyper::rt::*;
-            let abort_in_error = res.status() != 200 && res.status() != 206;
-            res.into_body().concat2()
-          }).and_then(move |body| {
-            std::thread::spawn(move || {
-              let text : Value = ::std::str::from_utf8(&body).expect("Expected an utf-8 string").parse().unwrap();
-              callback.call(None, &make_args!(text), None).unwrap();
-            });
-            Ok(())
-          });
-          // Put in an Option so poll_fn can return it later
-          let mut conn = Some(conn);
-          let until_upgrade = futures::future::poll_fn(move || {
-            try_ready!(conn.as_mut().unwrap().poll_without_shutdown());
-            Ok(futures::Async::Ready(conn.take().unwrap()))
-          });
-
-          res.join(until_upgrade)
+      let url = "https://serverlist.renegade-x.com/servers.jsp?id=launcher".parse::<hyper::Uri>().unwrap();
+      let https = hyper_tls::HttpsConnector::new(4).expect("TLS initialization failed");
+      let client = hyper::Client::builder().build::<_, hyper::Body>(https);
+      let mut req = hyper::Request::builder();
+      req.uri(url.clone()).header("host", url.host().unwrap()).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
+      let req = req.body(hyper::Body::empty()).unwrap();
+      let res = client.request(req).and_then(|res| {
+        use hyper::rt::*;
+        let abort_in_error = res.status() != 200 && res.status() != 206;
+        res.into_body().concat2()
+      }).and_then(move |body| {
+        std::thread::spawn(move || {
+          let text : Value = ::std::str::from_utf8(&body).expect("Expected an utf-8 string").parse().unwrap();
+          callback.call(None, &make_args!(text), None).unwrap();
         });
-      }
-      tokio::runtime::current_thread::Runtime::new().unwrap().block_on(future).unwrap();
+        Ok(())
+      });
+      tokio::runtime::current_thread::Runtime::new().unwrap().block_on(res).unwrap();
     });
   }
 
