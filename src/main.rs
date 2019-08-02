@@ -16,7 +16,7 @@ extern crate rand;
 
 extern crate unzip;
 
-//mod chat;
+mod chat;
 
 use std::sync::{Arc,Mutex};
 

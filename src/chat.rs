@@ -1,25 +1,32 @@
 use std::thread;
 use std::sync::{Arc, Mutex};
-use std::sync::mpsc::{channel, Sender, Receiver};
-use futures::Stream;
-use futures::Sink;
-use futures::Future;
+use futures::unsync::mpsc::{unbounded, UnboundedSender, UnboundedReceiver};
+use tokio_xmpp::{Client, Packet};
+use xmpp_parsers::{Jid, Element, TryFrom};
+use xmpp_parsers::message::{Body, MessageType};
+use xmpp_parsers::presence::{Presence, Show as PresenceShow, Type as PresenceType};
 
-pub struct Chat {
+
+//traits:
+use futures::{Stream, Sink, Future};
+
+/// The generic chat instance, should be transformed into a trait
+pub struct Chat<R: FnMut(ChatEvent)> {
   connected: Arc<Mutex<bool>>,
-  rx: Receiver<ChatEvent>,
-  tx: futures::sync::mpsc::Sender<ChatEvent>,
-  join_handle: std::thread::JoinHandle<Result<(), std::io::Error>>,
+  receiver: R,
+  sender: UnboundedSender<tokio_xmpp::xmpp_codec::Packet>,
+  rt: tokio::runtime::Runtime,
 }
 
 pub enum ChatEvent {
-  Config(Config),
+/// Send a string
   Send(String),
+/// Receive a message
   Receive(Message),
-  Error(Error),
-  Username(String),
-  Connect,
-  Disconnect,
+/// Any event, like connect, disconnect, list of users?, etc.
+  Event(String),
+/// Any error that occurs
+  Error(Error)
 }
 
 pub struct Message {
@@ -28,96 +35,68 @@ pub struct Message {
   pub message: String,
 }
 
-struct Error {
-  description: String,
+pub struct Error {
+  pub description: String,
 }
 
-struct Config {
-  username: String,
+fn make_presence() -> Element {
+  let mut presence = Presence::new(PresenceType::None);
+  presence.show = Some(PresenceShow::Chat);
+  presence.statuses.insert(String::from("en"), String::from("Echoing messages."));
+  presence.into()
 }
 
-impl Chat {
-  pub fn new() -> Chat {
-    let (client_sender, mut server_receiver) = futures::sync::mpsc::channel(10);
-    let (server_sender, client_receiver) = channel();
+impl<R: FnMut(ChatEvent)> Chat<R> {
+  pub fn new(receiver: R, username: String, password: String, server: String) -> Chat<R> {
+    let (client_sender, mut server_receiver) = unbounded();
     let connected = Arc::new(Mutex::new(false));
-    Chat {
+    let chat = Chat {
       connected: connected.clone(),
-      rx: client_receiver,
-      tx: client_sender,
-      join_handle: thread::spawn(move || {
-        let mut config_option : Option<Config> = None;
-        
-        loop {
-
-          let recv = match server_receiver.poll().unwrap() {
-            futures::Async::Ready(value) => value,
-            _ => None,
-          };
-          if let Some(chat_event) = recv {
-            match chat_event {
-              ChatEvent::Config(new_config) => {
-                config_option = Some(new_config);
-              },
-              ChatEvent::Connect => {
-                if let Some(mut config) = config_option.as_mut() {
-                  let mut rt = tokio::runtime::current_thread::Runtime::new().unwrap();
-                  let client = tokio_xmpp::Client::new("Sonny@weird-server.com", "").unwrap();
-                  let (sink, stream) = client.split();
-                  rt.spawn(
-                    server_receiver.for_each(|chat_event| {
-                      Ok(())
-                    }).map_err(|e| panic!("Potatoes"))
-                  );
-                } else {
-                  server_sender.send(ChatEvent::Error(Error{description: "".to_string()}));
-                }
-              },
-              _ => {},
-            }
-          };
-        }
-        Ok(())
-      }),
-    }
-  }
-
-  pub fn send(&self, message: String) {
-    self.tx.clone().send(ChatEvent::Send(message)).wait();
-  }
-
-  pub fn receive(&self) -> Option<Message> {
-    let receive = self.rx.recv();
-    match receive {
-      Ok(chat_event) => {
-        match chat_event {
-          ChatEvent::Receive(message) => Some(message),
-          _ => { None }
-        }
-      },
-      Err(e) => {
-        None
+      receiver: receiver,
+      sender: client_sender,
+      rt: tokio::runtime::Runtime::new().unwrap(),
+    };
+    let client = tokio_xmpp::Client::new(&format!("{}@{}", username, server), &password).unwrap();
+    let (sink, stream) = client.split();
+/*
+    chat.rt.spawn(
+      server_receiver.forward(
+        sink.sink_map_err(|_| panic!("Pipe"))
+      ).map(|(server_receiver, mut sink)| {
+        drop(server_receiver);
+        let _ = sink.close();
+      }).map_err(|e| {
+        panic!("Send error: {:?}", e);
+      })
+    );
+*/
+/*
+    chat.rt.block_on(stream.for_each(|event| {
+      if event.is_online() {
+        println!("Online!");
+        //let presence = make_presence();
+        //tx.start_send(Packet::Stanza(presence)).unwrap();
+      } else if let Some(message) = event.into_stanza().and_then(|stanza| xmpp_parsers::message::Message::try_from(stanza).ok()) {
+        println!("{:?}", message);
       }
-    }
+      futures::future::ok(())
+    }).map_err(|e| {
+      panic!("Send error: {:?}", e);
+    }));
+*/
+    chat
   }
-
+/*
+  pub fn send(&self, message: String) {
+    self.rt.spawn(self.sender.send(message));
+  }
+*/
   pub fn is_connected(&self) -> bool {
     *self.connected.lock().unwrap()
   }
-
-  pub fn connect(&self) {
-    self.tx.clone().send(ChatEvent::Connect).wait();
-  }
-
-  pub fn disconnect(&self){
-    self.tx.clone().send(ChatEvent::Disconnect).wait();
-  }
-
-  pub fn set_username(&self, username: String) {
-    self.tx.clone().send(ChatEvent::Username(encode(username))).wait();
-  }
 }
 
+/// encodes an input to an html-encoded output
 pub fn encode(input: String) -> String {
   let mut output = String::new();
   for chr in input.chars() {

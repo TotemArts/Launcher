@@ -164,6 +164,11 @@ div.titlebar > .title {
   height: *;
 }
 
+.join_server {
+  min-width: 600dip;
+  max-width: 700dip;
+}
+
 .logo {
   background-image: url(images/RenX_Logo.png);
   background-position: center;
@@ -197,11 +202,54 @@ div.titlebar > .title {
   margin: 0dip 10dip;
 }
 
+.dropdown_menu {
+  text-transform: none;
+  vertical-align: middle;
+  padding: 0dip 30dip 0dip 10dip;
+  background-position: right center;
+  background-repeat: no-repeat;
+
+  background-size: 32dip 12dip;
+  white-space: nowrap;
+  margin-right: -5dip;
+  height: *;
+}
+
+.dropdown_menu.open {
+  background-color: #0D1721;
+  background-image: url(images/FilterDown.svg);
+}
+
+.dropdown_menu.closed {
+  background-image: url(images/FilterUp.svg);
+}
+
 .body {
+  position: relative;
   background-color: #0c151ee6;
   padding: 10dip;
   margin-bottom: 10dip;
+}
+
+.mheight {
   height: *;
+}
+
+.menu {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  min-width: 200dip;
+  background-color: #0D1721;
+}
+
+.menu > div {
+  flow: vertical;
+  width: *;
+}
+
+.menu > div:hover {
+  background-color: #2D3741;
 }
 
 .chat {

@@ -1,30 +1,21 @@
-<html window-icon="images/rx.ico" window-frame="solid">
+<html window-icon="images/rx.ico" window-frame="extended">
 <head>
-<title>Minimalistic Sciter demo</title>
+<title>RenegadeX-Launcher - Choose username</title>
 <style>
-@import url(general.css);
-
-html, body {
-  width: 400px;
-  height: 500px;
-  background: none;
-  background-image: none;
-  background-color: #06090E;
-  overflow: none;
-  margin: 0px;
-  padding: 0px;
-}
+  @import url(elements.css);
+  @import url(containers.css);
+  @import url(fonts.css);
 </style>
 <script type="text/tiscript">
   function self.ready() {
     var (sx,sy,sw,sh) = View.screenBox(0,#workarea,#rectw);
-    view.move( sx + (sw - 400) / 2, sy + (sh - 185) / 2,400,185,true);
+     var (w,h) = $(div.username-window).box(#dimension, #content);
+    view.move( sx + (sw - w) / 2, sy + (sh - h) / 2,452,186,false);
   }
 
   function setPlayername() {
     if ($(input|text#username).value != "") {
       view.set_playername($(input|text#username).value);
-      view.set_irc_nick($(input|text#ircsafe).value);
       view.close();
     }
   }
@@ -41,12 +32,16 @@ html, body {
 </script>
 </head>
 <body>
-<div #header role="window-caption">
-  <h1>Welcome back Commander!</h1>
-</div>
-<div style="flow:vertical; width: *;">
-  <input|text#username enter="setPlayername();" maxlength="30">
-  <button#submit onclick="setPlayername();">SUBMIT</button>
+
+<div.username-window role="window-caption">
+  <div.titlebar>
+    <h3.title.center.uppercase style="width: *;">Welcome back Commander!</h3>
+  </div>
+  <div.padding.vflow>
+    <p>Username:</p>
+    <input|text.username enter="setPlayername();" maxlength="30" />
+    <button.green onclick="setPlayername();">SUBMIT</button>
+  </div>
 </div>
 
 </body>

@@ -6,6 +6,7 @@ var output_variables = {
   "server_filter_players_min":0,
   "server_filter_players_max":64,
   "server_filter_same_game_version":true,
+  "current_action": "Downloading update",
 };
 
 var server_list = [];
