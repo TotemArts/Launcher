@@ -1,4 +1,4 @@
-<html window-icon="images/rx.ico" window-frame="extended">
+<html window-icon="images/rx.ico" window-frame="solid">
 <head>
 <title>RenegadeX-Launcher - Choose username</title>
 <style>
@@ -9,13 +9,13 @@
 <script type="text/tiscript">
   function self.ready() {
     var (sx,sy,sw,sh) = View.screenBox(0,#workarea,#rectw);
-     var (w,h) = $(div.username-window).box(#dimension, #content);
-    view.move( sx + (sw - w) / 2, sy + (sh - h) / 2,452,186,false);
+    var (w,h) = $(div.username-window).box(#dimension, #content);
+    view.move( sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
   }
 
   function setPlayername() {
-    if ($(input|text#username).value != "") {
-      view.set_playername($(input|text#username).value);
+    if ($(input|text.username).value != "") {
+      view.set_playername($(input|text.username).value);
       view.close();
     }
   }
