@@ -2,7 +2,10 @@ var output_variables = {
   "username":"Not Set",
   "launcher_version":"0.61",
   "game_version":"Not Installed",
-  "download_progress":"80%",
+  "hash_progress":"0",
+  "download_progress":"0",
+  "patch_progress":"0",
+  "update_progress":"0",
   "server_filter_players_min":0,
   "server_filter_players_max":64,
   "server_filter_same_game_version":true,
@@ -14,11 +17,11 @@ var server_list = [];
 function variable_observer(changeDefinition) {
   if(changeDefinition[0] == "update" || changeDefinition[0] == "add") {
     for(var element in $$(output[{changeDefinition[2]}]) ) {
-      element.value = changeDefinition[3];
+      element.value = changeDefinition[3]==0?"0":changeDefinition[3];
     }
     for(var element in $$(progressbar[{changeDefinition[2]}]) ) {
       stdout.println("found progressbar");
-      element.style["width"] = changeDefinition[3];
+      element.style["width"] = changeDefinition[3]==0?"0%":changeDefinition[3]+"%";
     }
   }
 }
@@ -28,6 +31,16 @@ Object.addObserver(output_variables, variable_observer);
 function set_username(username) {
   output_variables["username"] = username;
   view.set_playername(username);
+}
+
+function show_overlay(page) {
+  if ($(div.menuEntries > .current)) {
+    $(div.menuEntries > .current).attributes.removeClass("current");
+  }
+  var overlay = $(#overlay);
+  overlay.load(page);
+  overlay.style["visibility"] = "visible";
+  $(div.menuEntries).state.disabled = true;
 }
 
 function close_overlay() {
@@ -52,6 +65,44 @@ function onPingResult(server, time_response) {
     if ( server_list[i].data["IP"] + ":" + server_list[i].data["Port"] == server ) {
       server_list[i].latency = time_response + " ms";
       break;
+    }
+  }
+}
+
+function tick_checkmark(element, boolean) {
+  if(boolean && !element.attributes.hasClass("checked") && !element.attributes.hasClass("ticked")) {
+    element.attributes.addClass("checked");
+  } else if (!boolean && element.attributes.hasClass("checked")) {
+    element.attributes.removeClass("checked");
+  }
+}
+
+/// Joining game related things
+function onGameExit() {
+  if($(img#map_image) != undefined) {
+    $(img#map_image).attributes["src"] = $(img#map_image).attributes["src-disabled"];
+  }
+  stdout.println("Game exited succesfully!");
+}
+
+function onGameError(ErrorMessage) {
+  if($(img#map_image) != undefined) {
+    $(img#map_image).attributes["src"] = $(img#map_image).attributes["src-disabled"];
+  }
+  show_overlay("error.htm");
+  output_variables["error_message"] = ErrorMessage
+}
+
+function joinServer(password = undefined) {
+  var servers = $(table.servers);
+  var entry = servers.value[servers.tbody.currentIndex]["data"];
+  if (entry["Variables"]["bPassworded"] && !password) {
+    show_overlay("password.htm");
+  } else {
+    view.launch_game(entry.IP+":"+entry.Port+password?"?Password="+password:"", onGameExit, onGameError);
+    if($(img#map_image) != undefined) {
+      $(img#map_image).attributes["src-disabled"]=$(img#map_image).attributes["src"];
+      $(img#map_image).attributes["src"]= "";
     }
   }
 }
@@ -92,4 +143,67 @@ function getServersCallback(results) {
   }
   for (var i = old_length-1; i > 0; i--) if( !updated[i] ) server_list.remove(i);
   stdout.println("refreshed servers");
+}
+
+function update_launcher() {
+  view.update_launcher(launcher_progress);
+  show_overlay("launcher-update.htm");
+}
+
+function prompt_launcher_update(new_version) {
+  output_variables["popup_title"] = "A new launcher update is available";
+  output_variables["popup_message"] = "Version " + new_version + " of the launcher is now available!";
+  output_variables["popup_green"] = "UPDATE";
+  show_overlay("popup_ok.htm");
+  $(#overlay button.green).@["onclick"] = "update_launcher();";
+}
+
+function onProgress(progress) {
+  output_variables["hash_progress"] = ( progress["hash"][1] != 0 )? progress["hash"][0]*100 / progress["hash"][1]:0;
+  output_variables["download_progress"] = ( progress["download"][1] != 0 )? progress["download"][0]*100 / progress["download"][1]:0;
+  output_variables["patch_progress"] = ( progress["patch"][1] != 0 )? progress["patch"][0]*100 / progress["patch"][1]:0;
+  output_variables["update_progress"] = output_variables["hash_progress"]/3 + output_variables["download_progress"]/3 + output_variables["patch_progress"]/3;
+/*
+  if ( progress["hash"][1] != 0 ) {
+    $(#hash-bar > #progress-bar).style["width"] = (progress["hash"][0]*100 / progress["hash"][1]) + "%";
+    $(#hash-bar > p).html = progress["hash"][0] + "/" + progress["hash"][1];
+  }
+  if ( progress["download"][1] != 0 ) {
+    $(#download-bar > #progress-bar).style["width"] = (progress["download"][0]*100 / progress["download"][1]) + "%";
+    $(#download-bar > p).html = progress["download"][0]/100 + " MB out of " + progress["download"][1]/100 + " MB Downloaded, "  + progress["download_speed"] + " Mb/s";
+  }
+  if ( progress["patch"][1] != 0 ) {
+    $(#patch-bar > #progress-bar).style["width"] = (progress["patch"][0]*100 / progress["patch"][1]) + "%";
+    $(#patch-bar > p).html = "Patched "+progress["patch"][0]+" out of "+progress["patch"][1]+" files";
+  }
+  download_old = progress["download"][0];
+*/
+}
+
+function onUpdateCallback(update, skipDownloadQuestion) {
+  //view.check_launcher_update(prompt_launcher_update);
+  if ( update ) {
+    if ( skipDownloadQuestion ) {
+      output_variables["current_action"] = "Resuming game update";
+      view.start_download(onProgress, onUpdateDone, onUpdateErr);
+    } else {
+      output_variables["popup_title"] = "A new game update is available";
+      output_variables["popup_message"] = "Would you like to update?";
+      output_variables["popup_green"] = "UPDATE";
+      output_variables["popup_gray"] = "DELAY";
+      show_overlay("popup_choice.htm");
+      $(#overlay button.green).@["onclick"] = "view.start_download(onProgress, onUpdateDone, onUpdateErr); output_variables[\"current_action\"] = \"Updating game\"; show_overlay(\"verify.htm\"); ";
+    }
+  }
+}
+function onUpdateErr(err) {
+  output_variables["popup_title"] = "An error has occurred while updating";
+  output_variables["popup_message"] = "An error has occurred while updating the game, the error states: </p><p>" + err;
+  output_variables["popup_green"] = "Oh well...";
+  show_overlay("popup_ok.htm");
+}
+
+function onUpdateDone() {
+  view.get_servers(getServersCallback);
+  close_overlay();
 }

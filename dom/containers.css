@@ -265,8 +265,16 @@ div.titlebar > .title {
   padding: 5dip;
 }
 
-.child-padding>*,.child-padding>input|text{
+.child-margin>* {
   margin: 10dip;
+}
+
+.child-minor-margin>* {
+  margin: 6dip;
+}
+
+.child-padding>*{
+  padding: 3dip;
 }
 
 .padding {

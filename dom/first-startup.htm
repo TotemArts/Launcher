@@ -10,7 +10,7 @@
   function self.ready() {
     var (sx,sy,sw,sh) = View.screenBox(0,#workarea,#rectw);
     var (w,h) = $(div.username-window).box(#dimension, #content);
-    view.move( sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
+    view.move( sx + (sw - w) / 2, sy + (sh - h) / 2,452,204,false);
   }
 
   function setPlayername() {
@@ -37,7 +37,7 @@
   <div.titlebar>
     <h3.title.center.uppercase style="width: *;">Welcome back Commander!</h3>
   </div>
-  <div.padding.vflow>
+  <div.child-padding.vflow>
     <p>Username:</p>
     <input|text.username enter="setPlayername();" maxlength="30" />
     <button.green onclick="setPlayername();">SUBMIT</button>

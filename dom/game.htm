@@ -1,13 +1,13 @@
 <div.grid>
   <div.logo.hflow>
-    <div.vflow style="vertical-align: middle;">
+    <div.vflow.vcenter>
       <p style="font-size: 7pt;">Welcome</p>
       <h1.change overlay="username.htm">
         <output username/>
       </h1>
     </div>
     <div style="width:*;"></div>
-    <div style="flow: vertical; text-align: right; vertical-align: middle;">
+    <div.vflow.vcenter style="text-align: right;">
       <p style="font-size: 7pt; line-height:100%;">Version</p>
       <h1><output game_version/></h1>
     </div>
@@ -15,9 +15,9 @@
   <div.left-margin></div>
   <div.right-margin></div>
   <div.footer-margin>
-    <div.downloadBar><progressbar.indicator download_progress/></div>
-    <p.nowrap style="float:left;"><output current_action/>: <span.green><output download_progress/></span></p>
-    <p style="float:right;">more details</p>
+    <div.downloadBar><progressbar.indicator update_progress/></div>
+    <p.nowrap style="float:left;"><output current_action/>: <span.green><output update_progress/>%</span></p>
+    <p overlay="verify.htm" style="float:right;">more details</p>
   </div>
   <div>
     <div#not_chat.join_server>
@@ -37,7 +37,7 @@
           <div.handle.start style="left: -3dip;"></div>
           <div.handle.end style="left: auto; right: 0dip; margin-right: 0dip;"></div>
         </div>
-        <div.checkmark.checked></div><p.nowrap>Same version</p>
+        <checkmark.big.checked/><p.nowrap>Same version</p>
       </div>
       <div.body.mheight>
         <table.servers>
@@ -64,31 +64,31 @@
       <div.titlebar>
         <h3.title><output title_menu/></h3>
         <div.spacer></div>
-        <div.dropdown_menu.closed onclick="this.attributes.toggleClass('open');this.attributes.toggleClass('closed');$(div.body > div.menu).style['visibility'] = this.attributes.hasClass('closed')?'hidden':'visible';">JOIN SERVER</div>
+        <div.dropdown_menu.closed onclick="this.attributes.toggleClass('open');this.attributes.toggleClass('closed');$(div.body > div.menu).style['visibility'] = this.attributes.hasClass('closed')?'hidden':'visible';">PLAY ONLINE</div>
       </div>
       <div.body.hflow>
-        <div.menu style="visibility: hidden;">
+        <div.menu.child-padding style="visibility: hidden;">
           <div.padding overlay="ip.htm"><h4>JOIN IP</h4></div>
           <div.padding><h4>LAUNCH SERVER</h4></div>
           <div.padding><h4>PLAY ONLINE</h4></div>
           <div.padding><h4>PLAY SKIRMISH</h4></div>
         </div>
-        <div style="min-width: 2px; width:*; height: *; margin-right: 10px; ">
-          <h1 style="margin-bottom: 10px; font-size: 14px;">MAP: <span #map-name style="font-size: 14px; color: #CE5135;">FIELD X</span></h1>
-          <div style="flow:horizontal; height: *; vertical-align: bottom;">
-            <div style="width:*; height:*; flow:vertical;">
-              <p>Time Limit: <span #time-limit>0</span></p>
-              <p>Vehicle Limit: <span #vehicle-limit>0</span></p>
-              <p>Player Limit: <span #player-limit>0</span></p>
-              <p>Mine Limit: <span #mine-limit>0</span></p>
-              <p>Game Mode: <span #game-mode>CNC</span></p>
+        <div.expand style="margin-right: 10px; ">
+          <h3>MAP: <span #map-name style="color: #CE5135;"></span></h3>
+          <div.hflow style=" height: *; vertical-align: bottom;">
+            <div.vflow.expand.child-padding>
+              <p>Time Limit: <span #time-limit></span></p>
+              <p>Vehicle Limit: <span #vehicle-limit></span></p>
+              <p>Player Limit: <span #player-limit></span></p>
+              <p>Mine Limit: <span #mine-limit></span></p>
+              <p>Game Mode: <span #game-mode></span></p>
             </div>
-            <div style="width:*;height:*; flow:vertical;">
-              <p>Game Length: 0</p>
-              <p>Vehicle Limit: 8</p>
-              <p>Player Limit: 64</p>
-              <p>Mine Limit: 24</p>
-              <p>Game Mode: CNC</p>
+            <div.vflow.expand.child-padding>
+              <p><checkmark.checked#crates/>Crates</p>
+              <p><checkmark.checked#steam/>Steam Required</p>
+              <p><checkmark.checked#ranked/>Ranked</p>
+              <p><checkmark.checked#balance/>Auto Balance</p>
+              <p><checkmark.checked#infantry/>Infantry Only</p>
             </div>
           </div>
           <button.green style="bottom: 0px;" onclick="joinServer();">JOIN SERVER</button>
@@ -98,12 +98,12 @@
     </div>
     <div.chat>
       <div.titlebar>
-        <h3.title>Chat</h3>
+        <h3.title>[WIP] Chat</h3>
         <div.spacer></div>
-        <div style="white-space: nowrap; margin-right: 10dip;">connect disconnect users</div>
+        <div.nowrap style="margin-right: 10dip;">connect disconnect users</div>
       </div>
       <div.body.mheight>
-        <div.chat readonly="true" spellcheck="false" style="behavior: htmlarea;"></div>
+        <div.chat readonly="true" spellcheck="false" style="behavior: htmlarea;">Chat is still under construction, our apologies!</div>
         <div.reply>
           <input|text novalue="Type here..." enter="sendIrcMessage(this)" />
         </div>

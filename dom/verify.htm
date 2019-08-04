@@ -1,13 +1,14 @@
 <div.settings-window>
   <div.titlebar>
-    <h3.title.center.uppercase style="width: *;"><output current_action/>Verrifying game files</h3>
+    <h3.title.center.uppercase style="width: *;"><output current_action/></h3>
+    <div.close close></div>
   </div>
   <div.padding>
-    <p>Validating files: <span.green>100%</span></p>
-    <div.downloadBar><div.indicator></div></div>
-    <p>Dowloading: <span.green>10%</span></p>
-    <div.downloadBar><div.indicator></div></div>
-    <p>Applying: <span.green>0%</span></p>
-    <div.downloadBar><div.indicator></div></div>
+    <p>Validating files: <span.green><output hash_progress/>%</span></p>
+    <div.downloadBar><progressbar.indicator hash_progress></progressbar></div>
+    <p>Dowloading: <span.green><output download_progress/>%</span></p>
+    <div.downloadBar><progressbar.indicator download_progress></progressbar></div>
+    <p>Applying: <span.green><output patch_progress/>%</span></p>
+    <div.downloadBar><progressbar.indicator patch_progress></progressbar></div>
   </div>
 </div>

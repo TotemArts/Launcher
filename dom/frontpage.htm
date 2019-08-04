@@ -11,6 +11,7 @@
   include "functional.tis";
 
   function self.ready() {
+    view.check_update(onUpdateCallback, onUpdateErr);
     $(#content).load($(div.current).attributes["page"]);
     current_page = $(div.current);
 

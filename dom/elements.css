@@ -278,22 +278,38 @@ button.close:hover, div.close:hover {
   background-image: url(images/FilterUp_Rollover.svg);
 }
 
-div.checkmark {
-  width:20dip;
-  height:20dip;
+.vcenter {
+vertical-align: middle;
+}
+
+.expand {
+  width: *;
+  height: *;
+}
+
+checkmark {
+  display: inline-block;
+  width:14dip;
+  height:14dip;
   background-position: center center;
   background-repeat: no-repeat;
-  background-size: 10dip 10dip;
+  background-size: 9dip 9dip;
   background-color: #070e14;
   border-radius: 2dip;
 }
 
-div.checkmark.checked {
-  background-size: 12dip 12dip;
+checkmark.big {
+  width:20dip;
+  height:20dip;
+  background-size: 10dip 10dip;
+}
+
+checkmark.checked {
+  //background-size: 12dip 12dip;
   background-image: url(images/Tick.svg);
 }
 
-div.checkmark.crossed {
+checkmark.crossed {
   background-image: url(images/Cross.svg);
 }
 

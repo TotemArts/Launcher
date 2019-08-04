@@ -1,13 +1,15 @@
 namespace Emu {
   function loadOutput() {
-    for(var attribute in this.attributes) {
-      if(output_variables[attribute]) {
+    for(var name in this.attributes) {
+      var attribute = output_variables[name];
+      if(attribute==0) attribute = "0";
+      if(attribute) {
         switch (this.tag) {
           case "output":
-            this.value = output_variables[attribute];
+            this.value = attribute;
             break;
           case "progressbar":
-            this.style["width"] = output_variables[attribute];
+            this.style["width"] = attribute + "%";
             break;
         }
       }
@@ -16,8 +18,32 @@ namespace Emu {
 
   function server_table() {
     this.value = server_list;
+
+    this.tbody.currentIndex = 0;
+
+    this << event change {
+        var entry = this.value[this.tbody.currentIndex].data;
+        stdout.println(JSON.stringify(entry["Variables"]));
+        output_variables["title_menu"] = entry["Name"];
+        $(#mine-limit).html = entry["Variables"]["Mine Limit"].toString();
+        $(#player-limit).html = entry["Variables"]["Player Limit"].toString();
+        $(#vehicle-limit).html = entry["Variables"]["Vehicle Limit"].toString();
+        $(#time-limit).html = entry["Variables"]["Time Limit"].toString();
+        tick_checkmark($(checkmark#crates), entry["Variables"]["bSpawnCrates"]);
+        tick_checkmark($(checkmark#steam), entry["Variables"]["bSteamRequired"]);
+        tick_checkmark($(checkmark#ranked), true);
+        tick_checkmark($(checkmark#balance), entry["Variables"]["bAutoBalanceTeams"]);
+        tick_checkmark($(checkmark#infantry), false);
+        var currentMap = entry["Current Map"];
+        var mapName = currentMap.split("-",1);
+        $(#game-mode).html = mapName[0];
+        $(#map-name).html = mapName[1].replace("_", " ");
+      }
     this << event click $(th.sortable) {
       this.sortVlist();
+    }
+    this << event dblclick $(tr) {
+      joinServer();
     }
   }
 
