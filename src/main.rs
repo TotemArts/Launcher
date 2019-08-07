@@ -159,7 +159,7 @@ impl Handler {
       match result {
         Ok(()) => {
           println!("Calling remove unversioned done");
-          std::thread::spawn(move || {callback_done.call(None, &make_args!(false,false), None).unwrap();});
+          std::thread::spawn(move || {callback_done.call(None, &make_args!("validate"), None).unwrap();});
         },
         Err(e) => {
           use std::error::Error;
@@ -321,7 +321,7 @@ impl Handler {
       if VERSION != launcher_info.version_name && !launcher_info.prompted {
         std::thread::spawn(move || {callback.call(None, &make_args!(launcher_info.version_name), None).unwrap();});
       } else {
-        std::thread::spawn(move || {callback.call(None, &make_args!(), None).unwrap();});
+        std::thread::spawn(move || {callback.call(None, &make_args!(Value::null()), None).unwrap();});
       }
     } else {
       let patcher = self.patcher.clone();
@@ -333,7 +333,7 @@ impl Handler {
           if VERSION != launcher_info.version_name && !launcher_info.prompted {
             std::thread::spawn(move || {callback.call(None, &make_args!(launcher_info.version_name), None).unwrap();});
           } else {
-            std::thread::spawn(move || {callback.call(None, &make_args!(), None).unwrap();});
+            std::thread::spawn(move || {callback.call(None, &make_args!(Value::null()), None).unwrap();});
           }
         }
       });
@@ -345,7 +345,7 @@ impl Handler {
     if VERSION != launcher_info.version_name {
       std::thread::spawn(move || {
         //download file
-        let mut future;
+        let future;
         let download_contents = Arc::new(Mutex::new(Vec::new()));
         let download_contents_clone = download_contents.clone();
         {
@@ -363,14 +363,17 @@ impl Handler {
               let abort_in_error = res.status() != 200 && res.status() != 206;
               let content_length : usize = res.headers().get("content-length").unwrap().to_str().unwrap().parse().unwrap();
               let progress_clone = progress.clone();
-              std::thread::spawn(move || {progress.call(None, &make_args!(0 as i32, content_length as i32), None).unwrap();});
-              //println!("{:?}", res.headers().get("content-length").unwrap());
+              println!("{}", content_length.to_string());
+              std::thread::spawn(move || {progress.call(None, &make_args!(format!("[0, {}]", content_length)), None).unwrap();});
               *download_contents_clone.lock().unwrap() = Vec::with_capacity(content_length);
-
+              let mut downloaded = 0;
               res.into_body().for_each(move |chunk| {
-                let chunk_size : i32 = chunk.len() as i32;
+                let chunk_size = chunk.len();
+                downloaded += chunk_size;
                 let progress_clone = progress_clone.clone();
-                std::thread::spawn(move || {progress_clone.call(None, &make_args!(chunk_size, content_length as i32), None).unwrap();});
+                if downloaded*100/content_length > (downloaded-chunk_size)*100/content_length {
+                  std::thread::spawn(move || {progress_clone.call(None, &make_args!(format!("[{},{}]", downloaded.to_string(), content_length.to_string())), None).unwrap();});
+                }
                 download_contents_clone.lock().unwrap().write_all(&chunk).map_err(|e| panic!("Writer encountered an error: {}", e))
               })
             });
@@ -381,6 +384,9 @@ impl Handler {
               Ok(futures::Async::Ready(conn.take().unwrap()))
             });
             res.join(until_upgrade)
+          }).and_then(move |(result, client)| {
+            drop(client);
+            Ok(result)
           });
         }
         tokio::runtime::current_thread::Runtime::new().unwrap().block_on(future).unwrap();

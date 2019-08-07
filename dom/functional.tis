@@ -9,7 +9,7 @@ var output_variables = {
   "server_filter_players_min":0,
   "server_filter_players_max":64,
   "server_filter_same_game_version":true,
-  "current_action": "Downloading update",
+  "current_action": "None",
 };
 
 var server_list = [];
@@ -20,7 +20,6 @@ function variable_observer(changeDefinition) {
       element.value = changeDefinition[3]==0?"0":changeDefinition[3];
     }
     for(var element in $$(progressbar[{changeDefinition[2]}]) ) {
-      stdout.println("found progressbar");
       element.style["width"] = changeDefinition[3]==0?"0%":changeDefinition[3]+"%";
     }
   }
@@ -146,7 +145,8 @@ function getServersCallback(results) {
 }
 
 function launcher_progress(progress) {
-  output_variables["download_progress"] = progress[0].asFloat()*100.0 / progress[1].asFloat();
+  var values = JSON.parse(progress);
+  output_variables["download_progress"] = values[0] * 100 / values[1];
 }
 
 function update_launcher() {
@@ -156,7 +156,8 @@ function update_launcher() {
 }
 
 function check_launcher_result(new_version = undefined) {
-  if(new_version) {
+  stdout.println("result launcher: " + new_version);
+  if(new_version != null) {
     output_variables["popup_title"] = "A new launcher update is available";
     output_variables["popup_message"] = "Version " + new_version + " of the launcher is now available!";
     output_variables["popup_green"] = "UPDATE";
@@ -175,7 +176,6 @@ function onProgress(progress) {
 }
 
 function onUpdateCallback(reason) {
-  //view.check_launcher_update(prompt_launcher_update);
   switch (reason) {
     case "up_to_date":
       break;
@@ -197,6 +197,11 @@ function onUpdateCallback(reason) {
       show_overlay("popup_choice.htm");
       $(#overlay button.green).@["onclick"] = "view.start_download(onProgress, onUpdateDone, onUpdateErr); output_variables[\"current_action\"] = \"Updating game\"; show_overlay(\"verify.htm\"); ";
       break;
+    case "validate":
+      output_variables["current_action"] = "Validating game installation";
+      show_overlay("verify.htm");
+      view.start_download(onProgress, onUpdateDone, onUpdateErr);
+      break;
   }
 }
 
@@ -208,15 +213,26 @@ function onUpdateErr(err) {
 }
 
 function onUpdateDone() {
+  output_variables["game_version"] = view.get_game_version();
   view.get_servers(getServersCallback);
-  close_overlay();
+  output_variables["popup_title"] = "Finished!";
+  output_variables["popup_message"] = "The action \""+output_variables["current_action"]+"\" was completed succesfully!";
+  output_variables["popup_green"] = "OK";
+  show_overlay("popup_ok.htm");
+}
+
+function onError(err) {
+  output_variables["popup_title"] = "An error has occurred";
+  output_variables["popup_message"] = "An error has occurred during \""+output_variables["current_action"]+"\", the error states: </p><p>" + err;
+  output_variables["popup_green"] = "Oh well...";
+  show_overlay("popup_ok.htm");
 }
 
 function resetGameUI() {
-  output_variables["popup_title"] = "A new game update is available";
-  output_variables["popup_message"] = "Would you like to update?";
-  output_variables["popup_green"] = "UPDATE";
-  output_variables["popup_gray"] = "DELAY";
+  output_variables["popup_title"] = "Reset game?";
+  output_variables["popup_message"] = "This will reset your game to a newly installed state, removing any custom content that you may have, please confirm.";
+  output_variables["popup_green"] = "I AM SURE";
+  output_variables["popup_gray"] = "CANCEL";
   show_overlay("popup_choice.htm");
-  $(#overlay button.green).@["onclick"] = "view.remove_unversioned(onUpdateDone, onUpdateErr); output_variables[\"current_action\"] = \"Updating game\"; show_overlay(\"verify.htm\"); ";
+  $(#overlay button.green).@["onclick"] = "view.remove_unversioned(onUpdateCallback, onError); output_variables[\"current_action\"] = \"Removing unversioned files\"; show_overlay(\"verify.htm\"); ";
 }

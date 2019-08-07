@@ -6,8 +6,8 @@
   <div.child-margin.center.padding>
       <button.bool setting="skipMovies">SKIP CINEMATICS</button>
       <button.bool setting="64-bit-version">64 BIT MODE</button>
-      <button.setting onclick="verifyFiles();" overlay="verify.htm">VERIFY GAME INTEGRITY</button>
-      <button.setting overlay="resetGame.htm">RESET GAME SETTINGS</button>
+      <button.setting onclick="onUpdateCallback('validate');">VERIFY GAME INTEGRITY</button>
+      <button.setting onclick="resetGameUI();">RESET GAME SETTINGS</button>
   </div>
   <div.center.uppercase.padding style="font-size: 7pt;">Launcher version <output launcher_version/></div>
 </div>
