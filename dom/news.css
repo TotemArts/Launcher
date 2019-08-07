@@ -1,4 +1,5 @@
 img {
+  border-style: none;
   aspect: "Emu.remove_width";
 }
 
@@ -78,11 +79,6 @@ a[data-mentionid] {
     background: #3d6594;
 }
 
-
-img {
-    border-style: none;
-}
-
 b, strong {
     font-weight: inherit;
 }
@@ -138,13 +134,11 @@ img.ipsImage, img.ipsImage_thumbnailed {
   border: 0px;
   text-align: left;
   vertical-align: top;
-  min-width: 10dip;
-  max-width: 100%;
 }
 
 span.ipsEmoji, div.ipsEmoji {
-    font-weight: normal;
-    font-family: "Apple Color Emoji", "Segoe UI Emoji", "NotoColorEmoji", "Segoe UI Symbol", "Android Emoji", "EmojiSymbols";
+  font-weight: normal;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "NotoColorEmoji", "Segoe UI Symbol", "Android Emoji", "EmojiSymbols";
 }
 
 .ipsType_richText {
