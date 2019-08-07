@@ -1,10 +1,10 @@
 [package]
 name = "RenegadeX-Launcher"
-version = "0.7.2"
+version = "0.7.3"
 authors = ["SonnyX"]
 edition = "2018"
 build = "windows.rs"
-exclude = ["C:", "dom", "new", "dom/**", "new/**", "RenX-Launcher.zip", "sciter.dll", "SelfUpdateExecutor.exe", "RenegadeX-Launcher.ini", "RenegadeX-Launcher"]
+exclude = ["dom", "new", "dom/**", "new/**", "RenX-Launcher.zip", "sciter.dll", "SelfUpdateExecutor.exe", "RenegadeX-Launcher.ini", "RenegadeX-Launcher"]
 
 [dependencies]
 hyper = "^0.12.27"

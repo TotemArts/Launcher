@@ -11,7 +11,7 @@
   include "functional.tis";
 
   function self.ready() {
-    view.check_update(onUpdateCallback, onUpdateErr);
+    view.check_launcher_update(check_launcher_result);
     $(#content).load($(div.current).attributes["page"]);
     current_page = $(div.current);
 

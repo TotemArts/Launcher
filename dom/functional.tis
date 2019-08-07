@@ -145,17 +145,26 @@ function getServersCallback(results) {
   stdout.println("refreshed servers");
 }
 
+function launcher_progress(progress) {
+  output_variables["download_progress"] = progress[0].asFloat()*100.0 / progress[1].asFloat();
+}
+
 function update_launcher() {
   view.update_launcher(launcher_progress);
+  output_variables["current_action"] = "Installing launcher update";
   show_overlay("launcher-update.htm");
 }
 
-function prompt_launcher_update(new_version) {
-  output_variables["popup_title"] = "A new launcher update is available";
-  output_variables["popup_message"] = "Version " + new_version + " of the launcher is now available!";
-  output_variables["popup_green"] = "UPDATE";
-  show_overlay("popup_ok.htm");
-  $(#overlay button.green).@["onclick"] = "update_launcher();";
+function check_launcher_result(new_version = undefined) {
+  if(new_version) {
+    output_variables["popup_title"] = "A new launcher update is available";
+    output_variables["popup_message"] = "Version " + new_version + " of the launcher is now available!";
+    output_variables["popup_green"] = "UPDATE";
+    show_overlay("popup_ok.htm");
+    $(#overlay button.green).@["onclick"] = "update_launcher();";
+  } else {
+    view.check_update(onUpdateCallback, onUpdateErr);
+  }
 }
 
 function onProgress(progress) {
@@ -163,39 +172,34 @@ function onProgress(progress) {
   output_variables["download_progress"] = ( progress["download"][1] != 0 )? progress["download"][0]*100 / progress["download"][1]:0;
   output_variables["patch_progress"] = ( progress["patch"][1] != 0 )? progress["patch"][0]*100 / progress["patch"][1]:0;
   output_variables["update_progress"] = output_variables["hash_progress"]/3 + output_variables["download_progress"]/3 + output_variables["patch_progress"]/3;
-/*
-  if ( progress["hash"][1] != 0 ) {
-    $(#hash-bar > #progress-bar).style["width"] = (progress["hash"][0]*100 / progress["hash"][1]) + "%";
-    $(#hash-bar > p).html = progress["hash"][0] + "/" + progress["hash"][1];
-  }
-  if ( progress["download"][1] != 0 ) {
-    $(#download-bar > #progress-bar).style["width"] = (progress["download"][0]*100 / progress["download"][1]) + "%";
-    $(#download-bar > p).html = progress["download"][0]/100 + " MB out of " + progress["download"][1]/100 + " MB Downloaded, "  + progress["download_speed"] + " Mb/s";
-  }
-  if ( progress["patch"][1] != 0 ) {
-    $(#patch-bar > #progress-bar).style["width"] = (progress["patch"][0]*100 / progress["patch"][1]) + "%";
-    $(#patch-bar > p).html = "Patched "+progress["patch"][0]+" out of "+progress["patch"][1]+" files";
-  }
-  download_old = progress["download"][0];
-*/
 }
 
-function onUpdateCallback(update, skipDownloadQuestion) {
+function onUpdateCallback(reason) {
   //view.check_launcher_update(prompt_launcher_update);
-  if ( update ) {
-    if ( skipDownloadQuestion ) {
-      output_variables["current_action"] = "Resuming game update";
+  switch (reason) {
+    case "up_to_date":
+      break;
+    case "full":
+      output_variables["current_action"] = "Installing game";
+      show_overlay("verify.htm");
       view.start_download(onProgress, onUpdateDone, onUpdateErr);
-    } else {
+      break;
+    case "resume":
+      output_variables["current_action"] = "Resuming game installation";
+      show_overlay("verify.htm");
+      view.start_download(onProgress, onUpdateDone, onUpdateErr);
+      break;
+    case "patch":
       output_variables["popup_title"] = "A new game update is available";
       output_variables["popup_message"] = "Would you like to update?";
       output_variables["popup_green"] = "UPDATE";
       output_variables["popup_gray"] = "DELAY";
       show_overlay("popup_choice.htm");
       $(#overlay button.green).@["onclick"] = "view.start_download(onProgress, onUpdateDone, onUpdateErr); output_variables[\"current_action\"] = \"Updating game\"; show_overlay(\"verify.htm\"); ";
-    }
+      break;
   }
 }
+
 function onUpdateErr(err) {
   output_variables["popup_title"] = "An error has occurred while updating";
   output_variables["popup_message"] = "An error has occurred while updating the game, the error states: </p><p>" + err;
@@ -206,4 +210,13 @@ function onUpdateErr(err) {
 function onUpdateDone() {
   view.get_servers(getServersCallback);
   close_overlay();
+}
+
+function resetGameUI() {
+  output_variables["popup_title"] = "A new game update is available";
+  output_variables["popup_message"] = "Would you like to update?";
+  output_variables["popup_green"] = "UPDATE";
+  output_variables["popup_gray"] = "DELAY";
+  show_overlay("popup_choice.htm");
+  $(#overlay button.green).@["onclick"] = "view.remove_unversioned(onUpdateDone, onUpdateErr); output_variables[\"current_action\"] = \"Updating game\"; show_overlay(\"verify.htm\"); ";
 }

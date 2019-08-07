@@ -44,15 +44,19 @@ impl Handler {
       let update = &progress.lock().unwrap().update;
       match update {
         Update::UpToDate => {
-          std::thread::spawn(move || {done.call(None, &make_args!(false, false), None).unwrap();});
+          std::thread::spawn(move || {done.call(None, &make_args!("up_to_date"), None).unwrap();});
           return;
         },
-        Update::Resume | Update::Full => {
-          std::thread::spawn(move || {done.call(None, &make_args!(true, true), None).unwrap();});
+        Update::Full => {
+          std::thread::spawn(move || {done.call(None, &make_args!("full"), None).unwrap();});
+          return;
+        },
+        Update::Resume => {
+          std::thread::spawn(move || {done.call(None, &make_args!("resume"), None).unwrap();});
           return;
         },
         Update::Delta => {
-          std::thread::spawn(move || {done.call(None, &make_args!(true, false), None).unwrap();});
+          std::thread::spawn(move || {done.call(None, &make_args!("update"), None).unwrap();});
           return;
         },
         Update::Unknown => {}
@@ -69,13 +73,16 @@ impl Handler {
         }
         match update_available {
           Update::UpToDate => {
-            std::thread::spawn(move || {done.call(None, &make_args!(false, false), None).unwrap();});
+            std::thread::spawn(move || {done.call(None, &make_args!("up_to_date"), None).unwrap();});
           },
-          Update::Resume | Update::Full => {
-            std::thread::spawn(move || {done.call(None, &make_args!(true, true), None).unwrap();});
+          Update::Full => {
+            std::thread::spawn(move || {done.call(None, &make_args!("full"), None).unwrap();});
+          },
+          Update::Resume => {
+            std::thread::spawn(move || {done.call(None, &make_args!("resume"), None).unwrap();});
           },
           Update::Delta => {
-            std::thread::spawn(move || {done.call(None, &make_args!(true, false), None).unwrap();});
+            std::thread::spawn(move || {done.call(None, &make_args!("patch"), None).unwrap();});
           },
           Update::Unknown => {
             eprintln!("Update::Unknown");
@@ -309,9 +316,27 @@ impl Handler {
   }
 
   fn check_launcher_update(&self, callback: Value) {
-    let launcher_info = self.patcher.lock().unwrap().get_launcher_info().unwrap();
-    if VERSION != launcher_info.version_name && !launcher_info.prompted {
-      std::thread::spawn(move || {callback.call(None, &make_args!(launcher_info.version_name), None).unwrap();});
+    let launcher_info_option = self.patcher.lock().unwrap().get_launcher_info();
+    if let Some(launcher_info) = launcher_info_option {
+      if VERSION != launcher_info.version_name && !launcher_info.prompted {
+        std::thread::spawn(move || {callback.call(None, &make_args!(launcher_info.version_name), None).unwrap();});
+      } else {
+        std::thread::spawn(move || {callback.call(None, &make_args!(), None).unwrap();});
+      }
+    } else {
+      let patcher = self.patcher.clone();
+      std::thread::spawn(move || {
+        let mut patcher = patcher.lock().unwrap();
+        patcher.retrieve_mirrors().unwrap();
+        let launcher_info_option = patcher.get_launcher_info();
+        if let Some(launcher_info) = launcher_info_option {
+          if VERSION != launcher_info.version_name && !launcher_info.prompted {
+            std::thread::spawn(move || {callback.call(None, &make_args!(launcher_info.version_name), None).unwrap();});
+          } else {
+            std::thread::spawn(move || {callback.call(None, &make_args!(), None).unwrap();});
+          }
+        }
+      });
     }
   }
 
@@ -338,14 +363,14 @@ impl Handler {
               let abort_in_error = res.status() != 200 && res.status() != 206;
               let content_length : usize = res.headers().get("content-length").unwrap().to_str().unwrap().parse().unwrap();
               let progress_clone = progress.clone();
-              std::thread::spawn(move || {progress.call(None, &make_args!(Value::null(), content_length as i32), None).unwrap();});
+              std::thread::spawn(move || {progress.call(None, &make_args!(0 as i32, content_length as i32), None).unwrap();});
               //println!("{:?}", res.headers().get("content-length").unwrap());
               *download_contents_clone.lock().unwrap() = Vec::with_capacity(content_length);
 
               res.into_body().for_each(move |chunk| {
                 let chunk_size : i32 = chunk.len() as i32;
                 let progress_clone = progress_clone.clone();
-                std::thread::spawn(move || {progress_clone.call(None, &make_args!(chunk_size, Value::null()), None).unwrap();});
+                std::thread::spawn(move || {progress_clone.call(None, &make_args!(chunk_size, content_length as i32), None).unwrap();});
                 download_contents_clone.lock().unwrap().write_all(&chunk).map_err(|e| panic!("Writer encountered an error: {}", e))
               })
             });

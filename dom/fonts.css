@@ -35,8 +35,8 @@
   src: url("fonts/Ruda-Bold.ttf");
 }
 
-text, p, div {
-  font-family:Roboto, FreeMono;
+text, p, div, plaintext {
+  font-family: Roboto, FreeMono;
   font-size: 9pt;
   color: #C2E3EE;
 }
