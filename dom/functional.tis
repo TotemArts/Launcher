@@ -49,7 +49,7 @@ function close_overlay() {
   current_page.attributes.addClass("current");
   var overlay = $(#overlay);
   overlay.text = "";
-  overlay.style["visibility"] = "hidden";
+  overlay.style["visibility"] = "collapse";
   $(div.menuEntries).state.disabled = false;
 }
 

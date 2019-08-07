@@ -1,1 +1,35 @@
-hi
+<div.grid>
+  <div.logo.hflow>
+    <div.vflow.vcenter>
+      <p style="font-size: 7pt;">Welcome</p>
+      <h1.change overlay="username.htm">
+        <output username/>
+      </h1>
+    </div>
+    <div style="width:*;"></div>
+    <div.vflow.vcenter style="text-align: right;">
+      <p style="font-size: 7pt; line-height:100%;">Version</p>
+      <h1><output game_version/></h1>
+    </div>
+  </div>
+  <div.left-margin></div>
+  <div.right-margin></div>
+  <div.footer-margin></div>
+  <div.hflow>
+    <div.news_items_container.vflow>
+      <div.titlebar>
+        <h3.title>[WIP] Chat</h3>
+      </div>
+      <div.body.expand>
+      </div>
+    </div>
+    <div.news_container.vflow>
+      <div.titlebar>
+        <h3.title>[WIP] Chat</h3>
+      </div>
+      <div.body.expand>
+        <frame.extend #news style="overflow-y:auto;" content-style="news.css" src="item.htm"></frame>
+      </div>
+    </div>
+  </div>
+</div>

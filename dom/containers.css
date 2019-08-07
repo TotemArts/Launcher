@@ -96,7 +96,7 @@ div.titlebar > .title {
   width:*;
   height:100%;
   background-color: #000000a0;
-  visibility:hidden;
+  visibility:collapse;
   vertical-align: middle; 
 }
 
@@ -167,6 +167,16 @@ div.titlebar > .title {
 .join_server {
   min-width: 600dip;
   max-width: 700dip;
+}
+
+.news_items_container {
+  width: 400dip;
+  height: *;
+}
+
+.news_container {
+  width: 750dip;
+  height: *;
 }
 
 .logo {

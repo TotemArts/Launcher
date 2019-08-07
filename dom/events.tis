@@ -16,6 +16,25 @@ namespace Emu {
     }
   }
 
+  function remove_width() {
+    if (this.attributes.exists("width")) {
+      this.attributes["width"] = (this.attributes["width"].toNumber()/10) + "%";
+    }
+  }
+
+  function spoiler() {
+    var spoiler = this.next;
+    this << event click {
+      if (spoiler.style["visibility"] == "collapse") {
+        spoiler.style["visibility"] = "visible";
+      } else if (spoiler.style["visibility"] == "visible") {
+        spoiler.style["visibility"] = "collapse";
+      } else {
+        stdout.println("Weird");
+      }
+    }
+  }
+
   function server_table() {
     this.value = server_list;
 
