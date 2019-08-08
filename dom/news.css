@@ -1,5 +1,19 @@
-#news {
+#news p {
+  margin-top: 1em;
+  margin-bottom: 1em;
+  margin-left: 0;
+  margin-right: 0;
+  border-radius: 0;
   line-height: 1.5;
+}
+
+#news p:empty {
+  margin-top: 0;
+  margin-bottom: 0;
+  margin-left: 0;
+  margin-right: 0;
+  border-radius: 0;
+  line-height: 0;
 }
 
 #news img {
@@ -9,9 +23,10 @@
 }
 
 #news img[data-ratio] {
+  max-height: calc( self.width * self.data-ratio / 100 );
 }
 
-#news #ipsTabs_elTopic_76915_elTopic_76915_latestPost_panel, #elTopic_76915, #news .ipsPhotoPanel, #news hr {
+#news #ipsTabs_elTopic_topicID_elTopic_topicID_latestPost_panel, #elTopic_topicID, #news .ipsPhotoPanel, #news hr {
   visibility: none;
 }
 
@@ -103,7 +118,7 @@
 }
 
 
-#news #elTopic_76915_content {
+#news #elTopic_topicID_content {
   padding: 10dip;
   height: *;
   width: *;

@@ -202,6 +202,10 @@ div.titlebar > .title {
   width: 750dip;
 }
 
+.news_container .body {
+  padding-top: -5dip;
+}
+
 .logo {
   background-image: url(images/RenX_Logo.png);
   background-position: center;

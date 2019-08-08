@@ -24,7 +24,6 @@ function news_feed_item(text) {
 function news_feed_callback(text) {
   var arr = text.match(/(<item>(?:.|\n)+?<\/item>)/gm);
   var frame = $(frame);
-  stdout.println(arr.length);
   for (var i=0; i < arr.length; i++) {
     var text = arr[i];
     var item = {
@@ -51,19 +50,31 @@ function image_callback(bytes) {
       news_items[id].html = news_items[id].html.replace(image_regex, "data:image/webp;base64,"+image.toBytes(#webp, 100).toString("base64"));
     }
   } else {
-    news_items[id].html = news_items[id].html.replace(/<img.+?src="(http.+?)".+?>/, "");
+    var regex_string = "<img.+?src=\""+url.replace(/\//g, "\\/").replace(/\./g, "\\.")+"\".+?>";
+    var image_regex = new RegExp(regex_string, "g");
+    news_items[id].html = news_items[id].html.replace(image_regex, "");
   }
   var regex = /<img.+?src="(http.+?)".+?>/;
   var img = news_items[id].html.match(regex);
-  if (img) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1]});
+  if (img != null) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1],frame:this.frame});
+  else if (id==frame_id) {
+    if (this.frame != undefined ) {
+      this.frame.load(news_items[id].html, "");
+    } else {
+      $(#news).load(news_items[id].html, "");
+    }
+  }
 }
 
 function load_news_item(text) {
+  text = text.replace(/\r|\n|\s+|\t+/g, " ").replace(/\r|\n|\s+|\t+/g, " ").replace(/>\s</, "><");
+  var topicID = text.match(/data-topicID='(.+?)'/)[1];
+  text = text.replace(new RegExp("_"+topicID,"g"), "_topicID");
   news_items[id].html = text;
   if (this.frame) this.frame.load(text,"");
   var regex = /<img.+?src="(http.+?)".+?>/;
   var img = text.match(regex);
-  if (img) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1]});
+  if (img) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1],frame: this.frame});
 }
 
 function variable_observer(changeDefinition) {
