@@ -416,6 +416,32 @@ impl Handler {
       });
     }
   }
+  fn fetch_resource(&self, url: Value, mut headers_value: Value, callback: Value, mut context: Value) {
+    std::thread::spawn(move || {
+      let url = url.as_string().unwrap().parse::<hyper::Uri>().unwrap();
+      let https = hyper_tls::HttpsConnector::new(4).expect("TLS initialization failed");
+      let client = hyper::Client::builder().build::<_, hyper::Body>(https);
+      let mut req = hyper::Request::builder();
+      req.uri(url.clone()).header("host", url.host().unwrap()).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
+      headers_value.isolate();
+      for (key,value) in headers_value.items() {
+        req.header(key.as_string().unwrap().as_bytes(), value.as_string().unwrap());
+      }
+      let req = req.body(hyper::Body::empty()).unwrap();
+      let res = client.request(req).and_then(|res| {
+        use hyper::rt::*;
+        let abort_in_error = res.status() != 200 && res.status() != 206;
+        res.into_body().concat2()
+      }).and_then(move |body| {
+        std::thread::spawn(move || {
+          let text = ::std::str::from_utf8(&body).expect("Expected an utf-8 string");
+          callback.call(Some(context), &make_args!(text), None).unwrap();
+        });
+        Ok(())
+      });
+      tokio::runtime::current_thread::Runtime::new().unwrap().block_on(res).unwrap();
+    });
+  }
 }
 
 impl sciter::EventHandler for Handler {
@@ -438,6 +464,7 @@ impl sciter::EventHandler for Handler {
     fn get_launcher_version();
     fn check_launcher_update(Value);
     fn update_launcher(Value);
+    fn fetch_resource(Value,Value,Value,Value);
   }
 }
 

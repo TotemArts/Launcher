@@ -14,6 +14,35 @@ var output_variables = {
 
 var server_list = [];
 
+var news_items = [];
+
+function news_feed_item(text) {
+  var item = {
+    title: text.match(/<title>((?:.|\n)+?)<\/title>/m)[1],
+    link: text.match(/<link><!\[CDATA\[((?:.|\n)+?)(?:\?.+?)<\/link>/m)[1],
+    description: text.match(/<description>((?:.|\n)+?)<\/description>|<description\/()>/m)[1],
+    pubDate: text.match(/<pubDate>((?:.|\n)+?)<\/pubDate>/m)[1],
+  };
+  news_items.push(item);
+}
+
+function news_feed_callback(text) {
+  var arr = text.match(/(<item>(?:.|\n)+?<\/item>)/gm);
+  stdout.println(arr.length);
+  for (var i=0; i < arr.length; i++) {
+    news_feed_item(arr[i]);
+  }
+}
+
+function load_news_feed() {
+  view.fetch_resource("https://renegade-x.com/rss/1-recent-news.xml/", {Referer: "https://renegade-x.com/forums/forum/7-news/", X-Requested-With: "XMLHttpRequest", TE: "Trailers", Pragma: "no-cache"}, news_feed_callback, this);
+}
+
+function load_news_item(text) {
+  news_items[id].html = text;
+  frame.load(text,"");
+}
+
 function variable_observer(changeDefinition) {
   if(changeDefinition[0] == "update" || changeDefinition[0] == "add") {
     for(var element in $$(output[{changeDefinition[2]}]) ) {

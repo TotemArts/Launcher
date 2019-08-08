@@ -3,7 +3,7 @@ img {
   aspect: "Emu.remove_width";
 }
 
-.ipsPhotoPanel{
+#ipsTabs_elTopic_76915_elTopic_76915_latestPost_panel, #elTopic_76915, .ipsPhotoPanel, hr {
   visibility: none;
 }
 
@@ -125,7 +125,15 @@ body {
 }*/
 
 html {
-  background-color: #00070a30;
+  background-color: #0c151ee6;
+  width: *;
+  height: *;
+}
+
+body, #elTopic_76915_content {
+  padding: 10dip;
+  height: *;
+  width: *;
 }
 
 img.ipsImage, img.ipsImage_thumbnailed {
