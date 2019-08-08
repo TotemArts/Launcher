@@ -1,13 +1,21 @@
-img {
-  border-style: none;
-  aspect: "Emu.remove_width";
+#news {
+  line-height: 1.5;
 }
 
-#ipsTabs_elTopic_76915_elTopic_76915_latestPost_panel, #elTopic_76915, .ipsPhotoPanel, hr {
+#news img {
+  border-style: none;
+  aspect: "Emu.news_image";
+  image-rendering:optimize-quality;
+}
+
+#news img[data-ratio] {
+}
+
+#news #ipsTabs_elTopic_76915_elTopic_76915_latestPost_panel, #elTopic_76915, #news .ipsPhotoPanel, #news hr {
   visibility: none;
 }
 
-.ipsSpoiler, .ipsStyle_spoiler {
+#news .ipsSpoiler, #news .ipsStyle_spoiler {
     margin: 0;
     padding: 0px 15px;
     border-width: 1px 1px 1px 1px;
@@ -17,7 +25,7 @@ img {
     background: #fafafa;
 }
 
-.ipsSpoiler_header {
+#news .ipsSpoiler_header {
     background: #e5e5e5;
     margin: 0px -15px;
     padding: 5px 15px;
@@ -30,24 +38,24 @@ img {
 }
 
 
-.ipsSpoiler {
+#news .ipsSpoiler {
     border-color: rgba(53,186,255,.2);
     background: #05131b;
 }
 
-.ipsSpoiler_contents {
+#news .ipsSpoiler_contents {
   visibility: collapse;
 }
 
-.ipsSpoiler_header {
+#news .ipsSpoiler_header {
     background: rgba(53,186,255,.2);
     color: inherit;
 }
-.ipsImage_thumbnailed {
+#news .ipsImage_thumbnailed {
     border: 1px solid rgba(53,186,255,.2);
 }
 
-.ipsEmbeddedVideo iframe {
+#news .ipsEmbeddedVideo iframe {
     position: absolute;
     top: 0;
     left: 0;
@@ -55,21 +63,21 @@ img {
     height: 100%;
 }
 
-.ipsEmbeddedVideo {
+#news .ipsEmbeddedVideo {
     width: 100%;
     overflow: auto;
     position: relative;
 }
 
-.ipsEmbeddedVideo:not( video ) {
+#news .ipsEmbeddedVideo:not( video ) {
     padding-bottom: 56.25%;
     padding-top: 25px;
 }
-.ipsAttachLink_image, .ipsAttachLink {
+#news .ipsAttachLink_image, .ipsAttachLink {
     margin-bottom: 15px;
 }
 
-a[data-mentionid] {
+#news a[data-mentionid] {
     display: inline-block;
     border-radius: 2px;
     padding: 0px 5px;
@@ -79,64 +87,29 @@ a[data-mentionid] {
     background: #3d6594;
 }
 
-b, strong {
-    font-weight: inherit;
-}
-
-b, strong {
+#news b, #news strong {
     font-weight: bolder;
 }
-a {
+
+#news a {
     background-color: transparent;
-}
-html {
-    line-height: 1.15;
-}
-
-.ipsImage_thumbnailed {
-    border: 1px solid #E2E2E2;
-    padding: 1px;
-}
-
-a {
     color: #3d6594;
     text-decoration: none;
 }
 
-/*
-*, .ipsApp input[type="search"] {
-    box-sizing: border-box;
+#news .ipsImage_thumbnailed {
+    border: 1px solid #E2E2E2;
+    padding: 1px;
 }
 
-html {
-    min-height: 100%;
-    position: relative;
-    background-color: #fcfcfc;
-}
 
-body {
-    font-family: "Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-size: 13px;
-    line-height: 18px;
-    color: #353c41;
-    height: 100%;
-    background-color: #fcfcfc;
-    margin: 0;
-}*/
-
-html {
-  background-color: #0c151ee6;
-  width: *;
-  height: *;
-}
-
-body, #elTopic_76915_content {
+#news #elTopic_76915_content {
   padding: 10dip;
   height: *;
   width: *;
 }
 
-img.ipsImage, img.ipsImage_thumbnailed {
+#news img.ipsImage, #news img.ipsImage_thumbnailed {
   margin: 0px;
   padding: 0px;
   border: 0px;
@@ -144,11 +117,11 @@ img.ipsImage, img.ipsImage_thumbnailed {
   vertical-align: top;
 }
 
-span.ipsEmoji, div.ipsEmoji {
+#news span.ipsEmoji, #news div.ipsEmoji {
   font-weight: normal;
   font-family: "Apple Color Emoji", "Segoe UI Emoji", "NotoColorEmoji", "Segoe UI Symbol", "Android Emoji", "EmojiSymbols";
 }
 
-.ipsType_richText {
+#news .ipsType_richText {
   color: #a0a0a0;
 }

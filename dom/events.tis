@@ -16,24 +16,36 @@ namespace Emu {
     }
   }
 
-  function remove_width() {
+
+
+  function news_image() {
     if (this.attributes.exists("width")) {
       this.attributes["width"] = (this.attributes["width"].toNumber()/10) + "%";
     }
   }
 
   function render_news_items() {
-    var frame = $(frame)
+    var frame = $(#news)
     for (var i=0; i<news_items.length;i++) {
       this.append("<div id="+i+"><pubDate>"+news_items[i].pubDate+"</pubDate><p.title>"+news_items[i].title+"</p></div>");
       var element = this.lastNode;
       element << event click {
         var id = this.attributes["id"].toNumber();
+        frame_id = id;
         if (news_items[id].html) {
           frame.load(news_items[id].html, "");
         } else {
           view.fetch_resource(news_items[id].link+"?preview=1", {Referer: "https://renegade-x.com/forums/forum/7-news/", X-Requested-With: "XMLHttpRequest", TE: "Trailers", Pragma: "no-cache"}, load_news_item, {id: id, frame: frame});
         }
+      }
+    }
+    if (news_items.length > 0) {
+      var id = 0;
+      frame_id = 0;
+      if (news_items[0].html) {
+        frame.load(news_items[0].html, "");
+      } else {
+        view.fetch_resource(news_items[id].link+"?preview=1", {Referer: "https://renegade-x.com/forums/forum/7-news/", X-Requested-With: "XMLHttpRequest", TE: "Trailers", Pragma: "no-cache"}, load_news_item, {id: id, frame: frame});
       }
     }
   }
