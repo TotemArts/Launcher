@@ -462,19 +462,13 @@ impl Handler {
           std::thread::spawn(move || {
             if (!abort_in_error) {
               callback.call(Some(context), &make_args!(body.as_ref()), None).unwrap();
+            } else {
+              callback.call(Some(context), &make_args!(Value::null()), None).unwrap();
             }
           });
           Ok(())
         })
-      });/*
-      }).and_then(move |body| {
-        std::thread::spawn(move || {
-          if (!abort_in_error) {
-            callback.call(Some(context), &make_args!(body.as_ref()), None).unwrap();
-          }
-        });
-        Ok(())
-      });*/
+      });
       tokio::runtime::current_thread::Runtime::new().unwrap().block_on(res).unwrap();
     });
   }

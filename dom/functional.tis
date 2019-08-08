@@ -43,17 +43,18 @@ function load_news_feed() {
 }
 
 function image_callback(bytes) {
-  var image = Image.fromBytes(bytes);
-  if(image) {
-    var regex_string = url.replace(/\//g, "\\/").replace(/\./g, "\\.");
-    var image_regex = new RegExp(regex_string, "g");
-    //stdout.println("url: " + url);
-    //stdout.println("data:image/"+url.match(/.+\.(.+?.$)/)[1]+";base64,");
-    news_items[id].html = news_items[id].html.replace(image_regex, "data:image/webp;base64,"+image.toBytes(#webp, 100).toString("base64"));
+  if(bytes) {
+    var image = Image.fromBytes(bytes);
+    if(image) {
+      var regex_string = url.replace(/\//g, "\\/").replace(/\./g, "\\.");
+      var image_regex = new RegExp(regex_string, "g");
+      news_items[id].html = news_items[id].html.replace(image_regex, "data:image/webp;base64,"+image.toBytes(#webp, 100).toString("base64"));
+    }
+  } else {
+    news_items[id].html = news_items[id].html.replace(/<img.+?src="(http.+?)".+?>/, "");
   }
   var regex = /<img.+?src="(http.+?)".+?>/;
   var img = news_items[id].html.match(regex);
-  //stdout.println(img[0]);
   if (img) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1]});
 }
 
@@ -62,7 +63,6 @@ function load_news_item(text) {
   if (this.frame) this.frame.load(text,"");
   var regex = /<img.+?src="(http.+?)".+?>/;
   var img = text.match(regex);
-  //stdout.println(img[0]);
   if (img) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1]});
 }
 
