@@ -196,13 +196,15 @@ impl Handler {
       let res = client.request(req).and_then(|res| {
         use hyper::rt::*;
         let abort_in_error = res.status() != 200 && res.status() != 206;
-        res.into_body().concat2()
-      }).and_then(move |body| {
-        std::thread::spawn(move || {
-          let text : Value = ::std::str::from_utf8(&body).expect("Expected an utf-8 string").parse().unwrap();
-          callback.call(None, &make_args!(text), None).unwrap();
-        });
-        Ok(())
+        res.into_body().concat2().and_then(move |body| {
+          if !abort_in_error {
+            std::thread::spawn(move || {
+              let text : Value = ::std::str::from_utf8(&body).expect("Expected an utf-8 string").parse().unwrap();
+              callback.call(None, &make_args!(text), None).unwrap();
+            });
+          }
+          Ok(())
+        })
       });
       tokio::runtime::current_thread::Runtime::new().unwrap().block_on(res).unwrap();
     });
@@ -363,18 +365,21 @@ impl Handler {
               let abort_in_error = res.status() != 200 && res.status() != 206;
               let content_length : usize = res.headers().get("content-length").unwrap().to_str().unwrap().parse().unwrap();
               let progress_clone = progress.clone();
-              println!("{}", content_length.to_string());
               std::thread::spawn(move || {progress.call(None, &make_args!(format!("[0, {}]", content_length)), None).unwrap();});
               *download_contents_clone.lock().unwrap() = Vec::with_capacity(content_length);
               let mut downloaded = 0;
               res.into_body().for_each(move |chunk| {
                 let chunk_size = chunk.len();
-                downloaded += chunk_size;
-                let progress_clone = progress_clone.clone();
-                if downloaded*100/content_length > (downloaded-chunk_size)*100/content_length {
-                  std::thread::spawn(move || {progress_clone.call(None, &make_args!(format!("[{},{}]", downloaded.to_string(), content_length.to_string())), None).unwrap();});
+                if !abort_in_error {
+                  downloaded += chunk_size;
+                  let progress_clone = progress_clone.clone();
+                  if downloaded*100/content_length > (downloaded-chunk_size)*100/content_length {
+                    std::thread::spawn(move || {progress_clone.call(None, &make_args!(format!("[{},{}]", downloaded.to_string(), content_length.to_string())), None).unwrap();});
+                  }
+                  download_contents_clone.lock().unwrap().write_all(&chunk).map_err(|e| panic!("Writer encountered an error: {}", e))
+                } else {
+                  vec![].write_all(&chunk).map_err(|e| panic!("Writer encountered an error: {}", e))
                 }
-                download_contents_clone.lock().unwrap().write_all(&chunk).map_err(|e| panic!("Writer encountered an error: {}", e))
               })
             });
             // Put in an Option so poll_fn can return it later
@@ -416,34 +421,7 @@ impl Handler {
       });
     }
   }
-  fn fetch_resource(&self, url: Value, mut headers_value: Value, callback: Value, mut context: Value) {
-    std::thread::spawn(move || {
-      let url = url.as_string().unwrap().parse::<hyper::Uri>().unwrap();
-      let https = hyper_tls::HttpsConnector::new(4).expect("TLS initialization failed");
-      let client = hyper::Client::builder().build::<_, hyper::Body>(https);
-      let mut req = hyper::Request::builder();
-      req.uri(url.clone()).header("host", url.host().unwrap()).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
-      headers_value.isolate();
-      for (key,value) in headers_value.items() {
-        req.header(key.as_string().unwrap().as_bytes(), value.as_string().unwrap());
-      }
-      let req = req.body(hyper::Body::empty()).unwrap();
-      let res = client.request(req).and_then(|res| {
-        use hyper::rt::*;
-        let abort_in_error = res.status() != 200 && res.status() != 206;
-        res.into_body().concat2()
-      }).and_then(move |body| {
-        std::thread::spawn(move || {
-          let text = ::std::str::from_utf8(&body).expect("Expected an utf-8 string");
-          callback.call(Some(context), &make_args!(text), None).unwrap();
-        });
-        Ok(())
-      });
-      tokio::runtime::current_thread::Runtime::new().unwrap().block_on(res).unwrap();
-    });
-  }
-
-  fn fetch_image(&self, url: Value, mut headers_value: Value, callback: Value, mut context: Value) {
+  fn fetch_resource(&self, url: Value, mut headers_value: Value, callback: Value, context: Value) {
     std::thread::spawn(move || {
       let url = url.as_string().unwrap().parse::<hyper::Uri>().unwrap();
       let https = hyper_tls::HttpsConnector::new(4).expect("TLS initialization failed");
@@ -460,7 +438,38 @@ impl Handler {
         let abort_in_error = res.status() != 200 && res.status() != 206;
         res.into_body().concat2().and_then(move |body| {
           std::thread::spawn(move || {
-            if (!abort_in_error) {
+            if !abort_in_error {
+              let text = ::std::str::from_utf8(&body).expect("Expected an utf-8 string");
+              callback.call(Some(context), &make_args!(text), None).unwrap();
+            } else {
+              callback.call(Some(context), &make_args!(""), None).unwrap();
+            }
+          });
+          Ok(())
+        })
+      });
+      tokio::runtime::current_thread::Runtime::new().unwrap().block_on(res).unwrap();
+    });
+  }
+
+  fn fetch_image(&self, url: Value, mut headers_value: Value, callback: Value, context: Value) {
+    std::thread::spawn(move || {
+      let url = url.as_string().unwrap().parse::<hyper::Uri>().unwrap();
+      let https = hyper_tls::HttpsConnector::new(4).expect("TLS initialization failed");
+      let client = hyper::Client::builder().build::<_, hyper::Body>(https);
+      let mut req = hyper::Request::builder();
+      req.uri(url.clone()).header("host", url.host().unwrap()).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
+      headers_value.isolate();
+      for (key,value) in headers_value.items() {
+        req.header(key.as_string().unwrap().as_bytes(), value.as_string().unwrap());
+      }
+      let req = req.body(hyper::Body::empty()).unwrap();
+      let res = client.request(req).and_then(|res| {
+        use hyper::rt::*;
+        let abort_in_error = res.status() != 200 && res.status() != 206;
+        res.into_body().concat2().and_then(move |body| {
+          std::thread::spawn(move || {
+            if !abort_in_error {
               callback.call(Some(context), &make_args!(body.as_ref()), None).unwrap();
             } else {
               callback.call(Some(context), &make_args!(Value::null()), None).unwrap();

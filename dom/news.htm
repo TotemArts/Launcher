@@ -15,20 +15,22 @@
   <div.left-margin></div>
   <div.right-margin></div>
   <div.footer-margin></div>
-  <div.hflow.child-margin>
+  <div.hflow.child-margin.expand>
     <div.news_items_container.vflow>
       <div.titlebar>
-        <h3.title>[WIP] Chat</h3>
+        <h3.title.uppercase>Renegade-X news</h3>
       </div>
       <div.expand>
-        <div><pubDate>date</pubDate><p.title>title</p></div>
+        <div><pubDate>date</pubDate><p.type_news.uppercase>patch</p><p.title.uppercase>title</p></div>
       </div>
     </div>
     <div.news_container.vflow>
       <div.titlebar>
         <h3.title>[WIP] Chat</h3>
       </div>
-      <div.body.expand #news style="overflow-y:auto; margin-bottom: 10dip;"></div>
+      <div>
+        <div #news></div>
+      </div>
     </div>
   </div>
 </div>
