@@ -46,6 +46,28 @@
   background-color: #0c151ee6;
 }
 
+.news_item {
+  
+}
+
+pubDate {
+  display: block;
+  width: 30dip;
+  height: 30dip;
+  background-color: purple;
+  text-transform: uppercase;
+}
+
+p.news_title {
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+p.news_type {
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
 .news_container {
   width: 750dip;
   height: *;

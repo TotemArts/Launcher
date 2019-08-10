@@ -16,8 +16,6 @@ namespace Emu {
     }
   }
 
-
-
   function news_image() {
     if (this.attributes.exists("width")) {
       this.attributes["width"] = (this.attributes["width"].toNumber()/10) + "%";
@@ -25,16 +23,23 @@ namespace Emu {
   }
 
   function render_news_items() {
+
     var frame = $(#news)
     for (var i=0; i<news_items.length;i++) {
-      this.append("<div id="+i+"><pubDate>"+news_items[i].pubDate+"</pubDate><p.title>"+news_items[i].title+"</p></div>");
+      var date = new Date(news_items[i].pubDate);
+      var date_string = date.day + " " + date.monthName(false);
+      var type_string = "General";
+      if (news_items[i].title.match(/\sPATCH\s/i)) type_string = "Patch";
+      this.append("<div.news_item.hflow id="+i+"><pubDate>"+date_string+"</pubDate><div.vflow><p.news_type>"+type_string+"</p><p.news_title>"+news_items[i].title+"</p></div></div>");
       var element = this.lastNode;
       element << event click {
         var id = this.attributes["id"].toNumber();
         frame_id = id;
+        output_variables["current_news_title"] = news_items[id].title;
         if (news_items[id].html) {
           frame.load(news_items[id].html, "");
         } else {
+          frame.load("", "");
           view.fetch_resource(news_items[id].link+"?preview=1", {Referer: "https://renegade-x.com/forums/forum/7-news/", X-Requested-With: "XMLHttpRequest", TE: "Trailers", Pragma: "no-cache"}, load_news_item, {id: id, frame: frame});
         }
       }
@@ -42,9 +47,11 @@ namespace Emu {
     if (news_items.length > 0) {
       var id = 0;
       frame_id = 0;
+      output_variables["current_news_title"] = news_items[0].title;
       if (news_items[0].html) {
         frame.load(news_items[0].html, "");
       } else {
+        frame.load("", "");
         view.fetch_resource(news_items[id].link+"?preview=1", {Referer: "https://renegade-x.com/forums/forum/7-news/", X-Requested-With: "XMLHttpRequest", TE: "Trailers", Pragma: "no-cache"}, load_news_item, {id: id, frame: frame});
       }
     }
