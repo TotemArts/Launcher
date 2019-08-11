@@ -23,7 +23,6 @@ namespace Emu {
   }
 
   function render_news_items() {
-
     var frame = $(#news)
     for (var i=0; i<news_items.length;i++) {
       var date = new Date(news_items[i].pubDate);

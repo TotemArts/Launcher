@@ -42,21 +42,27 @@ function load_news_feed() {
 }
 
 function image_callback(bytes) {
-  if(bytes) {
+  if(bytes && bytes != null) {
     var image = Image.fromBytes(bytes);
-    if(image) {
+    if(image != null && url != null) {
       var regex_string = url.replace(/\//g, "\\/").replace(/\./g, "\\.");
       var image_regex = new RegExp(regex_string, "g");
       news_items[id].html = news_items[id].html.replace(image_regex, "data:image/webp;base64,"+image.toBytes(#webp, 100).toString("base64"));
+    } else {
+      stdout.println("Image at url \""+url+"\" appears to be damaged.");
+      var regex_string = "<img.+?src=\""+url.replace(/\//g, "\\/").replace(/\./g, "\\.")+"\".+?>";
+      var image_regex = new RegExp(regex_string, "g");
+      news_items[id].html = news_items[id].html.replace(image_regex, "<img/>");
     }
   } else {
+    stdout.println("Image at url \""+url+"\" appears to be missing.");
     var regex_string = "<img.+?src=\""+url.replace(/\//g, "\\/").replace(/\./g, "\\.")+"\".+?>";
     var image_regex = new RegExp(regex_string, "g");
-    news_items[id].html = news_items[id].html.replace(image_regex, "");
+    news_items[id].html = news_items[id].html.replace(image_regex, "<img/>");
   }
   var regex = /<img.+?src="(http.+?)".+?>/;
   var img = news_items[id].html.match(regex);
-  if (img != null) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1],frame:this.frame});
+  if (img != null && img[1] != null) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1],frame:this.frame});
   else if (id==frame_id) {
     if (this.frame != undefined ) {
       this.frame.load(news_items[id].html, "");
@@ -70,11 +76,18 @@ function load_news_item(text) {
   text = text.replace(/\r|\n|\s+|\t+/g, " ").replace(/\r|\n|\s+|\t+/g, " ").replace(/>\s</, "><");
   var topicID = text.match(/data-topicID='(.+?)'/)[1];
   text = text.replace(new RegExp("_"+topicID,"g"), "_topicID");
+  var regex_string = "<i?frame.+?(?:youtube[a-zA-Z0-9_\/\.]+?\/([a-zA-Z0-9_]+?)\\?.+?)?(?:\/>|<\/i?frame>)";
+  var matches = new RegExp(regex_string, "g").exec(text);
+  if (matches != null && matches.length > 1) {
+    text = text.replace(new RegExp(regex_string, "g"), "<a href=\"https://youtube.com/watch?v="+matches[1]+"\"><img src=\"https://img.youtube.com/vi/"+matches[1]+"/hqdefault.jpg\"/></a>");
+  } else if (matches != null) {
+    text = text.replace(new RegExp(regex_string, "g"), "");
+  }
   news_items[id].html = text;
   if (this.frame) this.frame.load(text,"");
   var regex = /<img.+?src="(http.+?)".+?>/;
   var img = text.match(regex);
-  if (img) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1],frame: this.frame});
+  if (img != null && img[1] != null) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1],frame: this.frame});
 }
 
 function variable_observer(changeDefinition) {
