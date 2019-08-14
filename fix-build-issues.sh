@@ -7,4 +7,5 @@ then
 else
   git submodule foreach --recursive git fetch
   git submodule foreach git merge origin master
+  git submodule update --init --recursive
 fi
