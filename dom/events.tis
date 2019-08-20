@@ -22,6 +22,16 @@ namespace Emu {
     }
   }
 
+  function chat_menu() {
+    var chat = $(div.chat);
+    stdout.println("Context menu enabled!");
+    if (chat.selection.html != "") {
+      stdout.println("Text selected: " + chat.selection.html);
+    } else {
+      this.$(#copy).state.disabled = true;
+    }
+  }
+
   function render_news_items() {
     var frame = $(#news)
     for (var i=0; i<news_items.length;i++) {

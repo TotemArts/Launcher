@@ -5,6 +5,8 @@ extern crate hyper;
 extern crate hyper_tls;
 extern crate tokio;
 extern crate tokio_tls;
+extern crate tokio_xmpp;
+extern crate xmpp_parsers;
 extern crate tokio_reactor;
 #[macro_use] extern crate futures;
 #[macro_use] extern crate sciter;
@@ -16,8 +18,6 @@ extern crate rand;
 
 extern crate unzip;
 
-mod chat;
-
 use std::sync::{Arc,Mutex};
 
 use sciter::Value;
@@ -27,36 +27,52 @@ use socket2::*;
 use renegadex_patcher::{Downloader,Update, traits::Error};
 use ini::Ini;
 use single_instance::SingleInstance;
-use hyper::rt::Future;
+//use hyper::rt::Future;
 use std::io::Write;
 
+
+use futures::{future, Future, Sink, Stream};
+use tokio_xmpp::{Client, Packet};
+use xmpp_parsers::{Jid, Element, TryFrom};
+use xmpp_parsers::message::{Body, Message, MessageType};
+use xmpp_parsers::presence::{Presence, Show as PresenceShow, Type as PresenceType};
+
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
+pub enum ChatEvent {
+  Presence,
+  Message(Option<Jid>, String),
+  Disconnect,
+}
+
 
 struct Handler {
   patcher: Arc<Mutex<Downloader>>,
   conf: Arc<Mutex<ini::Ini>>,
+  chat_handle: Option<std::thread::JoinHandle<()>>,
+  chat_sender: Option<futures::sync::mpsc::UnboundedSender<ChatEvent>>,
 }
 
 impl Handler {
   fn check_update(&self, done: sciter::Value, error: sciter::Value) {
     {
-      let progress = self.patcher.clone().lock().unwrap().get_progress();
-      let update = &progress.lock().unwrap().update;
+      let progress = self.patcher.clone().lock().expect("main.rs:59:Could not lock self.patcher.").get_progress();
+      let update = &progress.lock().expect("main.rs:60:Could not lock &progress.").update;
       match update {
         Update::UpToDate => {
-          std::thread::spawn(move || {done.call(None, &make_args!("up_to_date"), None).unwrap();});
+          std::thread::spawn(move || {done.call(None, &make_args!("up_to_date"), None).expect("main.rs:63:Could not spawn thread");});
           return;
         },
         Update::Full => {
-          std::thread::spawn(move || {done.call(None, &make_args!("full"), None).unwrap();});
+          std::thread::spawn(move || {done.call(None, &make_args!("full"), None).expect("main.rs:67");});
           return;
         },
         Update::Resume => {
-          std::thread::spawn(move || {done.call(None, &make_args!("resume"), None).unwrap();});
+          std::thread::spawn(move || {done.call(None, &make_args!("resume"), None).expect("main.rs:71");});
           return;
         },
         Update::Delta => {
-          std::thread::spawn(move || {done.call(None, &make_args!("update"), None).unwrap();});
+          std::thread::spawn(move || {done.call(None, &make_args!("update"), None).expect("main.rs:75");});
           return;
         },
         Update::Unknown => {}
@@ -67,22 +83,22 @@ impl Handler {
       let check_update = || -> Result<(), Error> {
         let update_available : Update;
         {
-          let mut patcher = patcher.lock().unwrap();
+          let mut patcher = patcher.lock().expect("main.rs:86");
           patcher.retrieve_mirrors()?;
           update_available = patcher.update_available()?;
         }
         match update_available {
           Update::UpToDate => {
-            std::thread::spawn(move || {done.call(None, &make_args!("up_to_date"), None).unwrap();});
+            std::thread::spawn(move || {done.call(None, &make_args!("up_to_date"), None).expect("main.rs:92");});
           },
           Update::Full => {
-            std::thread::spawn(move || {done.call(None, &make_args!("full"), None).unwrap();});
+            std::thread::spawn(move || {done.call(None, &make_args!("full"), None).expect("main.rs:95");});
           },
           Update::Resume => {
-            std::thread::spawn(move || {done.call(None, &make_args!("resume"), None).unwrap();});
+            std::thread::spawn(move || {done.call(None, &make_args!("resume"), None).expect("main.rs:98");});
           },
           Update::Delta => {
-            std::thread::spawn(move || {done.call(None, &make_args!("patch"), None).unwrap();});
+            std::thread::spawn(move || {done.call(None, &make_args!("patch"), None).expect("main.rs:101");});
           },
           Update::Unknown => {
             eprintln!("Update::Unknown");
@@ -95,20 +111,20 @@ impl Handler {
         use std::error::Error;
         let err = result.unwrap_err();
         eprintln!("{:#?}", err.description());
-        std::thread::spawn(move || {error.call(None, &make_args!(err.description()), None).unwrap();});
+        std::thread::spawn(move || {error.call(None, &make_args!(err.description()), None).expect("main.rs:114");});
       }
     });
   }
 
   fn start_download(&self, callback: sciter::Value, callback_done: sciter::Value, error: sciter::Value) {
-    let progress = self.patcher.clone().lock().unwrap().get_progress();
+    let progress = self.patcher.clone().lock().expect("main.rs:120").get_progress();
 		std::thread::spawn(move || {
       let mut not_finished = true;
       let mut last_download_size : u64 = 0;
       while not_finished {
         std::thread::sleep(std::time::Duration::from_millis(500));
         {
-          let progress_locked = progress.lock().unwrap();
+          let progress_locked = progress.lock().expect("main.rs:127");
           let me : Value = format!(
             "{{\"hash\": [{},{}],\"download\": [{},{}],\"patch\": [{},{}],\"download_speed\": {}}}",
             progress_locked.hashes_checked.0.clone(),
@@ -118,11 +134,11 @@ impl Handler {
             progress_locked.patch_files.0.clone(),
             progress_locked.patch_files.1.clone(),
             (progress_locked.download_size.0 - last_download_size) as f64 / 500000.0
-          ).parse().unwrap();
+          ).parse().expect("main.rs:137");
           last_download_size = progress_locked.download_size.0.clone();
           not_finished = !progress_locked.finished_patching;
           let callback_clone = callback.clone();
-          std::thread::spawn(move || {callback_clone.call(None, &make_args!(me), None).unwrap();});
+          std::thread::spawn(move || {callback_clone.call(None, &make_args!(me), None).expect("main.rs:141");});
         }
       }
 		});
@@ -130,19 +146,19 @@ impl Handler {
     std::thread::spawn(move || {
       let result : Result<(), renegadex_patcher::traits::Error>;
       {
-        let mut locked_patcher = patcher.lock().unwrap();
+        let mut locked_patcher = patcher.lock().expect("main.rs:149");
         locked_patcher.poll_progress();
         result = locked_patcher.download();
       }
       match result {
         Ok(()) => {
           println!("Calling download done");
-          std::thread::spawn(move || {callback_done.call(None, &make_args!(false,false), None).unwrap();});
+          std::thread::spawn(move || {callback_done.call(None, &make_args!(false,false), None).expect("main.rs:156");});
         },
         Err(e) => {
           use std::error::Error;
           eprintln!("{:#?}", e.description());
-          std::thread::spawn(move || {error.call(None, &make_args!(e.description()), None).unwrap();});
+          std::thread::spawn(move || {error.call(None, &make_args!(e.description()), None).expect("main.rs:161");});
         }
       };
     });
@@ -153,18 +169,18 @@ impl Handler {
     std::thread::spawn(move || {
       let result : Result<(), renegadex_patcher::traits::Error>;
       {
-        let mut locked_patcher = patcher.lock().unwrap();
+        let mut locked_patcher = patcher.lock().expect("main.rs:172");
         result = locked_patcher.remove_unversioned();
       }
       match result {
         Ok(()) => {
           println!("Calling remove unversioned done");
-          std::thread::spawn(move || {callback_done.call(None, &make_args!("validate"), None).unwrap();});
+          std::thread::spawn(move || {callback_done.call(None, &make_args!("validate"), None).expect("main.rs:178");});
         },
         Err(e) => {
           use std::error::Error;
           eprintln!("Error in remove_unversioned(): {:#?}", e.description());
-          std::thread::spawn(move || {error.call(None, &make_args!(e.description()), None).unwrap();});
+          std::thread::spawn(move || {error.call(None, &make_args!(e.description()), None).expect("main.rs:183");});
         }
       };
     });
@@ -172,51 +188,51 @@ impl Handler {
 
   fn get_playername(&self) -> String {
     let conf_unlocked = self.conf.clone();
-    let conf = conf_unlocked.lock().unwrap();
-    let section = conf.section(Some("RenX_Launcher".to_owned())).unwrap();
-    section.get("PlayerName").unwrap().to_string()
+    let conf = conf_unlocked.lock().expect("main.rs:191");
+    let section = conf.section(Some("RenX_Launcher".to_owned())).expect("main.rs:192");
+    section.get("PlayerName").expect("main.rs:193").to_string()
   }
 
   fn set_playername(&self, username: sciter::Value) {
     let conf_unlocked = self.conf.clone();
-    let mut conf = conf_unlocked.lock().unwrap();
+    let mut conf = conf_unlocked.lock().expect("main.rs:198");
     let mut section = conf.with_section(Some("RenX_Launcher".to_owned()));
-    section.set("PlayerName", username.as_string().unwrap());
-    conf.write_to_file("RenegadeX-Launcher.ini").unwrap();
+    section.set("PlayerName", username.as_string().expect("main.rs:200"));
+    conf.write_to_file("RenegadeX-Launcher.ini").expect("main.rs:201");
   }
 
   fn get_servers(&self, callback: sciter::Value) {
     std::thread::spawn(move || {
-      let url = "https://serverlist.renegade-x.com/servers.jsp?id=launcher".parse::<hyper::Uri>().unwrap();
+      let url = "https://serverlist.renegade-x.com/servers.jsp?id=launcher".parse::<hyper::Uri>().expect(concat!(file!(),":",line!()));
       let https = hyper_tls::HttpsConnector::new(4).expect("TLS initialization failed");
       let client = hyper::Client::builder().build::<_, hyper::Body>(https);
       let mut req = hyper::Request::builder();
-      req.uri(url.clone()).header("host", url.host().unwrap()).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
-      let req = req.body(hyper::Body::empty()).unwrap();
+      req.uri(url.clone()).header("host", url.host().expect("main.rs:210")).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
+      let req = req.body(hyper::Body::empty()).expect("main.rs:211");
       let res = client.request(req).and_then(|res| {
         use hyper::rt::*;
         let abort_in_error = res.status() != 200 && res.status() != 206;
         res.into_body().concat2().and_then(move |body| {
           if !abort_in_error {
             std::thread::spawn(move || {
-              let text : Value = ::std::str::from_utf8(&body).expect("Expected an utf-8 string").parse().unwrap();
-              callback.call(None, &make_args!(text), None).unwrap();
+              let text : Value = ::std::str::from_utf8(&body).expect("Expected an utf-8 string").parse().expect("main.rs:218");
+              callback.call(None, &make_args!(text), None).expect("main.rs:219");
             });
           }
           Ok(())
         })
       });
-      tokio::runtime::current_thread::Runtime::new().unwrap().block_on(res).unwrap();
+      tokio::runtime::current_thread::Runtime::new().expect("main.rs:225:runtime").block_on(res).expect("main.rs:225:block_on");
     });
   }
 
   fn get_ping(&self, server: sciter::Value, callback: sciter::Value) {
     std::thread::spawn(move || {
-      let socket = Socket::new(Domain::ipv4(), Type::raw(), Some(Protocol::icmpv4())).unwrap();
+      let socket = Socket::new(Domain::ipv4(), Type::raw(), Some(Protocol::icmpv4())).expect("main.rs:231:new socket");
       use std::str::FromStr;
-      let sock_addr = std::net::SocketAddr::from_str(&server.as_string().unwrap()).unwrap().into();
+      let sock_addr = std::net::SocketAddr::from_str(&server.as_string().expect("main.rs:233:as_string")).expect("main.rs:233:from_str").into();
       let start_time = std::time::Instant::now();
-      socket.connect_timeout(&sock_addr, std::time::Duration::from_millis(500)).unwrap();
+      socket.connect_timeout(&sock_addr, std::time::Duration::from_millis(500)).expect("main.rs:235:timeout");
       let mut code = [0x08, 0x00, 0x00, 0x00, rand::random::<u8>(), rand::random::<u8>(), 0x00, 0x01, 0x02, 0x59, 0x9d, 0x5c, 0x00, 0x00, 0x00, 0x00, 0x98, 0x61, 0x0c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37];
       let mut checksum : u64 = 0;
       for i in (0..code.len()).step_by(2) {
@@ -232,14 +248,14 @@ impl Handler {
       let checksum = (checksum as u16).to_be_bytes();
       code[2] = checksum[0];
       code[3] = checksum[1];
-      socket.send(&code).unwrap();
+      socket.send(&code).expect("main.rs:251:send");
       let mut buf : [u8; 100] = [0; 100];
-      socket.set_read_timeout(Some(std::time::Duration::from_millis(500))).unwrap();
-      socket.recv(&mut buf).unwrap();
+      socket.set_read_timeout(Some(std::time::Duration::from_millis(500))).expect("main.rs:253:read_timeout");
+      socket.recv(&mut buf).expect("main.rs:254:recv");
       let elapsed = start_time.elapsed().as_millis() as i32;
       if buf[36..36+48] == code[16..] {
         //println!("{:#?}", &elapsed);
-        std::thread::spawn(move || {callback.call(None, &make_args!(server, elapsed), None).unwrap();});
+        std::thread::spawn(move || {callback.call(None, &make_args!(server, elapsed), None).expect("main.rs:258:callback");});
       } else {
         //println!("{:?}", &buf[36..36+48]);
         //println!("{:?}", &code[16..]);
@@ -249,13 +265,13 @@ impl Handler {
 
 
   fn get_game_version(&self) -> String {
-    let conf = self.conf.lock().unwrap();
-    let section = conf.section(Some("RenX_Launcher".to_owned())).unwrap();
-    let game_location = section.get("GameLocation").unwrap().clone();
+    let conf = self.conf.lock().expect("main.rs:268");
+    let section = conf.section(Some("RenX_Launcher".to_owned())).expect("main.rs:269");
+    let game_location = section.get("GameLocation").expect("main.rs:270").clone();
     match Ini::load_from_file(format!("{}/UDKGame/Config/DefaultRenegadeX.ini", game_location)) {
       Ok(conf) => {
-        let section = conf.section(Some("RenX_Game.Rx_Game".to_owned())).unwrap();
-        section.get("GameVersion").unwrap().clone()
+        let section = conf.section(Some("RenX_Game.Rx_Game".to_owned())).expect("main.rs:273");
+        section.get("GameVersion").expect("main.rs:274").clone()
       },
       Err(_e) => {
         "Not installed".to_string()
@@ -264,15 +280,15 @@ impl Handler {
   }
 
   fn launch_game(&self, server: Value, done: Value, error: Value) {
-    let conf = self.conf.lock().unwrap();
-    let section = conf.section(Some("RenX_Launcher".to_owned())).unwrap();
-    let game_location = section.get("GameLocation").unwrap().clone();
-    let playername = section.get("PlayerName").unwrap().clone();
-    let startup_movie_disabled = section.get("skipMovies").unwrap().clone() == "true";
-    let bit_version = if section.get("64-bit-version").unwrap().clone() == "true" { "64" } else { "32" };
+    let conf = self.conf.lock().expect("main.rs:283");
+    let section = conf.section(Some("RenX_Launcher".to_owned())).expect("main.rs:284");
+    let game_location = section.get("GameLocation").expect("main.rs:285").clone();
+    let playername = section.get("PlayerName").expect("main.rs:286").clone();
+    let startup_movie_disabled = section.get("skipMovies").expect(concat!(file!(),":",line!())).clone() == "true";
+    let bit_version = if section.get("64-bit-version").expect(concat!(file!(),":",line!())).clone() == "true" { "64" } else { "32" };
     drop(conf);
     std::thread::spawn(move || {
-      let mut args = vec![server.as_string().unwrap(), format!("-ini:UDKGame:DefaultPlayer.Name={}", playername)];
+      let mut args = vec![server.as_string().expect(concat!(file!(),":",line!())), format!("-ini:UDKGame:DefaultPlayer.Name={}", playername)];
       if startup_movie_disabled {
         args.push("-nomoviestartup".to_string());
       }
@@ -284,16 +300,16 @@ impl Handler {
         Ok(mut child) => {
           let output = child.wait().expect("Failed to wait on game-instance to finish");
           if output.success() {
-            std::thread::spawn(move || {done.call(None, &make_args!(), None).unwrap();});
+            std::thread::spawn(move || {done.call(None, &make_args!(), None).expect(concat!(file!(),":",line!()));});
           } else {
             //eprintln!("{:#?}", output.unwrap_err().description());
-            std::thread::spawn(move || {error.call(None, &make_args!(format!("The game exited in a crash: {}", output.code().unwrap())), None).unwrap();});
+            std::thread::spawn(move || {error.call(None, &make_args!(format!("The game exited in a crash: {}", output.code().expect(concat!(file!(),":",line!())))), None).expect(concat!(file!(),":",line!()));});
           }
         },
         Err(e) => {
           use std::error::Error;
           eprintln!("Failed to create child: {}", e.description());
-          std::thread::spawn(move || {error.call(None, &make_args!(format!("Failed to open game: {}", e.description())), None).unwrap();});
+          std::thread::spawn(move || {error.call(None, &make_args!(format!("Failed to open game: {}", e.description())), None).expect(concat!(file!(),":",line!()));});
         }
       };
     });
@@ -301,16 +317,16 @@ impl Handler {
 
   fn get_setting(&self, setting: sciter::Value) -> String {
     let conf_unlocked = self.conf.clone();
-    let conf = conf_unlocked.lock().unwrap();
-    let section = conf.section(Some("RenX_Launcher".to_owned())).unwrap();
-    section.get(&setting.as_string().unwrap()).unwrap().to_string()
+    let conf = conf_unlocked.lock().expect(concat!(file!(),":",line!()));
+    let section = conf.section(Some("RenX_Launcher".to_owned())).expect(concat!(file!(),":",line!()));
+    section.get(&setting.as_string().expect(concat!(file!(),":",line!()))).expect(concat!(file!(),":",line!())).to_string()
   }
   fn set_setting(&self, setting: sciter::Value, value: sciter::Value) {
     let conf_unlocked = self.conf.clone();
-    let mut conf = conf_unlocked.lock().unwrap();
+    let mut conf = conf_unlocked.lock().expect(concat!(file!(),":",line!()));
     let mut section = conf.with_section(Some("RenX_Launcher".to_owned()));
-    section.set(setting.as_string().unwrap(), value.as_string().unwrap());
-    conf.write_to_file("RenegadeX-Launcher.ini").unwrap();
+    section.set(setting.as_string().expect(concat!(file!(),":",line!())), value.as_string().expect(concat!(file!(),":",line!())));
+    conf.write_to_file("RenegadeX-Launcher.ini").expect(concat!(file!(),":",line!()));
   }
 
   fn get_launcher_version(&self) -> &str {
@@ -318,24 +334,24 @@ impl Handler {
   }
 
   fn check_launcher_update(&self, callback: Value) {
-    let launcher_info_option = self.patcher.lock().unwrap().get_launcher_info();
+    let launcher_info_option = self.patcher.lock().expect(concat!(file!(),":",line!())).get_launcher_info();
     if let Some(launcher_info) = launcher_info_option {
       if VERSION != launcher_info.version_name && !launcher_info.prompted {
-        std::thread::spawn(move || {callback.call(None, &make_args!(launcher_info.version_name), None).unwrap();});
+        std::thread::spawn(move || {callback.call(None, &make_args!(launcher_info.version_name), None).expect(concat!(file!(),":",line!()));});
       } else {
-        std::thread::spawn(move || {callback.call(None, &make_args!(Value::null()), None).unwrap();});
+        std::thread::spawn(move || {callback.call(None, &make_args!(Value::null()), None).expect(concat!(file!(),":",line!()));});
       }
     } else {
       let patcher = self.patcher.clone();
       std::thread::spawn(move || {
-        let mut patcher = patcher.lock().unwrap();
-        patcher.retrieve_mirrors().unwrap();
+        let mut patcher = patcher.lock().expect(concat!(file!(),":",line!()));
+        patcher.retrieve_mirrors().expect(concat!(file!(),":",line!()));
         let launcher_info_option = patcher.get_launcher_info();
         if let Some(launcher_info) = launcher_info_option {
           if VERSION != launcher_info.version_name && !launcher_info.prompted {
-            std::thread::spawn(move || {callback.call(None, &make_args!(launcher_info.version_name), None).unwrap();});
+            std::thread::spawn(move || {callback.call(None, &make_args!(launcher_info.version_name), None).expect(concat!(file!(),":",line!()));});
           } else {
-            std::thread::spawn(move || {callback.call(None, &make_args!(Value::null()), None).unwrap();});
+            std::thread::spawn(move || {callback.call(None, &make_args!(Value::null()), None).expect(concat!(file!(),":",line!()));});
           }
         }
       });
@@ -343,7 +359,7 @@ impl Handler {
   }
 
   fn update_launcher(&self, progress: Value) {
-    let launcher_info = self.patcher.lock().unwrap().get_launcher_info().unwrap();
+    let launcher_info = self.patcher.lock().expect(concat!(file!(),":",line!())).get_launcher_info().expect(concat!(file!(),":",line!()));
     if VERSION != launcher_info.version_name {
       std::thread::spawn(move || {
         //download file
@@ -351,22 +367,22 @@ impl Handler {
         let download_contents = Arc::new(Mutex::new(Vec::new()));
         let download_contents_clone = download_contents.clone();
         {
-          let url = launcher_info.patch_url.parse::<hyper::Uri>().unwrap();
-          let host_port = format!("{}:{}",url.host().unwrap(),url.port_u16().unwrap_or(80_u16));
-          let tcpstream = std::net::TcpStream::connect(host_port).unwrap();
+          let url = launcher_info.patch_url.parse::<hyper::Uri>().expect(concat!(file!(),":",line!()));
+          let host_port = format!("{}:{}",url.host().expect(concat!(file!(),":",line!())),url.port_u16().unwrap_or(80_u16));
+          let tcpstream = std::net::TcpStream::connect(host_port).expect(concat!(file!(),":",line!()));
           future = tokio::net::TcpStream::from_std(tcpstream, &tokio_reactor::Handle::default()).map(|tcp| {
             hyper::client::conn::handshake(tcp)
-          }).unwrap().and_then(move |(mut client, conn)| {
+          }).expect(concat!(file!(),":",line!())).and_then(move |(mut client, conn)| {
             let mut req = hyper::Request::builder();
-            req.uri(url.path()).header("host", url.host().unwrap()).header("User-Agent", "sonny-launcher/1.0");
-            let req = req.body(hyper::Body::empty()).unwrap();
+            req.uri(url.path()).header("host", url.host().expect(concat!(file!(),":",line!()))).header("User-Agent", "sonny-launcher/1.0");
+            let req = req.body(hyper::Body::empty()).expect(concat!(file!(),":",line!()));
             let res = client.send_request(req).and_then(move |res| {
               use hyper::rt::*;
               let abort_in_error = res.status() != 200 && res.status() != 206;
-              let content_length : usize = res.headers().get("content-length").unwrap().to_str().unwrap().parse().unwrap();
+              let content_length : usize = res.headers().get("content-length").expect(concat!(file!(),":",line!())).to_str().expect(concat!(file!(),":",line!())).parse().expect(concat!(file!(),":",line!()));
               let progress_clone = progress.clone();
-              std::thread::spawn(move || {progress.call(None, &make_args!(format!("[0, {}]", content_length)), None).unwrap();});
-              *download_contents_clone.lock().unwrap() = Vec::with_capacity(content_length);
+              std::thread::spawn(move || {progress.call(None, &make_args!(format!("[0, {}]", content_length)), None).expect(concat!(file!(),":",line!()));});
+              *download_contents_clone.lock().expect(concat!(file!(),":",line!())) = Vec::with_capacity(content_length);
               let mut downloaded = 0;
               res.into_body().for_each(move |chunk| {
                 let chunk_size = chunk.len();
@@ -374,9 +390,9 @@ impl Handler {
                   downloaded += chunk_size;
                   let progress_clone = progress_clone.clone();
                   if downloaded*100/content_length > (downloaded-chunk_size)*100/content_length {
-                    std::thread::spawn(move || {progress_clone.call(None, &make_args!(format!("[{},{}]", downloaded.to_string(), content_length.to_string())), None).unwrap();});
+                    std::thread::spawn(move || {progress_clone.call(None, &make_args!(format!("[{},{}]", downloaded.to_string(), content_length.to_string())), None).expect(concat!(file!(),":",line!()));});
                   }
-                  download_contents_clone.lock().unwrap().write_all(&chunk).map_err(|e| panic!("Writer encountered an error: {}", e))
+                  download_contents_clone.lock().expect(concat!(file!(),":",line!())).write_all(&chunk).map_err(|e| panic!("Writer encountered an error: {}", e))
                 } else {
                   vec![].write_all(&chunk).map_err(|e| panic!("Writer encountered an error: {}", e))
                 }
@@ -385,8 +401,8 @@ impl Handler {
             // Put in an Option so poll_fn can return it later
             let mut conn = Some(conn);
             let until_upgrade = futures::future::poll_fn(move || {
-              try_ready!(conn.as_mut().unwrap().poll_without_shutdown());
-              Ok(futures::Async::Ready(conn.take().unwrap()))
+              try_ready!(conn.as_mut().expect(concat!(file!(),":",line!())).poll_without_shutdown());
+              Ok(futures::Async::Ready(conn.take().expect(concat!(file!(),":",line!()))))
             });
             res.join(until_upgrade)
           }).and_then(move |(result, client)| {
@@ -394,45 +410,45 @@ impl Handler {
             Ok(result)
           });
         }
-        tokio::runtime::current_thread::Runtime::new().unwrap().block_on(future).unwrap();
+        tokio::runtime::current_thread::Runtime::new().expect(concat!(file!(),":",line!())).block_on(future).expect(concat!(file!(),":",line!()));
 
         //extract files
-        let download_contents = std::io::Cursor::new(Arc::try_unwrap(download_contents).unwrap().into_inner().unwrap());
-        let mut output_path = std::env::current_exe().unwrap();
+        let download_contents = std::io::Cursor::new(Arc::try_unwrap(download_contents).expect(concat!(file!(),":",line!())).into_inner().expect(concat!(file!(),":",line!())));
+        let mut output_path = std::env::current_exe().expect(concat!(file!(),":",line!()));
         output_path.pop();
         let target_dir = output_path.clone();
         output_path.pop();
         output_path.push("launcher_update_extracted/");
         println!("{:?}", output_path);
         let mut self_update_executor = output_path.clone();
-        unzip::Unzipper::new(download_contents, output_path).unzip().unwrap();
+        unzip::Unzipper::new(download_contents, output_path).unzip().expect(concat!(file!(),":",line!()));
 
         //run updater program and quit this.
         let working_dir = self_update_executor.clone();
         self_update_executor.push("SelfUpdateExecutor.exe");
-        let args = vec![format!("--pid={}",std::process::id()), format!("--target={}", target_dir.to_str().unwrap())];
+        let args = vec![format!("--pid={}",std::process::id()), format!("--target={}", target_dir.to_str().expect(concat!(file!(),":",line!())))];
         std::process::Command::new(self_update_executor)
                                      .current_dir(working_dir)
                                      .args(&args)
                                      .stdout(std::process::Stdio::piped())
                                      .stderr(std::process::Stdio::inherit())
-                                     .spawn().unwrap();
+                                     .spawn().expect(concat!(file!(),":",line!()));
         std::process::exit(0);
       });
     }
   }
   fn fetch_resource(&self, url: Value, mut headers_value: Value, callback: Value, context: Value) {
     std::thread::spawn(move || {
-      let url = url.as_string().unwrap().parse::<hyper::Uri>().unwrap();
+      let url = url.as_string().expect(concat!(file!(),":",line!())).parse::<hyper::Uri>().expect(concat!(file!(),":",line!()));
       let https = hyper_tls::HttpsConnector::new(4).expect("TLS initialization failed");
       let client = hyper::Client::builder().build::<_, hyper::Body>(https);
       let mut req = hyper::Request::builder();
-      req.uri(url.clone()).header("host", url.host().unwrap()).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
+      req.uri(url.clone()).header("host", url.host().expect(concat!(file!(),":",line!()))).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
       headers_value.isolate();
       for (key,value) in headers_value.items() {
-        req.header(key.as_string().unwrap().as_bytes(), value.as_string().unwrap());
+        req.header(key.as_string().expect(concat!(file!(),":",line!())).as_bytes(), value.as_string().expect(concat!(file!(),":",line!())));
       }
-      let req = req.body(hyper::Body::empty()).unwrap();
+      let req = req.body(hyper::Body::empty()).expect(concat!(file!(),":",line!()));
       let res = client.request(req).and_then(|res| {
         use hyper::rt::*;
         let abort_in_error = res.status() != 200 && res.status() != 206;
@@ -440,47 +456,144 @@ impl Handler {
           std::thread::spawn(move || {
             if !abort_in_error {
               let text = ::std::str::from_utf8(&body).expect("Expected an utf-8 string");
-              callback.call(Some(context), &make_args!(text), None).unwrap();
+              callback.call(Some(context), &make_args!(text), None).expect(concat!(file!(),":",line!()));
             } else {
-              callback.call(Some(context), &make_args!(""), None).unwrap();
+              callback.call(Some(context), &make_args!(""), None).expect(concat!(file!(),":",line!()));
             }
           });
           Ok(())
         })
       });
-      tokio::runtime::current_thread::Runtime::new().unwrap().block_on(res).unwrap();
+      tokio::runtime::current_thread::Runtime::new().expect(concat!(file!(),":",line!())).block_on(res).expect(concat!(file!(),":",line!()));
     });
   }
 
   fn fetch_image(&self, url: Value, mut headers_value: Value, callback: Value, context: Value) {
     std::thread::spawn(move || {
-      let url = url.as_string().unwrap().parse::<hyper::Uri>().unwrap();
+      let url = url.as_string().expect(concat!(file!(),":",line!())).parse::<hyper::Uri>().expect(concat!(file!(),":",line!()));
       let https = hyper_tls::HttpsConnector::new(4).expect("TLS initialization failed");
       let client = hyper::Client::builder().build::<_, hyper::Body>(https);
       let mut req = hyper::Request::builder();
-      req.uri(url.clone()).header("host", url.host().unwrap()).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
+      req.uri(url.clone()).header("host", url.host().expect(concat!(file!(),":",line!()))).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
       headers_value.isolate();
       for (key,value) in headers_value.items() {
-        req.header(key.as_string().unwrap().as_bytes(), value.as_string().unwrap());
+        req.header(key.as_string().expect(concat!(file!(),":",line!())).as_bytes(), value.as_string().expect(concat!(file!(),":",line!())));
       }
-      let req = req.body(hyper::Body::empty()).unwrap();
+      let req = req.body(hyper::Body::empty()).expect(concat!(file!(),":",line!()));
       let res = client.request(req).and_then(|res| {
         use hyper::rt::*;
         let abort_in_error = res.status() != 200 && res.status() != 206;
         res.into_body().concat2().and_then(move |body| {
           std::thread::spawn(move || {
             if !abort_in_error {
-              callback.call(Some(context), &make_args!(body.as_ref()), None).unwrap();
+              callback.call(Some(context), &make_args!(body.as_ref()), None).expect(concat!(file!(),":",line!()));
             } else {
-              callback.call(Some(context), &make_args!(Value::null()), None).unwrap();
+              callback.call(Some(context), &make_args!(Value::null()), None).expect(concat!(file!(),":",line!()));
             }
           });
           Ok(())
         })
       });
-      tokio::runtime::current_thread::Runtime::new().unwrap().block_on(res).unwrap();
+      tokio::runtime::current_thread::Runtime::new().expect(concat!(file!(),":",line!())).block_on(res).expect(concat!(file!(),":",line!()));
     });
   }
+
+  /* CHAT FUNCTIONS */
+  fn chat_connect(&mut self, callback: Value) {
+    let username : String = self.get_playername();
+    let (mut sender, receiver) = futures::sync::mpsc::unbounded();
+    self.chat_sender = Some(sender.clone());
+
+    self.chat_handle = Some(std::thread::spawn(move || {
+    let mut rt = tokio::runtime::current_thread::Runtime::new().expect("Could not create a new tokio runtime");
+    let jid = format!("{}@chat.renegade-x.com",username);
+    let password = "";
+    let client = tokio_xmpp::Client::new(&jid, password).expect("Could not unwrap xmpp client");
+
+
+    let (sink,stream) = client.split();
+
+    rt.spawn(
+      receiver.map(|packet| {
+        match packet {
+          ChatEvent::Presence => Packet::Stanza(make_presence()),
+          ChatEvent::Message(recipient, message) => Packet::Stanza(make_reply(recipient, &message)),
+          ChatEvent::Disconnect => Packet::StreamEnd,
+        }
+      }).forward(
+        sink.sink_map_err(|_| panic!("Pipe"))
+      ).map(|(receiver, mut sink)| {
+        drop(receiver);
+        let _ = sink.close();
+      }).map_err(|e| {
+        panic!("Send error: {:?}", e);
+      })
+    );
+    rt.block_on(
+      stream.for_each(move |event| {
+        if event.is_online() {
+          println!("Online!");
+          sender.start_send(ChatEvent::Presence).expect("Couldn't send presence to Sink");
+        } else if let Some(message) = event.into_stanza().and_then(|stanza| Message::try_from(stanza).ok()) {
+          match (message.from, message.bodies.get("")) {
+            (Some(ref from), Some(ref body)) if body.0 == "die" => {
+              println!("Secret die command triggered by {}", from);
+              sender.start_send(ChatEvent::Disconnect).expect("Couldn't send Disconnect event to Sink");
+            }
+            (Some(ref from), Some(ref body)) => {
+              if message.type_ != MessageType::Error {
+                // This is a message we'll echo
+                println!("{} send a message saying: \"{}\"", &from, &body.0);
+                callback.call(None, &make_args!(format!("{} send a message saying: \"{}\"", &from, &body.0).as_str()), None);
+                sender.start_send(ChatEvent::Message(Some(from.clone()), body.0.clone())).expect("Couldn't send Message to Sink");
+              }
+            }
+            _ => {}
+          }
+        }
+        future::ok(())
+      }).map_err(|err| { panic!(concat!(file!(),":",line!(),": {:?}"), err) })
+    ).expect("Error when waiting for future to finish");
+    }));
+  }
+
+  fn chat_disconnect(&mut self) {
+    if self.chat_handle.is_some() {
+      let _ = self.chat_sender.as_ref().expect(concat!(file!(),":",line!())).start_send(ChatEvent::Disconnect);
+    }
+  }
+
+  fn chat_reconnect(&mut self, callback: Value) {
+    self.chat_disconnect();
+    self.chat_handle.take().expect(concat!(file!(),":",line!())).join();
+    self.chat_connect(callback);
+  }
+
+  fn chat_message(&mut self, message: Value) -> bool {
+    if self.chat_handle.is_some() {
+      let result = self.chat_sender.as_ref().expect(concat!(file!(),":",line!())).start_send(ChatEvent::Message(None, message.as_string().expect(concat!(file!(),":",line!()))));
+      result.is_ok()
+    } else {
+      false
+    }
+  }
+  /* END OF CHAT FUNCTIONS */
+}
+
+fn make_presence() -> Element {
+    let mut presence = Presence::new(PresenceType::None);
+    presence.show = PresenceShow::Chat;
+    presence
+        .statuses
+        .insert(String::from("en"), String::from("Echoing messages."));
+    presence.into()
+}
+
+// Construct a chat <message/>
+fn make_reply(to: Option<Jid>, body: &str) -> Element {
+    let mut message = Message::new(to);
+    message.bodies.insert(String::new(), Body(body.to_owned()));
+    message.into()
 }
 
 impl sciter::EventHandler for Handler {
@@ -505,11 +618,16 @@ impl sciter::EventHandler for Handler {
     fn update_launcher(Value);
     fn fetch_resource(Value,Value,Value,Value);
     fn fetch_image(Value,Value,Value,Value);
+
+    fn chat_connect(Value);
+    fn chat_disconnect();
+    fn chat_reconnect(Value);
+    fn chat_message(Value);
   }
 }
 
 fn main() {
-  let instance = SingleInstance::new("RenegadeX-Launcher").unwrap();
+  let instance = SingleInstance::new("RenegadeX-Launcher").expect(concat!(file!(),":",line!()));
   assert!(instance.is_single());
 
   let conf = match Ini::load_from_file("RenegadeX-Launcher.ini") {
@@ -533,33 +651,33 @@ fn main() {
             sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SOCKET_IO as u8 | // Enables connecting to the inspector via Ctrl+Shift+I
             sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_EVAL as u8  // Enables execution of Eval inside of TI-Script
           )
-        ).unwrap(); 
+        ).expect(concat!(file!(),":",line!())); 
         let mut frame = sciter::Window::new();
         let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(Downloader::new()));
-        frame.event_handler(Handler{patcher: patcher.clone(), conf: conf_arc.clone()});
-        let mut current_path = std::env::current_exe().unwrap();
+        frame.event_handler(Handler{patcher: patcher.clone(), conf: conf_arc.clone(), chat_handle: None, chat_sender: None});
+        let mut current_path = std::env::current_exe().expect(concat!(file!(),":",line!()));
         current_path.pop();
-        frame.load_file(&format!("file://{}/dom/first-startup.htm", current_path.to_str().unwrap()));
+        frame.load_file(&format!("file://{}/dom/first-startup.htm", current_path.to_str().expect(concat!(file!(),":",line!()))));
         frame.run_app();
       }
       conf = match Arc::try_unwrap(conf_arc) {
         Ok(conf_mutex) => {
-          conf_mutex.into_inner().unwrap().clone()
+          conf_mutex.into_inner().expect(concat!(file!(),":",line!())).clone()
         },
         Err(_e) => {
-          panic!("No way to deal with this for now");
+          panic!(concat!(file!(),":",line!(),": No way to deal with this for now"));
         }
       };
       conf
     }
   };
 
-  let section = conf.section(Some("RenX_Launcher".to_owned())).unwrap();
-  let game_location = section.get("GameLocation").unwrap();
-  let version_url = section.get("VersionUrl").unwrap();
-  let launcher_theme = section.get("LauncherTheme").unwrap();
+  let section = conf.section(Some("RenX_Launcher".to_owned())).expect(concat!(file!(),":",line!()));
+  let game_location = section.get("GameLocation").expect(concat!(file!(),":",line!()));
+  let version_url = section.get("VersionUrl").expect(concat!(file!(),":",line!()));
+  let launcher_theme = section.get("LauncherTheme").expect(concat!(file!(),":",line!()));
 
-  let mut current_path = std::env::current_exe().unwrap();
+  let mut current_path = std::env::current_exe().expect(concat!(file!(),":",line!()));
   current_path.pop();
   sciter::set_options(
     sciter::RuntimeOptions::ScriptFeatures(
@@ -568,14 +686,14 @@ fn main() {
       sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SOCKET_IO as u8 | // Enables connecting to the inspector via Ctrl+Shift+I
       sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_EVAL as u8  // Enables execution of Eval inside of TI-Script
     )
-  ).unwrap(); 
+  ).expect(concat!(file!(),":",line!())); 
   let mut frame = sciter::Window::new();
   let mut downloader = Downloader::new();
   downloader.set_location(game_location.to_string());
   downloader.set_version_url(version_url.to_string());
   let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(downloader));
   let conf_arc = Arc::new(Mutex::new(conf.clone()));
-  frame.event_handler(Handler{patcher: patcher.clone(), conf: conf_arc});
-  frame.load_file(&format!("file://{}/{}/frontpage.htm", current_path.to_str().unwrap(), launcher_theme));
+  frame.event_handler(Handler{patcher: patcher.clone(), conf: conf_arc, chat_handle: None, chat_sender: None});
+  frame.load_file(&format!("file://{}/{}/frontpage.htm", current_path.to_str().expect(concat!(file!(),":",line!())), launcher_theme));
   frame.run_app();
 }
