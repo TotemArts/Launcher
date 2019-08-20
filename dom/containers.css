@@ -164,6 +164,10 @@ div.titlebar > .title {
   height: *;
 }
 
+.footer-margin {
+  aspect: footer_progress;
+}
+
 .join_server {
   min-width: 600dip;
   max-width: 700dip;
@@ -252,9 +256,19 @@ div.titlebar > .title {
   background-color: #2D3741;
 }
 
+.chat-container {
+  height: *;
+  width: *;
+}
+
 .chat {
   height: *;
   width: *;
+  context-menu: url(chat-window-menu.htm);
+}
+
+menu.chat_menu {
+  aspect: "Emu.chat_menu";
 }
 
 .reply {

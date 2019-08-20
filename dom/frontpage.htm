@@ -12,7 +12,12 @@
   include "events.tis";
   include "functional.tis";
 
+  function chat_respond(text) {
+    stdout.println("chat: " + text);
+  }
+
   function self.ready() {
+    view.chat_connect(chat_respond);
     view.check_launcher_update(check_launcher_result);
     $(#content).load($(div.current).attributes["page"]);
     current_page = $(div.current);
