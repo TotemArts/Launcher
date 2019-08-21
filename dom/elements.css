@@ -33,19 +33,6 @@ progressbar {
   aspect: "Emu.loadOutput";
 }
 
-p.green, span.green, text.green {
-  color: #28a964;
-}
-
-a {
-  color: #ce5135;
-}
-
-a:hover {
-  text-decoration: underline;
-  color: #ce5135;
-}
-
 input|text {
   height: 30dip;
   width:*;
@@ -188,6 +175,10 @@ button.close:hover, div.close:hover {
   background-image: url(images/Close_Rollover.svg);
 }
 
+button#update {
+  width:210dip;
+}
+
 .twitter {
   width:22dip;
   height:33dip;
@@ -285,6 +276,12 @@ vertical-align: middle;
 .expand {
   width: *;
   height: *;
+}
+.vexpand {
+  height: *;
+}
+.hexpand {
+  width: *;
 }
 
 checkmark {
