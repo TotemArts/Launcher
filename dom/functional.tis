@@ -27,9 +27,12 @@ function footer_progress() {
 function set_footer() {
   switch(output_variables["current_action"]) {
     case "None":
-      if(!output_variables["update_available"]) footer.html = "<p><span.green>Game up to Date</span><p>";
-      else footer.html = "Would you like to update?";
-// add else with html for game-update
+      if(!output_variables["update_available"]) {
+        footer.html = "<p.uppercase.green>&#9745;&#10003;&#10004; Your game is up-to-date!<p>";
+      } else {
+        footer.html = "<div.hexpand.hflow.vcenter><p.uppercase.red.hexpand.vcenter>&#10005;&#10006;&#10007;&#10008; Your game is not up-to-date!<p><button.green #update>Update Game</button></div>";
+        $(button.green#update).@["onclick"] = "view.start_download(onProgress, onUpdateDone, onUpdateErr); output_variables[\"current_action\"] = \"Updating game\"; show_overlay(\"verify.htm\"); ";
+      }
       break;
     default:
       footer.html = "\
@@ -266,6 +269,7 @@ function check_launcher_result(new_version = undefined) {
     output_variables["popup_green"] = "UPDATE";
     show_overlay("popup_ok.htm");
     $(#overlay button.green).@["onclick"] = "update_launcher();";
+    $(#overlay .close).@["onclick"] = "view.check_update(onUpdateCallback, onUpdateErr);";
   } else {
     view.check_update(onUpdateCallback, onUpdateErr);
   }

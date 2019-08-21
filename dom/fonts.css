@@ -90,6 +90,24 @@ h1, h2, h3, h4, h5 {
   white-space: nowrap;
 }
 
+p.green, span.green, text.green {
+  color: #28a964;
+}
+
+p.red, span.red, text.red {
+  color: #ce5135;
+}
+
+a {
+  color: #ce5135;
+}
+
+a:hover {
+  text-decoration: underline;
+  color: #ce5135;
+}
+
+
 h1 {
   font-size: 15pt;
 }
