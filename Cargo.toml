@@ -4,7 +4,7 @@ version = "0.9.0"
 authors = ["SonnyX"]
 edition = "2018"
 build = "windows.rs"
-exclude = ["dom", "new", "dom/**", "new/**", "RenX-Launcher.zip", "sciter.dll", "SelfUpdateExecutor.exe", "RenegadeX-Launcher.ini", "RenegadeX-Launcher"]
+exclude = ["C:", "C:/**", "dom", "new", "dom/**", "new/**", "RenX-Launcher.zip", "RenX-Launcher.exe", "sciter.dll", "SelfUpdateExecutor.exe", "RenegadeX-Launcher.ini", "RenegadeX-Launcher"]
 
 [dependencies]
 hyper = "^0.12.27"
