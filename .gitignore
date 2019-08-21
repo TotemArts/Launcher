@@ -1,4 +1,6 @@
 target/
+dom2/
+ResourceHacker.ini
 Cargo.lock
 RenX-Launcher.zip
 RenegadeX-Launcher.ini
