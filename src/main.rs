@@ -635,7 +635,7 @@ fn main() {
     Err(_e) => {
       let mut conf = Ini::new();
       conf.with_section(Some("RenX_Launcher"))
-        .set("GameLocation", "C:/Program Files (x86)/Renegade X/")
+        .set("GameLocation", "../")
         .set("VersionUrl", "https://static.renegade-x.com/launcher_data/version/launcher.json")
         .set("PlayerName", "UnknownPlayer")
         .set("LauncherTheme", "dom")
