@@ -256,21 +256,6 @@ div.titlebar > .title {
   background-color: #2D3741;
 }
 
-.chat-container {
-  height: *;
-  width: *;
-}
-
-.chat {
-  height: *;
-  width: *;
-  context-menu: url(chat-window-menu.htm);
-}
-
-menu.chat_menu {
-  aspect: "Emu.chat_menu";
-}
-
 .reply {
   background-color: #0c2e3f;
   width:*;
