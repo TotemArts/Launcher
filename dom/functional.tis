@@ -204,7 +204,7 @@ function joinServer(password = undefined) {
   if (entry["Variables"]["bPassworded"] && !password) {
     show_overlay("password.htm");
   } else {
-    view.launch_game(entry.IP+":"+entry.Port+password?"?Password="+password:"", onGameExit, onGameError);
+    view.launch_game( entry["IP"]+":"+entry["Port"] + ( password? "?Password="+password : "" ), onGameExit, onGameError);
     if($(img#map_image) != undefined) {
       $(img#map_image).attributes["src-disabled"]=$(img#map_image).attributes["src"];
       $(img#map_image).attributes["src"]= "";

@@ -26,10 +26,5 @@ rand = "^0.6.5"
 percent-encoding = "^1.0.1"
 unzip = "^0.1.0"
 
-[target.'cfg(windows)'.build-dependencies]
-winres = "^0.1.8"
-
-[package.metadata.winres]
-OriginalFilename = "RenegadeX_Launcher.exe"
-FileDescription = "Launcher for RenegadeX"
-LegalCopyright = "Copyright © 2019"
+[build-dependencies]
+embed-resource = { git = "https://github.com/SonnyX/rust-embed-resource" }

@@ -1,8 +1,22 @@
-div.chat {
+.chat-container {
   height: *;
   width: *;
 }
 
+.chat {
+  height: *;
+  width: *;
+  context-menu: url(chat-window-menu.htm);
+}
+
+menu.chat_menu {
+  aspect: "Emu.chat_menu";
+}
+
+div.chat {
+  height: *;
+  width: *;
+}
 
 div.chat h2 {
    width: *; 
@@ -15,4 +29,8 @@ div.chat h2 {
 div.chat h2 span { 
     background:#fff; 
     padding:0 10px; 
+}
+
+.chat message {
+	
 }
