@@ -42,6 +42,12 @@ input|text {
   border-radius: 8dip;
 }
 
+#overlay input|text {
+  background-color: #222b34;
+  margin-left: 10dip;
+  margin-right: 10dip;
+}
+
 input|text.searchbar {
   height: 22dip;
   font-size: 9pt;
