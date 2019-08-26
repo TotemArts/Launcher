@@ -1,4 +1,5 @@
 #![windows_subsystem="windows"]
+#![warn(clippy::multiple_crate_versions)]
 
 extern crate native_tls;
 extern crate hyper;
@@ -559,14 +560,14 @@ impl Handler {
         } else if let Some(message) = event.into_stanza().and_then(|stanza| Message::try_from(stanza).ok()) {
           match (message.from, message.bodies.get("")) {
             (Some(ref from), Some(body)) if body.0 == "die" => {
-              println!("Secret die command triggered by {}", from);
+              println!("Secret die command triggered by {:?}", from);
               sender.start_send(ChatEvent::Disconnect).expect("Couldn't send Disconnect event to Sink");
             }
             (Some(ref from), Some(body)) => {
               if message.type_ != MessageType::Error {
                 // This is a message we'll echo
-                println!("{} send a message saying: \"{}\"", &from, &body.0);
-                callback.call(None, &make_args!(format!("{} send a message saying: \"{}\"", &from, &body.0).as_str()), None).expect(concat!(file!(),":",line!()));
+                println!("{:?} send a message saying: \"{}\"", &from, &body.0);
+                callback.call(None, &make_args!(format!("{:?} send a message saying: \"{}\"", &from, &body.0).as_str()), None).expect(concat!(file!(),":",line!()));
                 sender.start_send(ChatEvent::Message(Some(from.clone()), body.0.clone())).expect("Couldn't send Message to Sink");
               }
             }
@@ -608,7 +609,7 @@ impl Handler {
 /// bad message
 fn make_presence() -> Element {
     let mut presence = Presence::new(PresenceType::None);
-    presence.show = PresenceShow::Chat;
+    presence.show = Some(PresenceShow::Chat);
     presence
         .statuses
         .insert(String::from("en"), String::from("Echoing messages."));
