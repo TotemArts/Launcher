@@ -86,7 +86,6 @@ namespace Emu {
 
     this << event change {
         var entry = this.value[this.tbody.currentIndex].data;
-        stdout.println(JSON.stringify(entry["Variables"]));
         output_variables["title_menu"] = entry["Name"];
         $(#mine-limit).html = entry["Variables"]["Mine Limit"].toString();
         $(#player-limit).html = entry["Variables"]["Player Limit"].toString();
