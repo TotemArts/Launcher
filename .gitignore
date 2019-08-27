@@ -1,10 +1,13 @@
 target/
-dom2/
-ResourceHacker.ini
 Cargo.lock
-RenX-Launcher.zip
 RenegadeX-Launcher.ini
-RenegadeX-Launcher.exe
 C:/
 .idea/
 RenegadeX-Launcher
+windows-target/release/
+windows-target/x86_64-pc-windows-gnu/
+windows-target/RenegadeX-Launcher.exe
+windows-target/RenegadeX-Launcher.ini
+windows-target/Cargo.lock
+windows-target/.rustc_info.json
+windows-target/RenX-Launcher.zip
