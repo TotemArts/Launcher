@@ -3,7 +3,12 @@ name = "RenegadeX-Launcher"
 version = "0.9.3"
 authors = ["SonnyX"]
 edition = "2018"
+build = "windows.rs"
 exclude = ["target-windows/**", "target/**", "C:", "C:/**", "dom", "new", "dom/**", "new/**", "RenX-Launcher.zip", "RenX-Launcher.exe", "sciter.dll", "SelfUpdateExecutor.exe", "RenegadeX-Launcher.ini", "RenegadeX-Launcher"]
+
+[[bin]]
+name = "RenegadeX-Launcher"
+path = "../src/main.rs"
 
 [dependencies]
 hyper = "^0.12.27"
@@ -24,3 +29,11 @@ socket2 = "^0.3.8"
 rand = "^0.7.0"
 percent-encoding = "^2.1.0"
 unzip = "^0.1.0"
+
+[build-dependencies]
+embed-resource = "1.3.0"
+
+
+[profile.release]
+opt-level = 'z'
+lto=true
