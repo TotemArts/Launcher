@@ -29,11 +29,12 @@ use renegadex_patcher::{Downloader,Update, traits::Error};
 use ini::Ini;
 use single_instance::SingleInstance;
 use std::io::Write;
+use std::convert::TryFrom;
 
 
 use futures::{future, Future, Sink, Stream};
 use tokio_xmpp::Packet;
-use xmpp_parsers::{Jid, Element, TryFrom};
+use xmpp_parsers::{Jid, Element};
 use xmpp_parsers::message::{Body, Message, MessageType};
 use xmpp_parsers::presence::{Presence, Show as PresenceShow, Type as PresenceType};
 
