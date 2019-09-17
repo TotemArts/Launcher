@@ -19,6 +19,8 @@ namespace Emu {
   function news_image() {
     if (this.attributes.exists("width")) {
       this.attributes["width"] = (this.attributes["width"].toNumber()/10) + "%";
+    } else {
+      this.attributes["width"] = "100%";
     }
   }
 
@@ -36,7 +38,7 @@ namespace Emu {
     var frame = $(#news)
     for (var i=0; i<news_items.length;i++) {
       var date = new Date(news_items[i].pubDate);
-      var date_string = date.day + " " + date.monthName(false);
+      var date_string = "<day>" + (date.day<10?'0':'') + date.day + "</day><month>" + date.monthName(false) + "</month>";
       var type_string = "General";
       if (news_items[i].title.match(/\sPATCH\s/i)) type_string = "Patch";
       this.append("<div.news_item.hflow id="+i+"><pubDate>"+date_string+"</pubDate><div.vflow><p.news_type>"+type_string+"</p><p.news_title>"+news_items[i].title+"</p></div></div>");
@@ -45,6 +47,9 @@ namespace Emu {
         var id = this.attributes["id"].toNumber();
         frame_id = id;
         output_variables["current_news_title"] = news_items[id].title;
+        var current = this.parent.$(.current);
+        if (current) current.attributes.removeClass("current");
+        this.attributes.addClass("current");
         if (news_items[id].html) {
           frame.load(news_items[id].html, "");
         } else {
@@ -56,6 +61,7 @@ namespace Emu {
     if (news_items.length > 0) {
       var id = 0;
       frame_id = 0;
+      this.first.attributes.addClass("current");
       output_variables["current_news_title"] = news_items[0].title;
       if (news_items[0].html) {
         frame.load(news_items[0].html, "");
