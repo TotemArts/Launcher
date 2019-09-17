@@ -8,6 +8,10 @@ html, body, button, toggle, textarea, input|text, table, thead, tbody, tr, th, t
   border-radius: 0px;
 }
 
+*[onclick], *[overlay], *[page], button, input, .news_item {
+  cursor: pointer;
+}
+
 output {
   font: inherit;
   background-gradient: inherit;

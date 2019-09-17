@@ -100,7 +100,7 @@ function image_callback(bytes) {
 }
 
 function load_news_item(text) {
-  text = text.replace(/\r|\n|\s+|\t+/g, " ").replace(/\r|\n|\s+|\t+/g, " ").replace(/>\s</, "><");
+  text = text.replace(/\s<\/span/g, "&nbsp;</span").replace(/(?:\r|\n|\s|\t)+/g, " ").replace(/>\s</, ">&nbsp;<");
   var topicID = text.match(/data-topicID='(.+?)'/)[1];
   text = text.replace(new RegExp("_"+topicID,"g"), "_topicID");
   var regex_string = "<i?frame.+?(?:youtube[a-zA-Z0-9_\/\.]+?\/([a-zA-Z0-9_]+?)\\?.+?)?(?:\/>|<\/i?frame>)";
