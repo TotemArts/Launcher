@@ -28,9 +28,9 @@ function set_footer() {
   switch(output_variables["current_action"]) {
     case "None":
       if(!output_variables["update_available"]) {
-        footer.html = "<div.hexpand.hflow.vcenter><p.uppercase.green.hexpand.vcenter>&#9745;&#10003;&#10004; Your game is up-to-date!</p><button.green #update>Launch to Menu</button></div>";
+        footer.html = "<div.hexpand.hflow.vcenter><p.uppercase.green.hexpand.vcenter>&#10003; Your game is up-to-date!</p><button.green #update>Launch to Menu</button></div>";
       } else {
-        footer.html = "<div.hexpand.hflow.vcenter><p.uppercase.red.hexpand.vcenter>&#10005;&#10006;&#10007;&#10008; Your game is not up-to-date!</p><button.green #update>Update Game</button></div>";
+        footer.html = "<div.hexpand.hflow.vcenter><p.uppercase.red.hexpand.vcenter>&#10005; Your game is not up-to-date!</p><button.green #update>Update Game</button></div>";
         $(button.green#update).@["onclick"] = "view.start_download(onProgress, onUpdateDone, onUpdateErr); output_variables[\"current_action\"] = \"Updating game\"; show_overlay(\"verify.htm\"); ";
       }
       break;

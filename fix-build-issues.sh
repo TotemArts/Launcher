@@ -1,8 +1,8 @@
 #!/bin/bash
 cd "$( ls -1tqd ~/.cargo/git/checkouts/xdelta-*/*/ | head -n 1 )" || exit
-if [ $( ls -1tq ./lzma-sys/xz/ | wc -l ) == "1" ]
+if [ $( ls -a1tq $(pwd)/lzma-sys/xz/ | wc -l ) == "3" ]
 then
-  rm -rf /lzma-sys/xz/
+  rm -Rf lzma-sys/xz/
   git submodule update --init --recursive
 else
   git submodule foreach --recursive git fetch
