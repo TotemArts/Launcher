@@ -1,4 +1,5 @@
 #!/bin/sh
+cargo update --manifest-path="windows-target/Cargo.toml"
 cargo build --manifest-path="windows-target/Cargo.toml" --target-dir="windows-target" --target=x86_64-pc-windows-gnu --release
 cp ./windows-target/x86_64-pc-windows-gnu/release/RenegadeX-Launcher.exe ./windows-target/RenegadeX-Launcher.exe
 rm windows-target/RenX-Launcher.zip
