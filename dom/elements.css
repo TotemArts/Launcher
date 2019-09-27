@@ -432,7 +432,7 @@ table.servers {
   table:root > tbody > tr {
     behavior:form; /* mission critical: each repeated child is treated as a form so it can accept object values  */
   }
-  table:root > tbody > tr > td:nth-child(1) { max-width:5dip; }
+  table:root > tbody > tr > td:nth-child(1) { max-width:5dip; color: rgba(0,0,0,0)}
 
   table:root > thead > tr > th:nth-child(1) { width:5dip; }
   table:root > thead > tr > th:nth-child(2) { width:50%; }

@@ -3,19 +3,16 @@
   width: *;
 }
 
-.chat {
-  height: *;
-  width: *;
-  context-menu: url(chat-window-menu.htm);
-}
-
 menu.chat_menu {
   aspect: "Emu.chat_menu";
 }
 
 div.chat {
   height: *;
+  min-height: 200dip;
   width: *;
+  context-menu: url(chat-window-menu.htm);
+  overflow-y: auto;
 }
 
 div.chat h2 {
