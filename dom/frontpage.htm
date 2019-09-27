@@ -11,6 +11,7 @@
 <script type="text/tiscript">
   include "events.tis";
   include "functional.tis";
+  include "chat.tis";
 
   function chat_respond(text) {
     stdout.println("chat: " + text);
@@ -25,6 +26,7 @@
     initialize_variables();
     view.get_servers(getServersCallback);
     load_news_feed();
+    setInterval(_getMessages, 100);
   }
 </script>
 </head>

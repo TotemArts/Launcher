@@ -1,6 +1,6 @@
 var output_variables = {
   "username":"Not Set",
-  "launcher_version":"0.61",
+  "launcher_version":"0",
   "game_version":"Not Installed",
   "hash_progress":"0",
   "download_progress":"0",
@@ -248,6 +248,29 @@ function getServersCallback(results) {
   }
   for (var i = old_length-1; i > 0; i--) if( !updated[i] ) server_list.remove(i);
   stdout.println("refreshed servers");
+}
+
+function updateFilter(arg1, arg2 = undefined) {
+  if (arg2) {
+    var min = arg1;
+    var max = arg2;
+    for(var i = 0; i < server_list.length; i++) {
+      if(server_list[i].data["Players"] >= min && server_list[i].data["Players"] <= max) {
+        server_list[i].in_player_range = true;
+        stdout.println(server_list[i].data["Game Version"]);
+        stdout.println(output_variables["game_version"]);
+        server_list[i].display = $(div.filterbar > checkmark).attributes.hasClass("checked")?(server_list[i].data["Game Version"] == output_variables["game_version"]):true;
+      } else {
+        server_list[i].in_player_range = false;
+        server_list[i].display = false;
+      }
+    }
+  } else {
+    var same_version = arg1;
+    for(var i = 0; i < server_list.length; i++) {
+      server_list[i].display = server_list[i].in_player_range && same_version?(server_list[i].data["Game Version"] == output_variables["game_version"]):true;
+    }
+  }
 }
 
 function launcher_progress(progress) {
