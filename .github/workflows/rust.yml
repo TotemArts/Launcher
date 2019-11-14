@@ -9,6 +9,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+    - name: Update dependencies
+      run: sudo apt-get install libgtk-3-dev && (cargo update || (sh fix-build-issues.sh && cargo update))
     - name: Build
       run: cargo build --release --verbose
     - name: Build Windows
