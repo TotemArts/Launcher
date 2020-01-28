@@ -438,13 +438,14 @@ impl Handler {
         output_path.pop();
         let target_dir = output_path.clone();
         output_path.pop();
+        let working_dir = output_path.clone();
+        
         output_path.push("launcher_update_extracted/");
         println!("{:?}", output_path);
         let mut self_update_executor = output_path.clone();
         unzip::Unzipper::new(download_contents, output_path).unzip().expect(concat!(file!(),":",line!()));
 
         //run updater program and quit this.
-        let working_dir = self_update_executor.clone();
         self_update_executor.push("SelfUpdateExecutor.exe");
         let args = vec![format!("--pid={}",std::process::id()), format!("--target={}", target_dir.to_str().expect(concat!(file!(),":",line!())))];
         std::process::Command::new(self_update_executor)
