@@ -18,7 +18,6 @@
   }
 
   function self.ready() {
-    view.chat_connect(chat_respond);
     view.check_launcher_update(check_launcher_result);
     $(#content).load($(div.current).attributes["page"]);
     current_page = $(div.current);

@@ -1,6 +1,6 @@
 [package]
 name = "RenegadeX-Launcher"
-version = "0.9.5"
+version = "0.9.6"
 authors = ["SonnyX"]
 edition = "2018"
 build = "windows.rs"
@@ -22,7 +22,7 @@ tokio-reactor = "^0.1.9"
 url = "^2.1.0"
 futures = "^0.1.27"
 sciter-rs = "^0.5.45"
-renegadex_patcher = { git = "https://github.com/SonnyX/RenegadeX-patcher-lib" }
+renegadex_patcher = { path = "../../RenegadeX-patcher-lib" }
 rust-ini = "^0.13.0"
 single-instance = "^0.1.1"
 socket2 = "^0.3.8"

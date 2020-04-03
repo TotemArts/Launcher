@@ -1,4 +1,4 @@
-#![windows_subsystem="windows"]
+#![windows_subsystem="console"]
 #![warn(clippy::multiple_crate_versions)]
 
 extern crate native_tls;
@@ -6,8 +6,6 @@ extern crate hyper;
 extern crate hyper_tls;
 extern crate tokio;
 extern crate tokio_tls;
-extern crate tokio_xmpp;
-extern crate xmpp_parsers;
 extern crate tokio_reactor;
 #[macro_use] extern crate futures;
 #[macro_use] extern crate sciter;
@@ -29,35 +27,17 @@ use renegadex_patcher::{Downloader,Update, traits::Error};
 use ini::Ini;
 use single_instance::SingleInstance;
 use std::io::Write;
-use std::convert::TryFrom;
-
-
-use futures::{future, Future, Sink, Stream};
-use tokio_xmpp::Packet;
-use xmpp_parsers::{Jid, Element};
-use xmpp_parsers::message::{Body, Message, MessageType};
-use xmpp_parsers::presence::{Presence, Show as PresenceShow, Type as PresenceType};
+use futures::Future;
 
 /// The current launcher's version
 static VERSION: &str = env!("CARGO_PKG_VERSION");
-
-/// The Events that can be sent over the Sender line of the Chat.
-pub enum ChatEvent {
-  Presence,
-  Message(Option<Jid>, String),
-  Disconnect,
-}
 
 /// Structure for Sciter event handling.
 struct Handler {
   /// The reference to the back-end library which is responsible for downloading and updating the game.
   patcher: Arc<Mutex<Downloader>>,
   /// The configuration file for the launcher.
-  conf: Arc<Mutex<ini::Ini>>,
-  /// Handle to the chat thread.
-  chat_handle: Option<std::thread::JoinHandle<()>>,
-  /// The mpsc sender to communicate with the chat thread.
-  chat_sender: Option<futures::sync::mpsc::UnboundedSender<ChatEvent>>,
+  conf: Arc<Mutex<ini::Ini>>
 }
 
 impl Handler {
@@ -521,108 +501,6 @@ impl Handler {
       tokio::runtime::current_thread::Runtime::new().expect(concat!(file!(),":",line!())).block_on(res).expect(concat!(file!(),":",line!()));
     });
   }
-
-  /* CHAT FUNCTIONS */
-  /// Connect to the XMPP server and start receiving messages.
-  fn chat_connect(&mut self, callback: Value) {
-    let username : String = self.get_playername();
-    let (mut sender, receiver) = futures::sync::mpsc::unbounded();
-    self.chat_sender = Some(sender.clone());
-
-    self.chat_handle = Some(std::thread::spawn(move || {
-    let mut rt = tokio::runtime::current_thread::Runtime::new().expect("Could not create a new tokio runtime");
-    let jid = format!("{}@chat.renegade-x.com",username);
-    let password = "";
-    let client = tokio_xmpp::Client::new(&jid, password).expect("Could not unwrap xmpp client");
-
-
-    let (sink,stream) = client.split();
-
-    rt.spawn(
-      receiver.map(|packet| {
-        match packet {
-          ChatEvent::Presence => Packet::Stanza(make_presence()),
-          ChatEvent::Message(recipient, message) => Packet::Stanza(make_reply(recipient, &message)),
-          ChatEvent::Disconnect => Packet::StreamEnd,
-        }
-      }).forward(
-        sink.sink_map_err(|_| panic!("Pipe"))
-      ).map(|(receiver, mut sink)| {
-        drop(receiver);
-        let _ = sink.close();
-      }).map_err(|e| {
-        panic!("Send error: {:?}", e);
-      })
-    );
-    rt.block_on(
-      stream.for_each(move |event| {
-        if event.is_online() {
-          println!("Online!");
-          sender.start_send(ChatEvent::Presence).expect("Couldn't send presence to Sink");
-        } else if let Some(message) = event.into_stanza().and_then(|stanza| Message::try_from(stanza).ok()) {
-          match (message.from, message.bodies.get("")) {
-            (Some(ref from), Some(body)) if body.0 == "die" => {
-              println!("Secret die command triggered by {:?}", from);
-              sender.start_send(ChatEvent::Disconnect).expect("Couldn't send Disconnect event to Sink");
-            }
-            (Some(ref from), Some(body)) => {
-              if message.type_ != MessageType::Error {
-                // This is a message we'll echo
-                println!("{:?} send a message saying: \"{}\"", &from, &body.0);
-                callback.call(None, &make_args!(format!("{:?} send a message saying: \"{}\"", &from, &body.0).as_str()), None).expect(concat!(file!(),":",line!()));
-                sender.start_send(ChatEvent::Message(Some(from.clone()), body.0.clone())).expect("Couldn't send Message to Sink");
-              }
-            }
-            _ => {}
-          }
-        }
-        future::ok(())
-      }).map_err(|err| { panic!(concat!(file!(),":",line!(),": {:?}"), err) })
-    ).expect("Error when waiting for future to finish");
-    }));
-  }
-
-  /// Disconnect from the XMPP server.
-  fn chat_disconnect(&mut self) {
-    if self.chat_handle.is_some() {
-      let _ = self.chat_sender.as_ref().expect(concat!(file!(),":",line!())).start_send(ChatEvent::Disconnect);
-    }
-  }
-
-  /// Reconnect to the XMPP server
-  fn chat_reconnect(&mut self, callback: Value) {
-    self.chat_disconnect();
-    let _ = self.chat_handle.take().expect(concat!(file!(),":",line!())).join();
-    self.chat_connect(callback);
-  }
-
-  /// Send message in the XMPP server.
-  fn chat_message(&mut self, message: Value) -> bool {
-    if self.chat_handle.is_some() {
-      let result = self.chat_sender.as_ref().expect(concat!(file!(),":",line!())).start_send(ChatEvent::Message(None, message.as_string().expect(concat!(file!(),":",line!()))));
-      result.is_ok()
-    } else {
-      false
-    }
-  }
-  /* END OF CHAT FUNCTIONS */
-}
-
-/// bad message
-fn make_presence() -> Element {
-    let mut presence = Presence::new(PresenceType::None);
-    presence.show = Some(PresenceShow::Chat);
-    presence
-        .statuses
-        .insert(String::from("en"), String::from("Echoing messages."));
-    presence.into()
-}
-
-/// Construct a chat <message/>
-fn make_reply(to: Option<Jid>, body: &str) -> Element {
-    let mut message = Message::new(to);
-    message.bodies.insert(String::new(), Body(body.to_owned()));
-    message.into()
 }
 
 impl sciter::EventHandler for Handler {
@@ -647,11 +525,6 @@ impl sciter::EventHandler for Handler {
     fn update_launcher(Value);
     fn fetch_resource(Value,Value,Value,Value);
     fn fetch_image(Value,Value,Value,Value);
-
-    fn chat_connect(Value);
-    fn chat_disconnect();
-    fn chat_reconnect(Value);
-    fn chat_message(Value);
   }
 }
 
@@ -684,7 +557,7 @@ fn main() {
         ).expect(concat!(file!(),":",line!())); 
         let mut frame = sciter::Window::new();
         let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(Downloader::new()));
-        frame.event_handler(Handler{patcher: patcher.clone(), conf: conf_arc.clone(), chat_handle: None, chat_sender: None});
+        frame.event_handler(Handler{patcher: patcher.clone(), conf: conf_arc.clone()});
         let mut current_path = std::env::current_exe().expect(concat!(file!(),":",line!()));
         current_path.pop();
         frame.load_file(&format!("file://{}/dom/first-startup.htm", current_path.to_str().expect(concat!(file!(),":",line!()))));
@@ -723,7 +596,7 @@ fn main() {
   downloader.set_version_url(version_url.to_string());
   let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(downloader));
   let conf_arc = Arc::new(Mutex::new(conf.clone()));
-  frame.event_handler(Handler{patcher: patcher.clone(), conf: conf_arc, chat_handle: None, chat_sender: None});
+  frame.event_handler(Handler{patcher: patcher.clone(), conf: conf_arc});
   frame.load_file(&format!("file://{}/{}/frontpage.htm", current_path.to_str().expect(concat!(file!(),":",line!())), launcher_theme));
   frame.run_app();
 }
