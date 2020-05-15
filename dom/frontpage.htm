@@ -11,11 +11,6 @@
 <script type="text/tiscript">
   include "events.tis";
   include "functional.tis";
-  include "chat.tis";
-
-  function chat_respond(text) {
-    stdout.println("chat: " + text);
-  }
 
   function self.ready() {
     view.check_launcher_update(check_launcher_result);

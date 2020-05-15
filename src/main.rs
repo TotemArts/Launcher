@@ -244,14 +244,10 @@ impl Handler {
       socket.send(&code).expect(concat!(file!(),":",line!()));
       let mut buf : [u8; 100] = [0; 100];
       socket.set_read_timeout(Some(std::time::Duration::from_millis(500))).expect(concat!(file!(),":",line!()));
-      socket.recv(&mut buf).expect(concat!(file!(),":",line!()));
+      let result = socket.recv(&mut buf);
       let elapsed = start_time.elapsed().as_millis() as i32;
-      if buf[36..36+48] == code[16..] {
-        //println!("{:#?}", &elapsed);
+      if result.is_ok() && buf[36..36+48] == code[16..] {
         std::thread::spawn(move || {callback.call(None, &make_args!(server, elapsed), None).expect(concat!(file!(),":",line!()));});
-      } else {
-        //println!("{:?}", &buf[36..36+48]);
-        //println!("{:?}", &code[16..]);
       }
     });
   }
