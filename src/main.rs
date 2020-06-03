@@ -96,9 +96,8 @@ impl Handler {
 		  };
       let result : Result<(),Error> = check_update();
       if let Err(err) = result {
-        use std::error::Error;
-        eprintln!("{:#?}", err.description());
-        std::thread::spawn(move || {error.call(None, &make_args!(err.description()), None).expect(concat!(file!(),":",line!()));});
+        eprintln!("{:#?}", &err);
+        std::thread::spawn(move || {error.call(None, &make_args!(err.to_string()), None).expect(concat!(file!(),":",line!()));});
       }
     });
   }
@@ -144,9 +143,8 @@ impl Handler {
           std::thread::spawn(move || {callback_done.call(None, &make_args!(false,false), None).expect(concat!(file!(),":",line!()));});
         },
         Err(e) => {
-          use std::error::Error;
-          eprintln!("{:#?}", e.description());
-          std::thread::spawn(move || {error.call(None, &make_args!(e.description()), None).expect(concat!(file!(),":",line!()));});
+          eprintln!("{:#?}", &e);
+          std::thread::spawn(move || {error.call(None, &make_args!(e.to_string()), None).expect(concat!(file!(),":",line!()));});
         }
       };
     });
@@ -167,9 +165,8 @@ impl Handler {
           std::thread::spawn(move || {callback_done.call(None, &make_args!("validate"), None).expect(concat!(file!(),":",line!()));});
         },
         Err(e) => {
-          use std::error::Error;
-          eprintln!("Error in remove_unversioned(): {:#?}", e.description());
-          std::thread::spawn(move || {error.call(None, &make_args!(e.description()), None).expect(concat!(file!(),":",line!()));});
+          eprintln!("Error in remove_unversioned(): {:#?}", &e);
+          std::thread::spawn(move || {error.call(None, &make_args!(e.to_string()), None).expect(concat!(file!(),":",line!()));});
         }
       };
     });
@@ -221,9 +218,11 @@ impl Handler {
   /// Get ping of server
   fn get_ping(&self, server: sciter::Value, callback: sciter::Value) {
     std::thread::spawn(move || {
-      use std::str::FromStr;
       let socket = Socket::new(Domain::ipv4(), Type::raw(), Some(Protocol::icmpv4())).expect(concat!(file!(),":",line!(),": New socket"));
-      let sock_addr = std::net::SocketAddr::from_str(&server.as_string().expect(concat!(file!(),":",line!()))).expect(concat!(file!(),":",line!())).into();
+      let server_string = server.as_string().expect(&format!("Couldn't cast server \"{:?}\" to string", &server));
+      use std::net::ToSocketAddrs;
+      let mut server_socket = server_string.to_socket_addrs().expect(&format!("Couldn't unwrap socket address of server \"{}\"", &server_string));
+      let sock_addr = server_socket.next().expect(&format!("No Sockets found for DNS name \"{}\"", &server_string)).into();
       let start_time = std::time::Instant::now();
       socket.connect_timeout(&sock_addr, std::time::Duration::from_millis(500)).expect(concat!(file!(),":",line!()));
       let mut code = [0x08, 0x00, 0x00, 0x00, rand::random::<u8>(), rand::random::<u8>(), 0x00, 0x01, 0x02, 0x59, 0x9d, 0x5c, 0x00, 0x00, 0x00, 0x00, 0x98, 0x61, 0x0c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37];
@@ -278,7 +277,13 @@ impl Handler {
     let bit_version = if section.get("64-bit-version").expect(concat!(file!(),":",line!())).clone() == "true" { "64" } else { "32" };
     drop(conf);
     std::thread::spawn(move || {
-      let mut args = vec![server.as_string().expect(concat!(file!(),":",line!())), format!("-ini:UDKGame:DefaultPlayer.Name={}", playername)];
+      let server = server.as_string().expect(concat!(file!(),":",line!()));
+      let mut args = vec![];
+      match server.as_str() {
+        "" => {},
+        _ => args.push(server)
+      };
+      args.push(format!("-ini:UDKGame:DefaultPlayer.Name={}", playername));
       if startup_movie_disabled {
         args.push("-nomoviestartup".to_string());
       }
@@ -292,14 +297,13 @@ impl Handler {
           if output.success() {
             std::thread::spawn(move || {done.call(None, &make_args!(), None).expect(concat!(file!(),":",line!()));});
           } else {
-            //eprintln!("{:#?}", output.unwrap_err().description());
+            //eprintln!("{:#?}", output.unwrap_err());
             std::thread::spawn(move || {error.call(None, &make_args!(format!("The game exited in a crash: {}", output.code().expect(concat!(file!(),":",line!())))), None).expect(concat!(file!(),":",line!()));});
           }
         },
         Err(e) => {
-          use std::error::Error;
-          eprintln!("Failed to create child: {}", e.description());
-          std::thread::spawn(move || {error.call(None, &make_args!(format!("Failed to open game: {}", e.description())), None).expect(concat!(file!(),":",line!()));});
+          eprintln!("Failed to create child: {}", &e);
+          std::thread::spawn(move || {error.call(None, &make_args!(format!("Failed to open game: {}", &e)), None).expect(concat!(file!(),":",line!()));});
         }
       };
     });

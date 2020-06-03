@@ -28,7 +28,8 @@ function set_footer() {
   switch(output_variables["current_action"]) {
     case "None":
       if(!output_variables["update_available"]) {
-        footer.html = "<div.hexpand.hflow.vcenter><p.uppercase.green.hexpand.vcenter>&#10003; Your game is up-to-date!</p><button.green #update>Launch to Menu</button></div>";
+        footer.html = "<div.hexpand.hflow.vcenter><p.uppercase.green.hexpand.vcenter>&#10003; Your game is up-to-date!</p><button.green #launch>Launch to Menu</button></div>";
+        $(button.green#launch).@["onclick"] = "launchGame();";
       } else {
         footer.html = "<div.hexpand.hflow.vcenter><p.uppercase.red.hexpand.vcenter>&#10005; Your game is not up-to-date!</p><button.green #update>Update Game</button></div>";
         $(button.green#update).@["onclick"] = "view.start_download(onProgress, onUpdateDone, onUpdateErr); output_variables[\"current_action\"] = \"Updating game\"; show_overlay(\"verify.htm\"); ";
@@ -69,32 +70,37 @@ function load_news_feed() {
 }
 
 function image_callback(bytes) {
-  if(bytes && bytes != null) {
+  if(bytes != undefined && bytes != null) {
     var image = Image.fromBytes(bytes);
-    if(image != null && url != null) {
-      var regex_string = url.replace(/\//g, "\\/").replace(/\./g, "\\.");
-      var image_regex = new RegExp(regex_string, "g");
-      news_items[id].html = news_items[id].html.replace(image_regex, "data:image/webp;base64,"+image.toBytes(#webp, 100).toString("base64"));
+    if(image != null && url != null && image != undefined && url != undefined) {
+      var escaped_url = url.replace(/\//g, "\\/").replace(/\./g, "\\.").trim();
+      var url_regex = new RegExp(escaped_url, "g");
+      var mime_regex = new RegExp(/\.(\w{3,4})$/g);
+      var filetype = escaped_url.split('.').pop();
+
+      if (filetype != "gif") {
+        news_items[id].html = news_items[id].html.replace(url_regex, "data:image/webp;base64,"+image.toBytes(#webp, 100).toString("base64"));
+      }
     } else {
       stdout.println("Image at url \""+url+"\" appears to be damaged.");
-      var regex_string = "<img.+?src=\""+url.replace(/\//g, "\\/").replace(/\./g, "\\.")+"\".+?>";
-      var image_regex = new RegExp(regex_string, "g");
+      var escaped_tag = "<img.+?src=\""+url.replace(/\//g, "\\/").replace(/\./g, "\\.")+"\".+?/>";
+      var image_regex = new RegExp(escaped_tag, "g");
       news_items[id].html = news_items[id].html.replace(image_regex, "<img/>");
     }
   } else {
     stdout.println("Image at url \""+url+"\" appears to be missing.");
-    var regex_string = "<img.+?src=\""+url.replace(/\//g, "\\/").replace(/\./g, "\\.")+"\".+?>";
-    var image_regex = new RegExp(regex_string, "g");
+    var escaped_tag = "<img.+?src=\""+url.replace(/\//g, "\\/").replace(/\./g, "\\.")+"\".+?/>";
+    var image_regex = new RegExp(escaped_tag, "g");
     news_items[id].html = news_items[id].html.replace(image_regex, "<img/>");
   }
   var regex = /<img.+?src="(http.+?)".+?>/;
   var img = news_items[id].html.match(regex);
-  if (img != null && img[1] != null) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1],frame:this.frame});
+  if (img != null && img[1] != null && img[1] != undefined) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1],frame:this.frame});
   else if (id==frame_id) {
-    if (this.frame != undefined ) {
+    if (this.frame != undefined && this.frame != null) {
       this.frame.load(news_items[id].html, "");
-    } else {
-      $(#news).load(news_items[id].html, "");
+    } else if (var news_frame = $(#news) != undefined && news_frame != null) {
+      news_frame.load(news_items[id].html, "");
     }
   }
 }
@@ -209,6 +215,14 @@ function joinServer(password = undefined) {
       $(img#map_image).attributes["src-disabled"]=$(img#map_image).attributes["src"];
       $(img#map_image).attributes["src"]= "";
     }
+  }
+}
+
+function launchGame() {
+  view.launch_game("", onGameExit, onGameError);
+  if($(img#map_image) != undefined) {
+    $(img#map_image).attributes["src-disabled"]=$(img#map_image).attributes["src"];
+    $(img#map_image).attributes["src"]= "";
   }
 }
 

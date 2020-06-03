@@ -185,7 +185,7 @@ button.close:hover, div.close:hover {
   background-image: url(images/Close_Rollover.svg);
 }
 
-button#update {
+button#update, button#launch {
   width:210dip;
 }
 

@@ -137,7 +137,7 @@
   visibility: none;
 }
 
-#news .ipsSpoiler, #news .ipsStyle_spoiler {
+#news .ipsSpoiler, #news .ipsStyle_spoiler, #news .ipsQuote {
     margin: 0;
     padding: 0px 15px;
     border-width: 1px 1px 1px 1px;
@@ -147,7 +147,7 @@
     background: #fafafa;
 }
 
-#news .ipsSpoiler_header {
+#news .ipsSpoiler_header, #news .ipsQuote_citation {
     background: #e5e5e5;
     margin: 0px -15px;
     padding: 5px 15px;
@@ -160,7 +160,7 @@
 }
 
 
-#news .ipsSpoiler {
+#news .ipsSpoiler, #news .ipsQuote {
     border-color: rgba(53,186,255,.2);
     background: #05131b;
 }
@@ -169,7 +169,11 @@
   visibility: collapse;
 }
 
-#news .ipsSpoiler_header {
+#news .ipsQuote_contents {
+  visibility: visible;
+}
+
+#news .ipsSpoiler_header, #news .ipsQuote_citation {
     background: rgba(53,186,255,.2);
     color: inherit;
 }
