@@ -31,7 +31,7 @@ function set_footer() {
         footer.html = "<div.hexpand.hflow.vcenter><p.uppercase.green.hexpand.vcenter>&#10003; Your game is up-to-date!</p><button.green #launch>Launch to Menu</button></div>";
         $(button.green#launch).@["onclick"] = "launchGame();";
       } else {
-        footer.html = "<div.hexpand.hflow.vcenter><p.uppercase.red.hexpand.vcenter>&#10005; Your game is not up-to-date!</p><button.green #update>Update Game</button></div>";
+        footer.html = "<div.hexpand.hflow.vcenter><p.uppercase.red.hexpand.vcenter>&#10005; "+output_variables["popup_title"]+"</p><button.green #update>"+output_variables["popup_green"]+" Game</button></div>";
         $(button.green#update).@["onclick"] = "view.start_download(onProgress, onUpdateDone, onUpdateErr); output_variables[\"current_action\"] = \"Updating game\"; show_overlay(\"verify.htm\"); ";
       }
       break;
@@ -324,9 +324,13 @@ function onUpdateCallback(reason) {
     case "up_to_date":
       break;
     case "full":
-      output_variables["current_action"] = "Installing game";
-      show_overlay("verify.htm");
-      view.start_download(onProgress, onUpdateDone, onUpdateErr);
+      output_variables["update_available"] = true;
+      output_variables["popup_title"] = "The game is not installed";
+      output_variables["popup_message"] = "Would you like to install?";
+      output_variables["popup_green"] = "INSTALL";
+      output_variables["popup_gray"] = "NOT NOW";
+      show_overlay("popup_choice.htm");
+      $(#overlay button.green).@["onclick"] = "view.start_download(onProgress, onUpdateDone, onUpdateErr); output_variables[\"current_action\"] = \"Installing game\"; show_overlay(\"verify.htm\"); ";
       break;
     case "resume":
       output_variables["current_action"] = "Resuming game installation";
