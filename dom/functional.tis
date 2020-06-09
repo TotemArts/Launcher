@@ -55,18 +55,18 @@ function news_feed_callback(text) {
   for (var i=0; i < arr.length; i++) {
     var text = arr[i];
     var item = {
-      title: text.match(/<title>((?:.|\n)+?)<\/title>/m)[1],
-      link: text.match(/<link><!\[CDATA\[((?:.|\n)+?)(?:\?.+?)<\/link>/m)[1],
-      description: text.match(/<description>((?:.|\n)+?)<\/description>|<description\/()>/m)[1],
-      pubDate: text.match(/<pubDate>((?:.|\n)+?)<\/pubDate>/m)[1],
+      title: text.match(/<title>(?:<!\[CDATA\[)?([\w\W]+?)(?:\]\]>)?<\/title>/m)[1],
+      link: text.match(/<link>(?:<!\[CDATA\[)?((?:.|\n)+?)(?:\?.+?)(?:\]\]>)?<\/link>/m)[1],
+      description: text.match(/<description>(?:<!\[CDATA\[)?((?:.|\n)+?)(?:\]\]>)?<\/description>|<description\/()>/m)[1],
+      pubDate: text.match(/<pubDate>(?:<!\[CDATA\[)?((?:.|\n)+?)(?:\]\]>)?<\/pubDate>/m)[1],
     };
     news_items.push(item);
-    if (i==0) view.fetch_resource(news_items[i].link+"?preview=1", {Referer: "https://renegade-x.com/forums/forum/7-news/", X-Requested-With: "XMLHttpRequest", TE: "Trailers", Pragma: "no-cache"}, load_news_item, {id: i, frame: undefined});
+    if (i==0) view.fetch_resource(news_items[i].link+"?preview=1", {"Referer": "https://renegade-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache"}, load_news_item, {"id": i, "frame": undefined});
   }
 }
 
 function load_news_feed() {
-  view.fetch_resource("https://renegade-x.com/rss/1-recent-news.xml/", {Referer: "https://renegade-x.com/forums/forum/7-news/", X-Requested-With: "XMLHttpRequest", TE: "Trailers", Pragma: "no-cache"}, news_feed_callback, this);
+  view.fetch_resource("https://renegade-x.com/rss/1-recent-news.xml/", {"Referer": "https://renegade-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache"}, news_feed_callback, this);
 }
 
 function image_callback(bytes) {
