@@ -165,11 +165,11 @@
     background: #05131b;
 }
 
-#news .ipsSpoiler_contents {
+#news .ipsSpoiler > .ipsSpoiler_contents {
   visibility: collapse;
 }
 
-#news .ipsQuote_contents {
+#news .ipsQuote > .ipsQuote_contents {
   visibility: visible;
 }
 
@@ -177,6 +177,7 @@
     background: rgba(53,186,255,.2);
     color: inherit;
 }
+
 #news .ipsImage_thumbnailed {
     border: 1px solid rgba(53,186,255,.2);
 }
