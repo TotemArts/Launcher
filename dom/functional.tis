@@ -111,9 +111,9 @@ function load_news_item(text) {
   text = text.replace(new RegExp("_"+topicID,"g"), "_topicID");
   var regex_string = "<i?frame.+?(?:youtube[a-zA-Z0-9_\/\.]+?\/([a-zA-Z0-9_]+?)\\?.+?)?(?:\/>|<\/i?frame>)";
   var matches = new RegExp(regex_string, "g").exec(text);
-  if (matches != null && matches.length > 1) {
+  if (matches != null && matches.length > 1 && matches[1] != "") {
     text = text.replace(new RegExp(regex_string, "g"), "<a href=\"https://youtube.com/watch?v="+matches[1]+"\"><img src=\"https://img.youtube.com/vi/"+matches[1]+"/hqdefault.jpg\"/></a>");
-  } else if (matches != null) {
+  } else {
     text = text.replace(new RegExp(regex_string, "g"), "");
   }
   news_items[id].html = text;
