@@ -547,6 +547,7 @@ fn main() {
         .set("skipMovies", "false");
       let conf_arc = Arc::new(Mutex::new(conf.clone()));
       {
+        sciter::set_options(sciter::RuntimeOptions::DebugMode(true));
         sciter::set_options(
           sciter::RuntimeOptions::ScriptFeatures(
             sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_FILE_IO as u8 |
