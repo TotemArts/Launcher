@@ -70,12 +70,11 @@ function load_news_feed() {
 }
 
 function image_callback(bytes) {
+  var escaped_url = url.replace(/\//g, "\\/").replace(/\./g, "\\.").trim();
   if(bytes != undefined && bytes != null) {
     var image = Image.fromBytes(bytes);
     if(image != null && url != null && image != undefined && url != undefined) {
-      var escaped_url = url.replace(/\//g, "\\/").replace(/\./g, "\\.").trim();
       var url_regex = new RegExp(escaped_url, "g");
-      var mime_regex = new RegExp(/\.(\w{3,4})$/g);
       var filetype = escaped_url.split('.').pop();
 
       if (filetype != "gif") {
@@ -83,13 +82,13 @@ function image_callback(bytes) {
       }
     } else {
       stdout.println("Image at url \""+url+"\" appears to be damaged.");
-      var escaped_tag = "<img.+?src=\""+url.replace(/\//g, "\\/").replace(/\./g, "\\.")+"\".+?/>";
+      var escaped_tag = "<img.+?src=\""+escaped_url+"\".+?/>";
       var image_regex = new RegExp(escaped_tag, "g");
       news_items[id].html = news_items[id].html.replace(image_regex, "<img/>");
     }
   } else {
     stdout.println("Image at url \""+url+"\" appears to be missing.");
-    var escaped_tag = "<img.+?src=\""+url.replace(/\//g, "\\/").replace(/\./g, "\\.")+"\".+?/>";
+    var escaped_tag = "<img.+?src=\""+escaped_url+"\".+?/>";
     var image_regex = new RegExp(escaped_tag, "g");
     news_items[id].html = news_items[id].html.replace(image_regex, "<img/>");
   }
@@ -109,13 +108,12 @@ function load_news_item(text) {
   text = text.replace(/\s<\/span/g, "&nbsp;</span").replace(/(?:\r|\n|\s|\t)+/g, " ").replace(/>\s</, ">&nbsp;<");
   var topicID = text.match(/data-topicID='(.+?)'/)[1];
   text = text.replace(new RegExp("_"+topicID,"g"), "_topicID");
-  var regex_string = "<i?frame.+?(?:youtube[a-zA-Z0-9_\/\.]+?\/([a-zA-Z0-9_]+?)\\?.+?)?(?:\/>|<\/i?frame>)";
-  var matches = new RegExp(regex_string, "g").exec(text);
-  if (matches != null && matches.length > 1 && matches[1] != "") {
-    text = text.replace(new RegExp(regex_string, "g"), "<a href=\"https://youtube.com/watch?v="+matches[1]+"\"><img src=\"https://img.youtube.com/vi/"+matches[1]+"/hqdefault.jpg\"/></a>");
-  } else {
-    text = text.replace(new RegExp(regex_string, "g"), "");
-  }
+  var youtube_regex = /<i?frame.+?(?:youtube[a-zA-Z0-9_\/\.]+?\/([a-zA-Z0-9_]+?)\\?.+?)(?:\/>|<\/i?frame>)/g;
+  text = text.replace(youtube_regex, '<a href=\"https://youtube.com/watch?v=$1\"><img src=\"https://img.youtube.com/vi/$1/hqdefault.jpg\"/></a>');
+
+  var iframe_regex = /<i?frame.+?(?:\/>|<\/i?frame>)/g;
+  text = text.replace(iframe_regex, "");
+
   news_items[id].html = text;
   if (this.frame) this.frame.load(text,"");
   var regex = /<img.+?src="(http.+?)".+?>/;
