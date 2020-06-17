@@ -70,16 +70,13 @@ function load_news_feed() {
 }
 
 function image_callback(bytes) {
-  var escaped_url = url.replace(/\//g, "\\/").replace(/\./g, "\\.").trim();
-  if(bytes != undefined && bytes != null) {
+  var escaped_url = url.replace(/([\?\.\|\/\?\(\)])/g, "\\$1").trim();
+  if(bytes) {
     var image = Image.fromBytes(bytes);
-    if(image != null && url != null && image != undefined && url != undefined) {
+    if(image && url) {
       var url_regex = new RegExp(escaped_url, "g");
       var filetype = escaped_url.split('.').pop();
-
-      if (filetype != "gif") {
-        news_items[id].html = news_items[id].html.replace(url_regex, "data:image/webp;base64,"+image.toBytes(#webp, 100).toString("base64"));
-      }
+      news_items[id].html = news_items[id].html.replace(url_regex, "data:image/webp;base64,"+image.toBytes(#webp, 100).toString("base64"));
     } else {
       stdout.println("Image at url \""+url+"\" appears to be damaged.");
       var escaped_tag = "<img.+?src=\""+escaped_url+"\".+?/>";
@@ -92,20 +89,20 @@ function image_callback(bytes) {
     var image_regex = new RegExp(escaped_tag, "g");
     news_items[id].html = news_items[id].html.replace(image_regex, "<img/>");
   }
-  var regex = /<img.+?src="(http.+?)".+?>/;
+  var regex = /<img.+?src="(http(?:.)+?\.(?!gif).{3,4}(?:\?.+?)?)".+?>/;
   var img = news_items[id].html.match(regex);
-  if (img != null && img[1] != null && img[1] != undefined) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1],frame:this.frame});
+  if (img && img[1]) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1],frame:this.frame});
   else if (id==frame_id) {
-    if (this.frame != undefined && this.frame != null) {
+    if (this.frame) {
       this.frame.load(news_items[id].html, "");
-    } else if (var news_frame = $(#news) != undefined && news_frame != null) {
+    } else if (var news_frame = $(#news) && news_frame) {
       news_frame.load(news_items[id].html, "");
     }
   }
 }
 
 function load_news_item(text) {
-  text = text.replace(/\s<\/span/g, "&nbsp;</span").replace(/(?:\r|\n|\s|\t)+/g, " ").replace(/>\s</, ">&nbsp;<");
+  text = text.replace(/\s<\/span/g, "&nbsp;</span").replace(/[\r\n\s\t]+/g, " ").replace(/>\s</, ">&nbsp;<");
   var topicID = text.match(/data-topicID='(.+?)'/)[1];
   text = text.replace(new RegExp("_"+topicID,"g"), "_topicID");
   var youtube_regex = /<i?frame.+?(?:youtube[a-zA-Z0-9_\/\.]+?\/([a-zA-Z0-9_]+?)\\?.+?)(?:\/>|<\/i?frame>)/g;
@@ -116,9 +113,9 @@ function load_news_item(text) {
 
   news_items[id].html = text;
   if (this.frame) this.frame.load(text,"");
-  var regex = /<img.+?src="(http.+?)".+?>/;
+  var regex = /<img.+?src="(http(?:.)+?\.(?!gif).{3,4}(?:\?.+?)?)".+?>/;
   var img = text.match(regex);
-  if (img != null && img[1] != null) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1],frame: this.frame});
+  if (img && img[1]) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1],frame: this.frame});
 }
 
 function variable_observer(changeDefinition) {
