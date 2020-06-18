@@ -1,48 +1,57 @@
 <html window-icon="images/rx.ico" window-frame="solid">
-<head>
-<title>RenegadeX-Launcher - Choose username</title>
-<style>
-  @import url(elements.css);
-  @import url(containers.css);
-  @import url(fonts.css);
-</style>
-<script type="text/tiscript">
-  function self.ready() {
-    var (sx,sy,sw,sh) = View.screenBox(0,#workarea,#rectw);
-    var (w,h) = $(div.username-window).box(#dimension, #content);
-    view.move( sx + (sw - w) / 2, sy + (sh - h) / 2,452,204,false);
-  }
+  <head>
+    <title>Renegade X Launcher - Welcome Back Commander!</title>
+    <style>
+      @import url(elements.css);
+      @import url(containers.css);
+      @import url(fonts.css);
 
-  function setPlayername() {
-    if ($(input|text.username).value != "") {
-      view.set_playername($(input|text.username).value);
-      view.close();
-    }
-  }
+      html, body, div {
+        margin: 0 0 !important;
+        padding: 0 0 !important;
+      }
 
-  self.on("click","[onclick]",function(evt) {
-    stdout.println("onclick");
-    return eval.call(this, this.attributes["onclick"] );
-  });
+      input|text {
+        background-color: #222b34;
+        margin-left: 10dip;
+        margin-right: 10dip;
+      }
+    </style>
+    <script type="text/tiscript">
+      function self.ready() {
+        var (sx,sy,sw,sh) = View.screenBox(0,#workarea,#rectw);
+        var (w,h) = $(div.username-window).box(#dimension, #margin);
+        view.move( sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
+      }
 
-  self.on("keypress","[enter]",function(evt) {
-    if ( evt.keyCode != 13 && evt.keyCode != Event.VK_RETURN ) return;
-    eval.call(this, this.attributes["enter"]);
-  });
-</script>
-</head>
-<body>
+      function setPlayername() {
+        if ($(input|text.username).value != "") {
+          view.set_playername($(input|text.username).value);
+          view.close();
+        }
+      }
 
-<div.username-window role="window-caption">
-  <div.titlebar>
-    <h3.title.center.uppercase style="width: *;">Welcome back Commander!</h3>
-  </div>
-  <div.child-padding.vflow>
-    <p>Username:</p>
-    <input|text.username enter="setPlayername();" maxlength="30" />
-    <button.green onclick="setPlayername();">SUBMIT</button>
-  </div>
-</div>
+      self.on("click","[onclick]",function(evt) {
+        stdout.println("onclick");
+        return eval.call(this, this.attributes["onclick"] );
+      });
 
-</body>
+      self.on("keypress","[enter]",function(evt) {
+        if ( evt.keyCode != 13 && evt.keyCode != Event.VK_RETURN ) return;
+        eval.call(this, this.attributes["enter"]);
+      });
+    </script>
+  </head>
+  <body>
+    <div.username-window role="window-caption">
+      <div.titlebar>
+        <h3.title.center.uppercase style="width: *;">Welcome back Commander!</h3>
+      </div>
+      <div.child-margin.vflow>
+        <p>Username:</p>
+        <input|text.username enter="setPlayername();" maxlength="30" />
+        <button.green onclick="setPlayername();">SUBMIT</button>
+      </div>
+    </div>
+  </body>
 </html>
