@@ -134,6 +134,7 @@ impl Handler {
       let result : Result<(), renegadex_patcher::traits::Error>;
       {
         let mut locked_patcher = patcher.lock().expect(concat!(file!(),":",line!()));
+        locked_patcher.rank_mirrors().expect(concat!(file!(),":",line!()));
         locked_patcher.poll_progress();
         result = locked_patcher.download();
       }
@@ -157,6 +158,7 @@ impl Handler {
       let result : Result<(), renegadex_patcher::traits::Error>;
       {
         let mut locked_patcher = patcher.lock().expect(concat!(file!(),":",line!()));
+        locked_patcher.rank_mirrors().expect(concat!(file!(),":",line!()));
         result = locked_patcher.remove_unversioned();
       }
       match result {
@@ -547,7 +549,9 @@ fn main() {
         .set("skipMovies", "false");
       let conf_arc = Arc::new(Mutex::new(conf.clone()));
       {
-        sciter::set_options(sciter::RuntimeOptions::DebugMode(true));
+        sciter::set_options(
+          sciter::RuntimeOptions::DebugMode(true)
+        ).expect(concat!(file!(),":",line!()));
         sciter::set_options(
           sciter::RuntimeOptions::ScriptFeatures(
             sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_FILE_IO as u8 |
