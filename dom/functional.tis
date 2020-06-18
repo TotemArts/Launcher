@@ -89,7 +89,7 @@ function image_callback(bytes) {
     var image_regex = new RegExp(escaped_tag, "g");
     news_items[id].html = news_items[id].html.replace(image_regex, "<img/>");
   }
-  var regex = /<img.+?src="(http(?:.)+?\.(?!gif).{3,4}(?:\?.+?)?)".+?>/;
+  var regex = /<img.+?src="(http[^"]+?\.(?!gif)[^"]{3,4}(?:\?[^"]+?)?)".+?>/;
   var img = news_items[id].html.match(regex);
   if (img && img[1]) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1],frame:this.frame});
   else if (id==frame_id) {
@@ -113,7 +113,7 @@ function load_news_item(text) {
 
   news_items[id].html = text;
   if (this.frame) this.frame.load(text,"");
-  var regex = /<img.+?src="(http(?:.)+?\.(?!gif).{3,4}(?:\?.+?)?)".+?>/;
+  var regex = /<img.+?src="(http[^"]+?\.(?!gif)[^"]{3,4}(?:\?[^"]+?)?)".+?>/;
   var img = text.match(regex);
   if (img && img[1]) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1],frame: this.frame});
 }
