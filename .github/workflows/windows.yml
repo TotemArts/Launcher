@@ -10,9 +10,10 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Update dependencies
-      run: >
-        sudo apt-get install gcc-mingw-w64-x86-64 libgtk-3-dev &&
-        (cargo update --manifest-path="windows-target/Cargo.toml" || (sh fix-build-issues.sh && cargo update --manifest-path="windows-target/Cargo.toml"))
+      run: sudo apt install --no-install-recommends gcc-mingw-w64-x86-64
+        
+    - name: Update Cargo
+      run: cargo update --manifest-path="windows-target/Cargo.toml" || (sh fix-build-issues.sh && cargo update --manifest-path="windows-target/Cargo.toml")
 
     - name: Install latest toolchain
       uses: actions-rs/toolchain@v1
