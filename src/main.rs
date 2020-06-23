@@ -476,7 +476,7 @@ impl Handler {
   /// Fetch the image at url with specified headers
   fn fetch_image(&self, url: Value, mut headers_value: Value, callback: Value, context: Value) {
     std::thread::spawn(move || {
-      let url = url.as_string().expect(concat!(file!(),":",line!())).parse::<hyper::Uri>().expect(concat!(file!(),":",line!()));
+      let url = url.as_string().expect(&format!("{}, url: {}", concat!(file!(),":",line!()), &url)).parse::<hyper::Uri>().expect(&format!("{}, url: {}", concat!(file!(),":",line!()), &url));
       let https = hyper_tls::HttpsConnector::new(4).expect("TLS initialization failed");
       let client = hyper::Client::builder().build::<_, hyper::Body>(https);
       let mut req = hyper::Request::builder();
@@ -602,6 +602,7 @@ fn main() {
   let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(downloader));
   let conf_arc = Arc::new(Mutex::new(conf.clone()));
   frame.event_handler(Handler{patcher: patcher.clone(), conf: conf_arc});
-  frame.load_file(&format!("file://{}/{}/frontpage.htm", current_path.to_str().expect(concat!(file!(),":",line!())), launcher_theme));
+  println!("{}",&format!("file://{}/{}/frontpage.htm", current_path.to_str().expect(concat!(file!(),":",line!())).replace("#", "%23").as_str(), launcher_theme));
+  frame.load_file(&format!("file://{}/{}/frontpage.htm", current_path.to_str().expect(concat!(file!(),":",line!())).replace("#", "%23").as_str(), launcher_theme));
   frame.run_app();
 }
