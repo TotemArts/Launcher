@@ -78,18 +78,18 @@ function image_callback(bytes) {
       var filetype = escaped_url.split('.').pop();
       news_items[id].html = news_items[id].html.replace(url_regex, "data:image/webp;base64,"+image.toBytes(#webp, 100).toString("base64"));
     } else {
-      stdout.println("Image at url \""+url+"\" appears to be damaged.");
-      var escaped_tag = "<img.+?src=\""+escaped_url+"\".+?/>";
+      stdout.println("Image at url \""+escaped_url+"\" appears to be damaged.");
+      var escaped_tag = "<img[^>]+?src=\""+escaped_url+"\"[^>]*?\/>";
       var image_regex = new RegExp(escaped_tag, "g");
-      news_items[id].html = news_items[id].html.replace(image_regex, "<img/>");
+      news_items[id].html = news_items[id].html.replace(image_regex, "");
     }
   } else {
-    stdout.println("Image at url \""+url+"\" appears to be missing.");
-    var escaped_tag = "<img.+?src=\""+escaped_url+"\".+?/>";
+    stdout.println("Image at url \""+escaped_url+"\" appears to be missing.");
+    var escaped_tag = "<img[^>]+?src=\""+escaped_url+"\"[^>]*?\/>";
     var image_regex = new RegExp(escaped_tag, "g");
-    news_items[id].html = news_items[id].html.replace(image_regex, "<img/>");
+    news_items[id].html = news_items[id].html.replace(image_regex, "");
   }
-  var regex = /<img.+?src="(http[^"]+?\.(?!gif)[^"]{3,4}(?:\?[^"]+?)?)".+?>/;
+  var regex = /<img[^>]+?src="(http[^"]+?\.(?!gif)[^"]{3,4}(?:\?[^"]+?)?)"[^>]*?>/;
   var img = news_items[id].html.match(regex);
   if (img && img[1]) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1],frame:this.frame});
   else if (id==frame_id) {
@@ -105,15 +105,15 @@ function load_news_item(text) {
   text = text.replace(/\s<\/span/g, "&nbsp;</span").replace(/[\r\n\s\t]+/g, " ").replace(/>\s</, ">&nbsp;<");
   var topicID = text.match(/data-topicID='(.+?)'/)[1];
   text = text.replace(new RegExp("_"+topicID,"g"), "_topicID");
-  var youtube_regex = /<i?frame.+?(?:src="(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com|youtu.be)\/(?:[\w\-\_]+\?v=|embed\/|v\/)?([\w\-\_]+)(?:\S+)?".+?)?(?:\/>|<\/i?frame>)/g;
-  text = text.replace(youtube_regex, '<a href=\"https://youtube.com/watch?v=$1\"><img src=\"https://img.youtube.com/vi/$1/hqdefault.jpg\"/></a>');
+  var youtube_regex = /<i?frame[^>]+?(?:src="(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com|youtu.be)\/(?:[\w\-\_]+\?v=|embed\/|v\/)?([\w\-\_]+)(?:\S+)?"[^>]*?)(?:\/>|>[^<>]*?<\/i?frame>)/g;
+  text = text.replace(youtube_regex, "<a href=\"https://youtube.com/watch?v=$1\"><img src=\"https://img.youtube.com/vi_webp/$1/maxresdefault.webp\"/></a>");
 
-  var iframe_regex = /<i?frame.+?(?:\/>|<\/i?frame>)/g;
+  var iframe_regex = /<i?frame[^>]*?(?:\/>|>[^<>]*?<\/i?frame>)/g;
   text = text.replace(iframe_regex, "");
 
   news_items[id].html = text;
   if (this.frame) this.frame.load(text,"");
-  var regex = /<img.+?src="(http[^"]+?\.(?!gif)[^"]{3,4}(?:\?[^"]+?)?)".+?>/;
+  var regex = /<img[^>]+?src="(http[^"]+?\.(?!gif)[^"]{3,4}(?:\?[^"]+?)?)"[^>]*?>/;
   var img = text.match(regex);
   if (img && img[1]) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1],frame: this.frame});
 }
