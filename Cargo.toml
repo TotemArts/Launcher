@@ -6,16 +6,14 @@ edition = "2018"
 exclude = ["target-windows/**", "target/**", "C:", "C:/**", "dom", "new", "dom/**", "new/**", "RenX-Launcher.zip", "RenX-Launcher.exe", "sciter.dll", "SelfUpdateExecutor.exe", "RenegadeX-Launcher.ini", "RenegadeX-Launcher"]
 
 [dependencies]
-hyper = "^0.12.27"
-hyper-tls = "^0.3.2"
-tokio = "^0.1.18"
+hyper = "^0.13.6"
+hyper-tls = "^0.4.1"
+tokio = { version = "0.2", features = ["full"] }
 tokio-tls = "^0.2.1"
-tokio-xmpp = "^1.0.0"
-xmpp-parsers = "^0.15.0"
 native-tls = "^0.2"
 tokio-reactor = "^0.1.9"
 url = "^2.1.0"
-futures = "^0.1.27"
+futures = "^0.3.5"
 sciter-rs = "^0.5.50"
 renegadex_patcher = { git = "https://github.com/SonnyX/RenegadeX-patcher-lib" }
 rust-ini = "^0.13.0"
@@ -24,3 +22,4 @@ socket2 = "^0.3.8"
 rand = "^0.7.0"
 percent-encoding = "^2.1.0"
 unzip = "^0.1.0"
+dirs = "^3.0.0"
