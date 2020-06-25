@@ -470,6 +470,9 @@ function VirtualList(params) {
       } else {
         el[0].attributes.removeClass("locked");
       }
+      if (r.data["NamePrefix"]) {
+        el[1].html = "<span.green>" + r.data["NamePrefix"] + "</span>&nbsp;" + el[1].html;
+      }
       el.state.current = current_record === r;
       if(setupRecord) setupRecord(i,r,el);
     };

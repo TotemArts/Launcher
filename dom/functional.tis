@@ -227,6 +227,7 @@ function getServersCallback(results) {
   output_variables["players_online"] = 0;
   for (var i = 0; i < old_length; i++) updated[i] = false;
   for(var changed in results) {
+    if(!changed) continue;
     var in_range = changed["Players"] >= output_variables["server_filter_players_min"] &&  changed["Players"] <= output_variables["server_filter_players_max"];
     var result = {
       locked: changed["Variables"]["bPassworded"],
