@@ -15,32 +15,34 @@
       function self.ready() {
         var result = $(p.result);
         switch(view.get_return_code()) {
-          case "0":
+          case "Success":
             result.text = "Launcher updated succesfully!";
+            $(button).attributes.addClass("green");
+            $(button).attributes.removeClass("orange");
             break;
-          case "1":
+          case "InvalidArguments":
             result.text = "Launcher update failed: Invalid Arguments!";
             break;
-          case "2":
+          case "KillFailure":
             result.text = "Launcher update failed: Failed to terminate previous launcher!";
             break;
-          case "3":
+          case "DeletePermissionFailure":
             result.text = "Launcher update failed: Not enough permissions to delete!";
             break;
-          case "4":
+          case "MovePermissionFailure":
             result.text = "Launcher update failed: Not enough permissions to move!";
             break;
-          case "5":
+          case "DirectoryMissingFailure":
             result.text = "Launcher update failed: Missing directory!";
             break;
-          case "6":
+          case "UnhandledException":
             result.text = "Launcher update failed: Unhandled Exception!";
             break;
-          case "7":
+          case "UnknownError":
             result.text = "Launcher update failed: Unknown Error!";
             break;
           default:
-            result.text = "Launcher update result unknown: " + view.get_return_code();
+            result.text = "Launcher update result unknown: " + view.get_return_code() + ".";
         }
         view.update();
 
@@ -62,7 +64,7 @@
       </div>
       <div.child-margin.vflow>
         <p.result></p>
-        <button.green onclick="view.close();">Affirmative!</button>
+        <button.orange onclick="view.close();">Affirmative!</button>
       </div>
     </div>
   </body>
