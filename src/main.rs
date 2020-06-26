@@ -15,6 +15,7 @@ extern crate single_instance;
 extern crate socket2;
 extern crate rand;
 extern crate unzip;
+extern crate dirs;
 
 use std::sync::{Arc,Mutex};
 
@@ -188,7 +189,12 @@ impl Handler {
     let mut conf = conf_unlocked.lock().expect(concat!(file!(),":",line!()));
     let mut section = conf.with_section(Some("RenX_Launcher".to_owned()));
     section.set("PlayerName", username.as_string().expect(concat!(file!(),":",line!())));
-    conf.write_to_file("RenegadeX-Launcher.ini").expect(concat!(file!(),":",line!()));
+
+    let mut config_directory = dirs::config_dir().unwrap();
+    config_directory.push("Renegade X");
+    config_directory.set_file_name("Renegade X Launcher.ini");
+
+    conf.write_to_file(config_directory.to_str().unwrap()).expect(concat!(file!(),":",line!()));
   }
 
   /// Get Server List as plain text
@@ -216,7 +222,7 @@ impl Handler {
           Ok::<(), Error>(())
         })
       });
-      let result = rt.block_on(result).unwrap();
+      let _ = rt.block_on(result).unwrap();
     });
   }
 
@@ -328,7 +334,12 @@ impl Handler {
     let mut conf = conf_unlocked.lock().expect(concat!(file!(),":",line!()));
     let mut section = conf.with_section(Some("RenX_Launcher".to_owned()));
     section.set(setting.as_string().expect(concat!(file!(),":",line!())), value.as_string().expect(concat!(file!(),":",line!())));
-    conf.write_to_file("RenegadeX-Launcher.ini").expect(concat!(file!(),":",line!()));
+    
+    let mut config_directory = dirs::config_dir().unwrap();
+    config_directory.push("Renegade X");
+    config_directory.set_file_name("Renegade X Launcher.ini");
+
+    conf.write_to_file(config_directory.to_str().unwrap()).expect(concat!(file!(),":",line!()));
   }
 
   /// Get the current launcher version
@@ -449,7 +460,7 @@ impl Handler {
             Err::<(), Error>("".into())
           })
         });
-        let result = rt.block_on(result).unwrap();
+        let _ = rt.block_on(result).unwrap();
       });
     }
   }
@@ -497,7 +508,7 @@ impl Handler {
           Ok::<(), Error>(())
         })
       });
-      let result = rt.block_on(result).unwrap();
+      let _ = rt.block_on(result).unwrap();
     });
   }
 
@@ -543,7 +554,7 @@ impl Handler {
           Ok::<(), Error>(())
         })
       });
-      let result = rt.block_on(result).unwrap();
+      let _ = rt.block_on(result).unwrap();
     });
   }
 }
@@ -579,7 +590,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   //TODO: Create "Another instance is already running" window.
   assert!(instance.is_single());
 
-  let conf = match Ini::load_from_file("RenegadeX-Launcher.ini") {
+  let mut config_directory = dirs::config_dir().unwrap();
+  config_directory.push("Renegade X");
+  config_directory.set_file_name("Renegade X Launcher.ini");
+
+  let mut current_dir = std::env::current_exe()?;
+  current_dir.pop();
+  std::env::set_current_dir(current_dir)?;
+
+  let conf = match Ini::load_from_file(config_directory.to_str().unwrap()) {
     Ok(conf) => conf,
     Err(_e) => {
       let mut conf = Ini::new();
