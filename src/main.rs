@@ -7,7 +7,7 @@ extern crate hyper_tls;
 extern crate tokio;
 extern crate tokio_tls;
 extern crate tokio_reactor;
-#[macro_use] extern crate futures;
+extern crate futures;
 #[macro_use] extern crate sciter;
 extern crate renegadex_patcher;
 extern crate ini;
@@ -16,6 +16,7 @@ extern crate socket2;
 extern crate rand;
 extern crate unzip;
 extern crate dirs;
+extern crate tower;
 
 use std::sync::{Arc,Mutex};
 
@@ -28,7 +29,83 @@ use ini::Ini;
 use single_instance::SingleInstance;
 use std::io::Write;
 use crate::hyper::body::HttpBody; 
+use hyper::client::{Client, HttpConnector};
 use hyper::http::header::{HeaderMap, HeaderName, HeaderValue};
+use hyper::client::connect::dns::Name;
+
+use std::net::ToSocketAddrs;
+use std::pin::Pin;
+use std::task::Poll;
+use std::future::Future;
+
+
+#[derive(Debug, Clone)]
+pub struct SocketAddrs {
+  inner: std::vec::IntoIter<std::net::SocketAddr>
+}
+
+impl PartialEq for SocketAddrs {
+  fn eq(&self, other: &SocketAddrs) -> bool {
+    self.inner.as_slice() == other.inner.as_slice()
+  }
+}
+
+impl From<Vec<std::net::SocketAddr>> for SocketAddrs {
+  fn from(other: Vec<std::net::SocketAddr>) -> Self {
+    SocketAddrs {
+      inner: other.into_iter()
+    }
+  }
+}
+
+impl ToSocketAddrs for SocketAddrs {
+  type Iter = std::vec::IntoIter<std::net::SocketAddr>;
+  fn to_socket_addrs(&self) -> std::io::Result<std::vec::IntoIter<std::net::SocketAddr>> {
+    Ok(self.inner.clone())
+  }
+}
+
+impl Iterator for SocketAddrs {
+  type Item = std::net::IpAddr;
+
+  fn next(&mut self) -> Option<Self::Item> {
+      self.inner.next().map(|sa| sa.ip())
+  }
+}
+
+
+#[derive(Clone)]
+pub struct ResolverService {
+  pub socket_addrs: SocketAddrs
+}
+
+impl ResolverService {
+  pub fn new(socket_addrs: SocketAddrs) -> Self {
+    ResolverService {
+      socket_addrs
+    }
+  }
+}
+
+impl tower::Service<Name> for ResolverService {
+  type Response = SocketAddrs;
+  type Error = Error;
+  // We can't "name" an `async` generated future.
+  type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send >>;
+
+  fn poll_ready(&mut self, _: &mut std::task::Context<'_>) -> Poll<Result<(), Self::Error>> {
+      // This connector is always ready, but others might not be.
+      Poll::Ready(Ok(()))
+  }
+
+  fn call(&mut self, _: Name) -> Self::Future {
+    let socket_addrs = self.socket_addrs.clone();
+    let fut = async move { 
+      Ok(socket_addrs) 
+    };
+    Box::pin(fut)
+  }
+}
 
 /// The current launcher's version
 static VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -231,7 +308,6 @@ impl Handler {
     std::thread::spawn(move || {
       let socket = Socket::new(Domain::ipv4(), Type::raw(), Some(Protocol::icmpv4())).expect(concat!(file!(),":",line!(),": New socket"));
       let server_string = server.as_string().expect(&format!("Couldn't cast server \"{:?}\" to string", &server));
-      use std::net::ToSocketAddrs;
       let mut server_socket = server_string.to_socket_addrs().expect(&format!("Couldn't unwrap socket address of server \"{}\"", &server_string));
       let sock_addr = server_socket.next().expect(&format!("No Sockets found for DNS name \"{}\"", &server_string)).into();
       let start_time = std::time::Instant::now();
@@ -270,7 +346,7 @@ impl Handler {
     match Ini::load_from_file(format!("{}/UDKGame/Config/DefaultRenegadeX.ini", game_location)) {
       Ok(conf) => {
         let section = conf.section(Some("RenX_Game.Rx_Game".to_owned())).expect(concat!(file!(),":",line!()));
-        section.get("GameVersion").expect(concat!(file!(),":",line!())).clone()
+        section.get("GameVersion").expect(concat!(file!(),":",line!())).to_string()
       },
       Err(_e) => {
         "Not installed".to_string()
@@ -377,62 +453,58 @@ impl Handler {
   fn update_launcher(&self, progress: Value) {
     let launcher_info = self.patcher.lock().expect(concat!(file!(),":",line!())).get_launcher_info().expect(concat!(file!(),":",line!()));
     if VERSION != launcher_info.version_name {
-      let url = launcher_info.patch_url.parse::<hyper::Uri>();
-      std::thread::spawn(move || async {
+      let socket_addrs = launcher_info.patch_url.parse::<url::Url>().unwrap().socket_addrs(|| None).unwrap();
+      let uri = launcher_info.patch_url.parse::<hyper::Uri>().unwrap();
+      std::thread::spawn(move || {
         let mut rt = tokio::runtime::Builder::new().basic_scheduler().enable_time().enable_io().build().unwrap();
         let result = rt.enter(|| {
           rt.spawn(async move {
-            //download file
-            let url = url?;
-            if let Some(host) = url.host() {
-              //Connect tcp stream to a hostname:port
-              let host_port = format!("{}:{}", host, url.port_u16().unwrap_or(80_u16));
-              let tcpstream = std::net::TcpStream::connect(host_port)?;
-              let (mut client, conn) = tokio::net::TcpStream::from_std(tcpstream).map(|tcp| {
-                hyper::client::conn::handshake(tcp)
-              })?.await?;
+            //Connect tcp stream to a hostname:port
+            let tls : tokio_tls::TlsConnector = native_tls::TlsConnector::new().unwrap().into();
+            let resolver_service = ResolverService::new(socket_addrs.into());
+            let mut http_connector : HttpConnector<ResolverService> = HttpConnector::new_with_resolver(resolver_service);
+            http_connector.enforce_http(false);
+            let https_connector : hyper_tls::HttpsConnector<HttpConnector<ResolverService>> = (http_connector, tls).into();
+            let client = Client::builder().build::<_, hyper::Body>(https_connector);
 
-              let future = async {
-                // Set up a request
-                let req = hyper::Request::builder();
-                let req = req.uri(url.path()).header("host", host).header("User-Agent", "sonny-launcher/1.0");
-                let req = req.body(hyper::Body::empty()).expect(concat!(file!(),":",line!()));
+            // Set up a request
+            let req = hyper::Request::builder();
+            let req = req.uri(uri).header("User-Agent", "sonny-launcher/1.0");
+            let req = req.body(hyper::Body::empty()).expect(concat!(file!(),":",line!()));
 
-                // Send request
-                let res = client.send_request(req).await?;
-                if res.status() != 200 && res.status() != 206 {
-                  //Err("Bad Result")
-                }
+            // Send request
+            let res = client.request(req).await?;
 
-                // Initialize progress in front-end to be 0 up to maximum content_length
-                let content_length : usize = res.headers().get("content-length").expect("Expected a content-length header, however none was found.").to_str().expect("Couldn't convert content-length value to str.").parse().expect("Couldn't parse content-length as a usize.");
-                let progress_clone = progress.clone();
-                std::thread::spawn(move || {
-                  progress.call(None, &make_args!(format!("[0, {}]", content_length)), None).expect(concat!(file!(),":",line!()));
-                });
+            if res.status() == 200 || res.status() == 206 {
+              // Initialize progress in front-end to be 0 up to maximum content_length
+              let content_length : usize = res.headers().get("content-length").expect("Expected a content-length header, however none was found.").to_str().expect("Couldn't convert content-length value to str.").parse().expect("Couldn't parse content-length as a usize.");
+              let progress_clone = progress.clone();
+              std::thread::spawn(move || {
+                progress.call(None, &make_args!(format!("[0, {}]", content_length)), None).expect(concat!(file!(),":",line!()));
+              });
 
-                // Set up vector where the stream will write into
-                let mut download_contents = Vec::with_capacity(content_length);
-                let mut downloaded = 0;
-                let mut body = res.into_body();
-                while !body.is_end_stream() {
-                  if let Some(chunk) = body.data().await {
-                    let chunk = chunk?;
-                    let chunk_size = chunk.len();
-                    downloaded += chunk_size;
-                    let progress_clone = progress_clone.clone();
-                    if downloaded*100/content_length > (downloaded-chunk_size)*100/content_length {
-                      std::thread::spawn(move || {progress_clone.call(None, &make_args!(format!("[{},{}]", downloaded.to_string(), content_length.to_string())), None).expect(concat!(file!(),":",line!()));});
-                    }
-                    download_contents.write_all(&chunk)?;
+              // Set up vector where the stream will write into
+              let mut download_contents = Vec::with_capacity(content_length);
+              let mut downloaded = 0;
+              let mut body = res.into_body();
+
+              while !body.is_end_stream() {
+                if let Some(chunk) = body.data().await {
+                  let chunk = chunk?;
+                  let chunk_size = chunk.len();
+                  downloaded += chunk_size;
+                  let progress_clone = progress_clone.clone();
+                  if downloaded*100/content_length > (downloaded-chunk_size)*100/content_length {
+                    std::thread::spawn(move || {
+                      progress_clone.call(None, &make_args!(format!("[{},{}]", downloaded.to_string(), content_length.to_string())), None).expect(concat!(file!(),":",line!()));
+                    });
                   }
+                  download_contents.write_all(&chunk)?;
                 }
-                Ok::<Vec<u8>, Error>(download_contents)
-              };
-              let (result, client) = join!(future, conn.without_shutdown());
+              }
               drop(client);
 
-              let download_contents = std::io::Cursor::new(result?);
+              let download_contents = std::io::Cursor::new(download_contents);
               let mut output_path = std::env::current_exe().expect(concat!(file!(),":",line!()));
               output_path.pop();
               let target_dir = output_path.clone();
@@ -455,7 +527,7 @@ impl Handler {
                                           .spawn().expect(concat!(file!(),":",line!()));
               std::process::exit(0);
             }
-            Err::<(), Error>("".into())
+            Err::<(), Error>("Launcher update: File not found.".into())
           })
         });
         let _ = rt.block_on(result).unwrap();
@@ -519,7 +591,7 @@ impl Handler {
       }
     }
     let url = url.as_string().expect("Couldn't parse url as string.").parse::<hyper::Uri>();
-    std::thread::spawn(move || async {
+    std::thread::spawn(move || {
       let mut rt = tokio::runtime::Builder::new().basic_scheduler().enable_time().enable_io().build().unwrap();
       let result = rt.enter(|| {
         rt.spawn(async move {

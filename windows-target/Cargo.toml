@@ -1,6 +1,6 @@
 [package]
 name = "RenegadeX-Launcher"
-version = "0.9.12"
+version = "0.9.13"
 authors = ["SonnyX"]
 edition = "2018"
 build = "windows.rs"
@@ -14,9 +14,9 @@ path = "../src/main.rs"
 hyper = "^0.13.6"
 hyper-tls = "^0.4.1"
 tokio = { version = "0.2", features = ["full"] }
-tokio-tls = "^0.2.1"
+tokio-tls = "^0.3.1"
 native-tls = "^0.2"
-tokio-reactor = "^0.1.9"
+tokio-reactor = "^0.1.12"
 url = "^2.1.0"
 futures = "^0.3.5"
 sciter-rs = "^0.5.50"
@@ -28,6 +28,7 @@ rand = "^0.7.0"
 percent-encoding = "^2.1.0"
 unzip = "^0.1.0"
 dirs = "^3.0.0"
+tower = "0.3.1"
 
 [build-dependencies]
 embed-resource = "1.3.0"
