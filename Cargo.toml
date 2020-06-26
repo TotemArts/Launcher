@@ -1,6 +1,6 @@
 [package]
 name = "RenegadeX-Launcher"
-version = "0.9.11"
+version = "0.9.12"
 authors = ["SonnyX"]
 edition = "2018"
 exclude = ["target-windows/**", "target/**", "C:", "C:/**", "dom", "new", "dom/**", "new/**", "RenX-Launcher.zip", "RenX-Launcher.exe", "sciter.dll", "SelfUpdateExecutor.exe", "RenegadeX-Launcher.ini", "RenegadeX-Launcher"]

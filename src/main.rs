@@ -388,11 +388,9 @@ impl Handler {
               //Connect tcp stream to a hostname:port
               let host_port = format!("{}:{}", host, url.port_u16().unwrap_or(80_u16));
               let tcpstream = std::net::TcpStream::connect(host_port)?;
-              println!("before await");
               let (mut client, conn) = tokio::net::TcpStream::from_std(tcpstream).map(|tcp| {
                 hyper::client::conn::handshake(tcp)
               })?.await?;
-              println!("after await");
 
               let future = async {
                 // Set up a request
@@ -490,9 +488,7 @@ impl Handler {
 
             let req = req.uri(url.clone()).header("host", host).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
             let req = req.body(hyper::Body::empty()).expect(concat!(file!(),":",line!()));
-            println!("before await");
             let res = client.request(req).await?;
-            println!("after await");
 
             let abort_in_error = res.status() != 200 && res.status() != 206;
             let body = hyper::body::to_bytes(res.into_body()).await?;
@@ -537,9 +533,7 @@ impl Handler {
 
             let req = req.uri(url.clone()).header("host", host).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
             let req = req.body(hyper::Body::empty()).expect(concat!(file!(),":",line!()));
-            println!("before await");
             let res = client.request(req).await?;
-            println!("after await");
 
             let abort_in_error = res.status() != 200 && res.status() != 206;
             let body = hyper::body::to_bytes(res.into_body()).await?;
@@ -584,11 +578,39 @@ impl sciter::EventHandler for Handler {
   }
 }
 
+struct UpdateResultHandler {
+  update_result: String,
+}
+
+impl UpdateResultHandler {
+  fn get_return_code(&self) -> String {
+    self.update_result.clone()
+  }
+}
+
+impl sciter::EventHandler for UpdateResultHandler {
+	dispatch_script_call! {
+		fn get_return_code();
+  }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
   let instance = SingleInstance::new("RenegadeX-Launcher")?;
   //TODO: Create "Another instance is already running" window.
   assert!(instance.is_single());
+
+  sciter::set_options(
+    sciter::RuntimeOptions::DebugMode(true)
+  ).expect(concat!(file!(),":",line!()));
+  sciter::set_options(
+    sciter::RuntimeOptions::ScriptFeatures(
+      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_FILE_IO as u8 |
+      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SYSINFO as u8 |
+      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SOCKET_IO as u8 | // Enables connecting to the inspector via Ctrl+Shift+I
+      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_EVAL as u8  // Enables execution of Eval inside of TI-Script
+    )
+  ).expect(concat!(file!(),":",line!())); 
 
   let mut config_directory = dirs::config_dir().unwrap();
   config_directory.push("Renegade X");
@@ -596,7 +618,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
   let mut current_dir = std::env::current_exe()?;
   current_dir.pop();
-  std::env::set_current_dir(current_dir)?;
+  std::env::set_current_dir(&current_dir)?;
+
+  for argument in std::env::args() {
+    if argument.starts_with("--patch-result=") {
+      let mut frame = sciter::Window::new();
+      frame.event_handler(UpdateResultHandler{update_result: argument[15..].to_string()});
+      frame.load_file(&format!("file://{}/dom/self-update-result.htm#?{}", current_dir.to_str().expect(concat!(file!(),":",line!())), &argument[2..]));
+      frame.run_app();
+    }
+  }
 
   let conf = match Ini::load_from_file(config_directory.to_str().unwrap()) {
     Ok(conf) => conf,
@@ -612,23 +643,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .set("skipMovies", "false");
       let conf_arc = Arc::new(Mutex::new(conf.clone()));
       {
-        sciter::set_options(
-          sciter::RuntimeOptions::DebugMode(true)
-        ).expect(concat!(file!(),":",line!()));
-        sciter::set_options(
-          sciter::RuntimeOptions::ScriptFeatures(
-            sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_FILE_IO as u8 |
-            sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SYSINFO as u8 |
-            sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SOCKET_IO as u8 | // Enables connecting to the inspector via Ctrl+Shift+I
-            sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_EVAL as u8  // Enables execution of Eval inside of TI-Script
-          )
-        ).expect(concat!(file!(),":",line!())); 
         let mut frame = sciter::Window::new();
         let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(Downloader::new()));
         frame.event_handler(Handler{patcher: patcher.clone(), conf: conf_arc.clone()});
-        let mut current_path = std::env::current_exe().expect(concat!(file!(),":",line!()));
-        current_path.pop();
-        frame.load_file(&format!("file://{}/dom/first-startup.htm", current_path.to_str().expect(concat!(file!(),":",line!()))));
+        frame.load_file(&format!("file://{}/dom/first-startup.htm", current_dir.to_str().expect(concat!(file!(),":",line!()))));
         frame.run_app();
       }
       conf = match Arc::try_unwrap(conf_arc) {
@@ -648,16 +666,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   let version_url = section.get("VersionUrl").expect(concat!(file!(),":",line!()));
   let launcher_theme = section.get("LauncherTheme").expect(concat!(file!(),":",line!()));
 
-  let mut current_path = std::env::current_exe().expect(concat!(file!(),":",line!()));
-  current_path.pop();
-  sciter::set_options(
-    sciter::RuntimeOptions::ScriptFeatures(
-      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_FILE_IO as u8 |
-      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SYSINFO as u8 |
-      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SOCKET_IO as u8 | // Enables connecting to the inspector via Ctrl+Shift+I
-      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_EVAL as u8  // Enables execution of Eval inside of TI-Script
-    )
-  ).expect(concat!(file!(),":",line!())); 
   let mut frame = sciter::Window::new();
   let mut downloader = Downloader::new();
   downloader.set_location(game_location.to_string());
@@ -665,8 +673,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(downloader));
   let conf_arc = Arc::new(Mutex::new(conf.clone()));
   frame.event_handler(Handler{patcher: patcher.clone(), conf: conf_arc});
-  println!("{}",&format!("file://{}/{}/frontpage.htm", current_path.to_str().expect(concat!(file!(),":",line!())).replace("#", "%23").as_str(), launcher_theme));
-  frame.load_file(&format!("file://{}/{}/frontpage.htm", current_path.to_str().expect(concat!(file!(),":",line!())).replace("#", "%23").as_str(), launcher_theme));
+  println!("{}",&format!("file://{}/{}/frontpage.htm", current_dir.to_str().expect(concat!(file!(),":",line!())).replace("#", "%23").as_str(), launcher_theme));
+  frame.load_file(&format!("file://{}/{}/frontpage.htm", current_dir.to_str().expect(concat!(file!(),":",line!())).replace("#", "%23").as_str(), launcher_theme));
   frame.run_app();
   Ok(())
 }
