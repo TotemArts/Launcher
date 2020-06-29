@@ -1,4 +1,4 @@
-html, body, button, toggle, textarea, input|text, table, thead, tbody, tr, th, td, text, p, h1, h2, h3, h4, h5 {
+html, body, button, toggle, textarea, input|text, table, thead, tbody, tr, th, td, text, p, h1, h2, h3, h4, h5, output {
   background-gradient: none;
   background-color: none;
   background-image: none;
@@ -13,13 +13,14 @@ html, body, button, toggle, textarea, input|text, table, thead, tbody, tr, th, t
 }
 
 output {
+  display:inline;
   font: inherit;
   background-gradient: inherit;
   background-color: inherit;
   background-image: inherit;
   border: 0;
   padding: 0;
-  margin: 0;
+  margin: inherit;
   border-radius: 0;
   color: inherit;
   font-family: inherit;
@@ -312,7 +313,7 @@ checkmark.big {
 }
 
 checkmark.checked {
-  //background-size: 12dip 12dip;
+  /*background-size: 12dip 12dip;*/
   background-image: url(images/Tick.svg);
 }
 
