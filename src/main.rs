@@ -691,12 +691,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   let mut current_dir = std::env::current_exe()?;
   current_dir.pop();
   std::env::set_current_dir(&current_dir)?;
+  const WEBIFY: &percent_encoding::AsciiSet = &percent_encoding::NON_ALPHANUMERIC.remove(b'/').remove(b'\\').remove(b':');
+  let current_dir = percent_encoding::utf8_percent_encode(current_dir.to_str().unwrap(), WEBIFY).to_string();
 
   for argument in std::env::args() {
     if argument.starts_with("--patch-result=") {
       let mut frame = sciter::Window::new();
       frame.event_handler(UpdateResultHandler{update_result: argument[15..].to_string()});
-      frame.load_file(&format!("file://{}/dom/self-update-result.htm#?{}", current_dir.to_str().expect(concat!(file!(),":",line!())), &argument[2..]));
+      frame.load_file(&format!("file://{}/dom/self-update-result.htm", &current_dir));
       frame.run_app();
     }
   }
@@ -718,7 +720,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut frame = sciter::Window::new();
         let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(Downloader::new()));
         frame.event_handler(Handler{patcher: patcher.clone(), conf: conf_arc.clone()});
-        frame.load_file(&format!("file://{}/dom/first-startup.htm", current_dir.to_str().expect(concat!(file!(),":",line!()))));
+        frame.load_file(&format!("file://{}/dom/first-startup.htm", &current_dir));
         frame.run_app();
       }
       conf = match Arc::try_unwrap(conf_arc) {
@@ -745,8 +747,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(downloader));
   let conf_arc = Arc::new(Mutex::new(conf.clone()));
   frame.event_handler(Handler{patcher: patcher.clone(), conf: conf_arc});
-  println!("{}",&format!("file://{}/{}/frontpage.htm", current_dir.to_str().expect(concat!(file!(),":",line!())).replace("#", "%23").as_str(), launcher_theme));
-  frame.load_file(&format!("file://{}/{}/frontpage.htm", current_dir.to_str().expect(concat!(file!(),":",line!())).replace("#", "%23").as_str(), launcher_theme));
+  println!("{}",&format!("file://{}/{}/frontpage.htm", current_dir, launcher_theme));
+  frame.load_file(&format!("file://{}/{}/frontpage.htm", current_dir, launcher_theme));
   frame.run_app();
   Ok(())
 }
