@@ -18,6 +18,8 @@ extern crate unzip;
 extern crate dirs;
 extern crate tower;
 extern crate runas;
+extern crate sha2;
+extern crate hex;
 
 use std::sync::{Arc,Mutex};
 
@@ -33,6 +35,7 @@ use crate::hyper::body::HttpBody;
 use hyper::client::{Client, HttpConnector};
 use hyper::http::header::{HeaderMap, HeaderName, HeaderValue};
 use hyper::client::connect::dns::Name;
+use sha2::{Sha256, Digest};
 
 use std::net::ToSocketAddrs;
 use std::pin::Pin;
@@ -490,6 +493,7 @@ impl Handler {
     if VERSION != launcher_info.version_name {
       let socket_addrs = launcher_info.patch_url.parse::<url::Url>().unwrap().socket_addrs(|| None).unwrap();
       let uri = launcher_info.patch_url.parse::<hyper::Uri>().unwrap();
+      let good_hash = launcher_info.patch_hash;
       std::thread::spawn(move || {
         let mut rt = tokio::runtime::Builder::new().basic_scheduler().enable_time().enable_io().build().unwrap();
         let result = rt.enter(|| {
@@ -539,6 +543,14 @@ impl Handler {
               }
               drop(client);
 
+              // check instructions hash
+              let mut sha256 = Sha256::new();
+              sha256.input(&download_contents);
+              let hash = hex::encode_upper(sha256.result());
+              if &hash != &good_hash {
+                panic!("The hashes don't match one another!");
+              }
+
               let download_contents = std::io::Cursor::new(download_contents);
               let mut output_path = std::env::current_exe().expect(concat!(file!(),":",line!()));
               output_path.pop();
@@ -551,6 +563,7 @@ impl Handler {
 
               //extract files
               unzip::Unzipper::new(download_contents, output_path).unzip().expect(concat!(file!(),":",line!()));
+
               //run updater program and quit this.
               self_update_executor.push("SelfUpdateExecutor.exe");
               let args = vec![format!("--pid={}",std::process::id()), format!("--target={}", target_dir.to_str().expect(concat!(file!(),":",line!())))];
