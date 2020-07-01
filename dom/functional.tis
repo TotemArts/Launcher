@@ -32,7 +32,7 @@ function set_footer() {
         $(button.green#launch).@["onclick"] = "launchGame();";
       } else {
         footer.html = "<div.hexpand.hflow.vcenter><p.uppercase.red.hexpand.vcenter>&#10005; "+output_variables["popup_title"]+"</p><button.green #update>"+output_variables["popup_green"]+" Game</button></div>";
-        $(button.green#update).@["onclick"] = "view.start_download(onProgress, onUpdateDone, onUpdateErr); output_variables[\"current_action\"] = \"Updating game\"; show_overlay(\"verify.htm\"); ";
+        $(button.green#update).@["onclick"] = output_variables["button_onclick"];
       }
       break;
     default:
@@ -321,8 +321,9 @@ function onUpdateCallback(reason) {
       output_variables["popup_message"] = "Would you like to install?";
       output_variables["popup_green"] = "INSTALL";
       output_variables["popup_gray"] = "NOT NOW";
+      output_variables["button_onclick"] = "view.install_redists(onRedistDone, onUpdateErr); output_variables[\"current_action\"] = \"Installing game dependencies\"; show_overlay(\"launcher-update.htm\");";
       show_overlay("popup_choice.htm");
-      $(#overlay button.green).@["onclick"] = "view.start_download(onProgress, onUpdateDone, onUpdateErr); output_variables[\"current_action\"] = \"Installing game\"; show_overlay(\"verify.htm\"); ";
+      $(#overlay button.green).@["onclick"] = output_variables["button_onclick"];
       break;
     case "resume":
       output_variables["current_action"] = "Resuming game installation";
@@ -335,8 +336,9 @@ function onUpdateCallback(reason) {
       output_variables["popup_message"] = "Would you like to update?";
       output_variables["popup_green"] = "UPDATE";
       output_variables["popup_gray"] = "DELAY";
+      output_variables["button_onclick"] = "view.start_download(onProgress, onUpdateDone, onUpdateErr); output_variables[\"current_action\"] = \"Updating game\"; show_overlay(\"verify.htm\");";
       show_overlay("popup_choice.htm");
-      $(#overlay button.green).@["onclick"] = "view.start_download(onProgress, onUpdateDone, onUpdateErr); output_variables[\"current_action\"] = \"Updating game\"; show_overlay(\"verify.htm\"); ";
+      $(#overlay button.green).@["onclick"] = output_variables["button_onclick"];
       break;
     case "validate":
       output_variables["current_action"] = "Validating game installation";
@@ -353,6 +355,12 @@ function onUpdateErr(err) {
   output_variables["popup_message"] = "An error has occurred while \""+current_action+"\", the error states: </p><p>" + err;
   output_variables["popup_green"] = "Oh well...";
   show_overlay("popup_ok.htm");
+}
+
+function onRedistDone() {
+  view.start_download(onProgress, onUpdateDone, onUpdateErr);
+  output_variables["current_action"] = "Installing game";
+  if($(#overlay) && $(#overlay).style["visibility"] == "visible") show_overlay("verify.htm");
 }
 
 function onUpdateDone() {

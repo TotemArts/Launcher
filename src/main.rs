@@ -17,6 +17,7 @@ extern crate rand;
 extern crate unzip;
 extern crate dirs;
 extern crate tower;
+extern crate runas;
 
 use std::sync::{Arc,Mutex};
 
@@ -449,6 +450,40 @@ impl Handler {
     }
   }
 
+  fn install_redists(&self, done: Value, error_callback: Value) {
+    if let Some(mut cache_dir) = dirs::cache_dir() {
+      let patcher = self.patcher.clone();
+      // Spawn thread, to not block the main process.
+      std::thread::spawn(move || {
+        cache_dir.set_file_name("UE3Redist.exe");
+        let file = std::fs::File::create(&cache_dir)?;
+        let mut patcher = patcher.lock().expect(concat!(file!(),":",line!()));
+        patcher.rank_mirrors()?;
+        let result = patcher.download_file_from_mirrors("/redists/UE3Redist.exe", file);
+        if let Err(error) = result {
+          std::thread::spawn(move || {error_callback.call(None, &make_args!(format!("Failed to download UE3Redist: {}", error)), None).expect(concat!(file!(),":",line!()));});
+          return Err::<(), Error>("Failed to download UE3Redist.".into());
+        }
+
+        //run installer of UE3Redist and quit this.
+        match runas::Command::new(cache_dir.to_str().unwrap()).gui(true).status() {
+          Ok(output) => {
+            if output.success() {
+              std::thread::spawn(move || {done.call(None, &make_args!(), None).expect(concat!(file!(),":",line!()));});
+            } else {
+              std::thread::spawn(move || {error_callback.call(None, &make_args!(format!("UE3Redist.exe exited in a crash: {}", output.code().expect(concat!(file!(),":",line!())))), None).expect(concat!(file!(),":",line!()));});
+            }
+          },
+          Err(e) => {
+            eprintln!("Failed to create child: {}", &e);
+            std::thread::spawn(move || {error_callback.call(None, &make_args!(format!("Failed to open UE3Redist: {}", &e)), None).expect(concat!(file!(),":",line!()));});
+          }
+        };
+        Ok::<(), Error>(())
+      });
+    }
+  }
+
   /// Launcher updater
   fn update_launcher(&self, progress: Value) {
     let launcher_info = self.patcher.lock().expect(concat!(file!(),":",line!())).get_launcher_info().expect(concat!(file!(),":",line!()));
@@ -627,7 +662,8 @@ impl Handler {
 
 impl sciter::EventHandler for Handler {
 	dispatch_script_call! {
-		fn check_update(Value, Value);
+    fn check_update(Value, Value);
+    fn install_redists(Value, Value);
     fn start_download(Value, Value, Value);
     fn remove_unversioned(Value, Value);
 
