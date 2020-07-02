@@ -465,6 +465,7 @@ impl Handler {
         let mut patcher = patcher.lock().expect(concat!(file!(),":",line!()));
         patcher.rank_mirrors()?;
         let result = patcher.download_file_from_mirrors("/redists/UE3Redist.exe", file);
+        drop(patcher);
         if let Err(error) = result {
           std::thread::spawn(move || {error_callback.call(None, &make_args!(format!("Failed to download UE3Redist: {}", error)), None).expect(concat!(file!(),":",line!()));});
           return Err::<(), Error>("Failed to download UE3Redist.".into());
