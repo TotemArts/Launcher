@@ -1,4 +1,4 @@
-#![windows_subsystem="windows"]
+#![windows_subsystem="console"]
 #![warn(clippy::multiple_crate_versions)]
 
 extern crate native_tls;
@@ -127,7 +127,7 @@ impl Handler {
   fn check_update(&self, done: sciter::Value, error: sciter::Value) {
     {
       let progress = self.patcher.clone().lock().expect(concat!(file!(),":",line!())).get_progress();
-      let update = &progress.lock().expect(concat!(file!(),":",line!())).update;
+      let update = &progress.lock().expect(concat!(file!(),":",line!())).update.clone();
       match update {
         Update::UpToDate => {
           std::thread::spawn(move || {done.call(None, &make_args!("up_to_date"), None).expect(concat!(file!(),":",line!()));});
@@ -206,6 +206,7 @@ impl Handler {
           ).parse().expect(concat!(file!(),":",line!()));
           last_download_size = progress_locked.download_size.0;
           not_finished = !progress_locked.finished_patching;
+          drop(progress_locked);
           let callback_clone = callback.clone();
           std::thread::spawn(move || {callback_clone.call(None, &make_args!(me), None).expect(concat!(file!(),":",line!()));});
         }
@@ -444,6 +445,7 @@ impl Handler {
         let mut patcher = patcher.lock().expect(concat!(file!(),":",line!()));
         patcher.retrieve_mirrors().expect(concat!(file!(),":",line!()));
         let launcher_info_option = patcher.get_launcher_info();
+        drop(patcher);
         if let Some(launcher_info) = launcher_info_option {
           if VERSION != launcher_info.version_name && !launcher_info.prompted {
             std::thread::spawn(move || {callback.call(None, &make_args!(launcher_info.version_name), None).expect(concat!(file!(),":",line!()));});
@@ -496,7 +498,8 @@ impl Handler {
     if VERSION != launcher_info.version_name {
       let socket_addrs = launcher_info.patch_url.parse::<url::Url>().unwrap().socket_addrs(|| None).unwrap();
       let uri = launcher_info.patch_url.parse::<hyper::Uri>().unwrap();
-      let good_hash = launcher_info.patch_hash;
+      let good_hash = launcher_info.patch_hash.clone();
+      drop(launcher_info);
       std::thread::spawn(move || {
         let mut rt = tokio::runtime::Builder::new().basic_scheduler().enable_time().enable_io().build().unwrap();
         let result = rt.enter(|| {
