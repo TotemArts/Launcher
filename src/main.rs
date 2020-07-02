@@ -273,7 +273,8 @@ impl Handler {
 
     let mut config_directory = dirs::config_dir().unwrap();
     config_directory.push("Renegade X");
-    config_directory.set_file_name("Renegade X Launcher.ini");
+    std::fs::create_dir_all(&config_directory).expect("Creation of config-directory went wrong!");
+    config_directory.push("Renegade X Launcher.ini");
 
     conf.write_to_file(config_directory.to_str().unwrap()).expect(concat!(file!(),":",line!()));
   }
@@ -417,7 +418,8 @@ impl Handler {
     
     let mut config_directory = dirs::config_dir().unwrap();
     config_directory.push("Renegade X");
-    config_directory.set_file_name("Renegade X Launcher.ini");
+    std::fs::create_dir_all(&config_directory).expect("Creation of config-directory went wrong!");
+    config_directory.push("Renegade X Launcher.ini");
 
     conf.write_to_file(config_directory.to_str().unwrap()).expect(concat!(file!(),":",line!()));
   }
@@ -544,11 +546,13 @@ impl Handler {
               drop(client);
 
               // check instructions hash
-              let mut sha256 = Sha256::new();
-              sha256.input(&download_contents);
-              let hash = hex::encode_upper(sha256.result());
-              if &hash != &good_hash {
-                panic!("The hashes don't match one another!");
+              if &good_hash != "" {
+                let mut sha256 = Sha256::new();
+                sha256.input(&download_contents);
+                let hash = hex::encode_upper(sha256.result());
+                if &hash != &good_hash {
+                  panic!("The hashes don't match one another!");
+                }
               }
 
               let download_contents = std::io::Cursor::new(download_contents);
@@ -735,7 +739,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
   let mut config_directory = dirs::config_dir().unwrap();
   config_directory.push("Renegade X");
-  config_directory.set_file_name("Renegade X Launcher.ini");
+  config_directory.push("Renegade X Launcher.ini");
 
   let mut current_dir = std::env::current_exe()?;
   current_dir.pop();
