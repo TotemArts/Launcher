@@ -21,9 +21,11 @@ single-instance = "^0.1.1"
 socket2 = "^0.3.8"
 rand = "^0.7.0"
 percent-encoding = "^2.1.0"
-unzip = "^0.1.0"
+unzip = { git = "https://github.com/SonnyX/unzip-rs" }
 dirs = "^3.0.0"
 tower = "^0.3.1"
 runas = { git = "https://github.com/SonnyX/rust-runas" }
 sha2 = "^0.8"
 hex = "^0.4"
+log = "^0.4.11"
+flexi_logger = "^0.15.8"
