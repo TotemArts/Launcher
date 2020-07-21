@@ -760,16 +760,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
   }
 
-  let conf = match Ini::load_from_file(config_directory.to_str().unwrap()) {
+  let launcher_conf = match Ini::load_from_file("RenegadeX-Launcher.ini") {
     Ok(conf) => conf,
     Err(_e) => {
       let mut conf = Ini::new();
       conf.with_section(Some("RenX_Launcher"))
         .set("GameLocation", "../")
         .set("VersionUrl", "https://static.renegade-x.com/launcher_data/version/launcher.json")
+        .set("LauncherTheme", "dom");
+        conf
+    }
+  };
+
+
+  let conf = match Ini::load_from_file(config_directory.to_str().unwrap()) {
+    Ok(conf) => conf,
+    Err(_e) => {
+      let mut conf = Ini::new();
+      conf.with_section(Some("RenX_Launcher"))
         .set("PlayerName", "UnknownPlayer")
-        .set("LauncherTheme", "dom")
-        .set("LastNewsGUID", "")
         .set("64-bit-version", "true")
         .set("skipMovies", "false");
       let conf_arc = Arc::new(Mutex::new(conf.clone()));
@@ -792,7 +801,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
   };
 
-  let section = conf.section(Some("RenX_Launcher".to_owned())).expect(concat!(file!(),":",line!()));
+  let section = launcher_conf.section(Some("RenX_Launcher".to_owned())).expect(concat!(file!(),":",line!()));
   let game_location = section.get("GameLocation").expect(concat!(file!(),":",line!()));
   let version_url = section.get("VersionUrl").expect(concat!(file!(),":",line!()));
   let launcher_theme = section.get("LauncherTheme").expect(concat!(file!(),":",line!()));
