@@ -1,4 +1,4 @@
-#![windows_subsystem="console"]
+#![windows_subsystem="windows"]
 #![warn(clippy::multiple_crate_versions)]
 
 extern crate native_tls;
@@ -540,7 +540,7 @@ impl Handler {
         }
 
         //run installer of UE3Redist and quit this.
-        match runas::Command::new(cache_dir.to_str().unexpected(concat!(file!(),":",line!()))).gui(true).status() {
+        match runas::Command::new(cache_dir.to_str().unexpected(concat!(file!(),":",line!()))).gui(true).spawn().unexpected("Couldn't spawn UE3Redist.").wait() {
           Ok(output) => {
             if output.success() {
               std::thread::spawn(move || {done.call(None, &make_args!(), None).unexpected(concat!(file!(),":",line!()));});
@@ -623,7 +623,7 @@ impl Handler {
                 sha256.input(&download_contents);
                 let hash = hex::encode_upper(sha256.result());
                 if &hash != &good_hash {
-                  error!("The hashes don't match one another!")
+                  error!("The hashes don't match one another!");
                   panic!("The hashes don't match one another!");
                 }
               }

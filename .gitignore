@@ -5,8 +5,8 @@ C:/
 .idea/
 RenegadeX-Launcher
 windows-target/release/
-windows-target/x86_64-pc-windows-gnu/
-windows-target/RenegadeX-Launcher.exe
+windows-target/i686-pc-windows-gnu/
+windows-target/Renegade X Launcher.exe
 windows-target/RenegadeX-Launcher.ini
 windows-target/Cargo.lock
 windows-target/.rustc_info.json
