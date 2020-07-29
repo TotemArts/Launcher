@@ -103,6 +103,10 @@ namespace Emu {
         tick_checkmark($(checkmark#balance), entry["Variables"]["bAutoBalanceTeams"]);
         tick_checkmark($(checkmark#infantry), false);
         var currentMap = entry["Current Map"];
+        var video = $(#map_video);
+        //video.videoUnload();
+        video.videoLoad(view.get_video_location(entry["Current Map"]).replace("file:///", ""));
+        video.videoPlay(0.0);
         var mapName = currentMap.split("-",1);
         $(#game-mode).html = mapName[0];
         $(#map-name).html = mapName[1].replace("_", " ");

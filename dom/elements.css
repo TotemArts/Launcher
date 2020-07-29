@@ -53,6 +53,11 @@ input|text {
   margin-right: 10dip;
 }
 
+#map_video {
+  width: 320;
+  height: 180;
+}
+
 input|text.searchbar {
   height: 22dip;
   font-size: 9pt;
@@ -103,8 +108,6 @@ button.bool {
   background-repeat: no-repeat;
   background-size: auto 10dip;
   aspect: "bool_setting";
-}
-button.bool:hover {
 }
 
 button.bool.true {

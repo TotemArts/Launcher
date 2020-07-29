@@ -308,6 +308,22 @@ impl Handler {
     });
   }
 
+  fn get_video_location(&self, map_name: sciter::Value) -> String {
+    let conf_unlocked = self.local_conf.clone();
+    let conf = conf_unlocked.lock().unexpected(concat!(file!(),":",line!()));
+    let section = conf.section(Some("RenX_Launcher".to_owned())).unexpected(concat!(file!(),":",line!()));
+    let relative_path = section.get("GameLocation").unexpected(concat!(file!(),":",line!())).to_string();
+    let mut absolute_path = std::path::PathBuf::from(relative_path).canonicalize().unexpected("Couldn't create absolute path from relative one");
+    absolute_path.push("PreviewVids");
+    absolute_path.push(map_name.as_string().unexpected(concat!(file!(),":",line!())));
+    absolute_path.set_extension("avi");
+    if !absolute_path.is_file() {
+      absolute_path.pop();
+      absolute_path.push("Default.avi");
+    }
+    url::Url::from_file_path(absolute_path).unexpected("Cannot convert path to a url.").into_string()
+  }
+
   /// Retrieve the playername
   fn get_playername(&self) -> String {
     info!("Requested playername!");
@@ -783,6 +799,7 @@ impl sciter::EventHandler for Handler {
     fn update_launcher(Value);
     fn fetch_resource(Value,Value,Value,Value);
     fn fetch_image(Value,Value,Value,Value);
+    fn get_video_location(Value);
   }
 }
 
@@ -836,7 +853,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
       sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SOCKET_IO as u8 | // Enables connecting to the inspector via Ctrl+Shift+I
       sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_EVAL as u8  // Enables execution of Eval inside of TI-Script
     )
-  ).unexpected(concat!(file!(),":",line!())); 
+  ).unexpected(concat!(file!(),":",line!()));
 
 
   let mut current_dir = std::env::current_exe()?;
