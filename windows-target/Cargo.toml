@@ -1,6 +1,6 @@
 [package]
 name = "RenegadeX-Launcher"
-version = "0.9.18"
+version = "1.0.0"
 authors = ["SonnyX"]
 edition = "2018"
 build = "windows.rs"

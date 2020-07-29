@@ -4,11 +4,11 @@
     <div.minimize close></div>
   </div>
   <div.padding>
-    <p>Validating files: <span.green><output hash_progress/>%</span></p>
+    <p>Validating files: <span.green.hexpand><output hash_progress/>%</span><output hash_progress_done/>/<output hash_progress_total/> files</p>
     <div.downloadBar><progressbar.indicator hash_progress></progressbar></div>
-    <p>Dowloading: <span.green><output download_progress/>%</span></p>
+    <p>Dowloading: <span.green.hexpand><output download_progress/>%</span><output download_speed/></p>
     <div.downloadBar><progressbar.indicator download_progress></progressbar></div>
-    <p>Applying: <span.green><output patch_progress/>%</span></p>
+    <p>Applying: <span.green.hexpand><output patch_progress/>%</span><output patch_progress_done/>/<output patch_progress_total/> files</p>
     <div.downloadBar><progressbar.indicator patch_progress></progressbar></div>
   </div>
 </div>

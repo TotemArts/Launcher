@@ -236,16 +236,23 @@ impl Handler {
         std::thread::sleep(std::time::Duration::from_millis(500));
         {
           let progress_locked = progress.lock().unexpected(concat!(file!(),":",line!()));
-          let me : Value = format!(
-            "{{\"hash\": [{},{}],\"download\": [{},{}],\"patch\": [{},{}],\"download_speed\": {}}}",
+
+          let sizes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+          let bytes = ((progress_locked.download_size.0 - last_download_size) * 2) as f64;
+          let base = bytes.log(1024_f64).floor() as usize;
+          let speed = format!("{:.2} {}/s", bytes / 1024_u64.pow(base as u32) as f64, sizes[base]);
+
+          let json = format!(
+            "{{\"hash\": [{},{}],\"download\": [{}.0,{}.0],\"patch\": [{},{}],\"download_speed\": \"{}\"}}",
             progress_locked.hashes_checked.0,
             progress_locked.hashes_checked.1,
-            progress_locked.download_size.0/10_000,
-            progress_locked.download_size.1/10_000,
+            progress_locked.download_size.0,
+            progress_locked.download_size.1,
             progress_locked.patch_files.0,
             progress_locked.patch_files.1,
-            (progress_locked.download_size.0 - last_download_size) as f64 / 500_000.0
-          ).parse().unexpected(concat!(file!(),":",line!()));
+            speed
+          );
+          let me : Value = json.parse().unexpected(concat!(file!(),":",line!()));
           last_download_size = progress_locked.download_size.0;
           not_finished = !progress_locked.finished_patching;
           drop(progress_locked);

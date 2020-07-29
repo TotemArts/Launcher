@@ -305,8 +305,22 @@ function check_launcher_result(new_version = undefined) {
 }
 
 function onProgress(progress) {
-  output_variables["hash_progress"] = ( progress["hash"][1] != 0 )? progress["hash"][0]*100 / progress["hash"][1]:0;
-  output_variables["download_progress"] = ( progress["download"][1] != 0 )? progress["download"][0]*100 / progress["download"][1]:0;
+  output_variables["hash_progress_done"] = progress["hash"][0];
+  output_variables["hash_progress_total"] = progress["hash"][1];
+  if( progress["download"][1] != 0 && progress["hash"][1] == 0 ) {
+    output_variables["hash_progress"] = 100;
+  } else {
+    output_variables["hash_progress"] = ( progress["hash"][1] != 0 )? progress["hash"][0]*100 / progress["hash"][1]:0;
+  }
+
+  output_variables["download_progress_done"] = progress["download"][0];
+  output_variables["download_progress_total"] = progress["download"][1];
+  var download_progress = ( progress["download"][1] != 0 )? progress["download"][0] * 100 / progress["download"][1] : 0.0;
+  output_variables["download_progress"] = String.printf("%.1f", download_progress);
+  output_variables["download_speed"] = progress["download_speed"];
+
+  output_variables["patch_progress_done"] = progress["patch"][0];
+  output_variables["patch_progress_total"] = progress["patch"][1];
   output_variables["patch_progress"] = ( progress["patch"][1] != 0 )? progress["patch"][0]*100 / progress["patch"][1]:0;
   output_variables["update_progress"] = output_variables["hash_progress"]/3 + output_variables["download_progress"]/3 + output_variables["patch_progress"]/3;
 }

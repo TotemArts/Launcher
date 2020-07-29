@@ -295,6 +295,10 @@ vertical-align: middle;
   width: *;
 }
 
+span {
+  display: inline-block;
+}
+
 checkmark {
   display: inline-block;
   width:14dip;
