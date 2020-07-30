@@ -16,6 +16,21 @@ namespace Emu {
     }
   }
 
+  function videoHandler() {
+    var video = this;
+    video.onControlEvent = function(evt) {
+      switch(evt.type) {
+        case Event.VIDEO_INITIALIZED:
+          return false;
+        case Event.VIDEO_STARTED:
+          return false;
+        case Event.VIDEO_STOPPED:
+          video.videoPlay(0.0);
+          return false; 
+      }
+    }  
+  }
+
   function news_image() {
     if (this.attributes.exists("width")) {
       this.attributes["width"] = (this.attributes["width"].toNumber()/10) + "%";
