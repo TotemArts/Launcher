@@ -461,6 +461,8 @@ impl Handler {
       if startup_movie_disabled {
         args.push("-nomoviestartup".to_string());
       }
+      args.push("-UseAllAvailableCores".to_string());
+
       match std::process::Command::new(format!("{}/Binaries/Win{}/UDK.exe", game_location, bit_version))
                                      .args(&args)	
                                      .stdout(std::process::Stdio::piped())
