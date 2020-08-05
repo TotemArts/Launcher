@@ -181,15 +181,17 @@ function tick_checkmark(element, boolean) {
 
 /// Joining game related things
 function onGameExit() {
-  if($(img#map_image) != undefined) {
-    $(img#map_image).attributes["src"] = $(img#map_image).attributes["src-disabled"];
+  var video = $(#map_video);
+  if(video != undefined) {
+    video.videoPlay();
   }
   stdout.println("Game exited succesfully!");
 }
 
 function onGameError(ErrorMessage) {
-  if($(img#map_image) != undefined) {
-    $(img#map_image).attributes["src"] = $(img#map_image).attributes["src-disabled"];
+  var video = $(#map_video);
+  if(video != undefined) {
+    video.videoPlay();
   }
   show_overlay("error.htm");
   output_variables["error_message"] = ErrorMessage
@@ -202,18 +204,18 @@ function joinServer(password = undefined) {
     show_overlay("password.htm");
   } else {
     view.launch_game( entry["IP"]+":"+entry["Port"] + ( password? "?Password="+password : "" ), onGameExit, onGameError);
-    if($(img#map_image) != undefined) {
-      $(img#map_image).attributes["src-disabled"]=$(img#map_image).attributes["src"];
-      $(img#map_image).attributes["src"]= "";
+    var video = $(#map_video);
+    if(video != undefined) {
+      video.videoStop();
     }
   }
 }
 
 function launchGame() {
   view.launch_game("", onGameExit, onGameError);
-  if($(img#map_image) != undefined) {
-    $(img#map_image).attributes["src-disabled"]=$(img#map_image).attributes["src"];
-    $(img#map_image).attributes["src"]= "";
+  var video = $(#map_video);
+  if(video != undefined) {
+    video.videoStop();
   }
 }
 

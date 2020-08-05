@@ -18,6 +18,8 @@ namespace Emu {
 
   function videoHandler() {
     var video = this;
+    video.shouldPlay = true;
+
     video.onControlEvent = function(evt) {
       switch(evt.type) {
         case Event.VIDEO_INITIALIZED:
@@ -25,7 +27,8 @@ namespace Emu {
         case Event.VIDEO_STARTED:
           return false;
         case Event.VIDEO_STOPPED:
-          video.videoPlay(0.0);
+          if(this.videoIsEnded())
+            video.videoPlay(0.0);
           return false; 
       }
     }  
@@ -119,7 +122,6 @@ namespace Emu {
         tick_checkmark($(checkmark#infantry), false);
         var currentMap = entry["Current Map"];
         var video = $(#map_video);
-        //video.videoUnload();
         video.videoLoad(view.get_video_location(entry["Current Map"]).replace("file:///", ""));
         video.videoPlay(0.0);
         var mapName = currentMap.split("-",1);
