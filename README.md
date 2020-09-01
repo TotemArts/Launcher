@@ -1,4 +1,16 @@
 # RenegadeX Launcher
+Some build-requirements:
+```bash
+sudo tee -a /etc/pacman.conf > /dev/null <<EOT
+[ownstuff]
+SigLevel = PackageOptional
+Server = https://ftp.f3l.de/~martchus/$repo/os/$arch
+Server = https://martchus.no-ip.biz/repo/arch/$repo/os/$arch
+EOT
+
+sudo pacman -S cmake gcc pkgconf wget openssl gcc-mingw-w64-i686
+```
+
 Build commands for linux:
 ```bash
 cargo update
