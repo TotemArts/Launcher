@@ -7,8 +7,7 @@ SigLevel = PackageOptional
 Server = https://ftp.f3l.de/~martchus/$repo/os/$arch
 Server = https://martchus.no-ip.biz/repo/arch/$repo/os/$arch
 EOT
-
-sudo pacman -S cmake gcc pkgconf wget openssl gcc-mingw-w64-i686
+sudo pacman -Syu cmake gcc pkgconf wget openssl mingw-w64-gcc
 ```
 
 Build commands for linux:
