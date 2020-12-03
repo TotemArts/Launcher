@@ -28,4 +28,4 @@ runas = { git = "https://github.com/SonnyX/rust-runas" }
 sha2 = "^0.8"
 hex = "^0.4"
 log = "^0.4.11"
-flexi_logger = "^0.15.8"
+flexi_logger = "^0.16.2"
