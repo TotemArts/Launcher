@@ -16,7 +16,7 @@ url = "^2.1.0"
 futures = "^0.3.5"
 sciter-rs = "^0.5.50"
 renegadex_patcher = { git = "https://github.com/SonnyX/RenegadeX-patcher-lib" }
-rust-ini = "^0.13.0"
+rust-ini = "^0.16.0"
 single-instance = "^0.1.1"
 socket2 = "^0.3.8"
 rand = "^0.7.0"
