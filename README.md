@@ -1,5 +1,10 @@
 # RenegadeX Launcher
-Some build-requirements:
+To compile for windows (only compile from linux/wsl):
+```bash
+./package-windows.sh
+```
+
+Some build-requirements for Arch Linux:
 ```bash
 sudo tee -a /etc/pacman.conf > /dev/null <<EOT
 [ownstuff]
@@ -14,28 +19,6 @@ Build commands for linux:
 ```bash
 cargo update
 cargo build --release
-```
-The first time you might get an issue such as:
-```bash
-warning: spurious network error (2 tries remaining): invalid Content-Type: application/octet-stream; class=Net (12)
-warning: spurious network error (1 tries remaining): invalid Content-Type: application/octet-stream; class=Net (12)
-error: failed to load source for a dependency on `xdelta`
-
-Caused by:
-  Unable to update https://github.com/SonnyX/xdelta-decoder-rust.git
-
-Caused by:
-  failed to update submodule `lzma-sys/xz`
-
-Caused by:
-  failed to fetch submodule `lzma-sys/xz` from https://git.tukaani.org/xz.git
-
-Caused by:
-  invalid Content-Type: application/octet-stream; class=Net (12)
-```
-If this happens, then run the following:
-```bash
-./fix-build-issue.sh
 ```
 
 Run commands for Linux:
