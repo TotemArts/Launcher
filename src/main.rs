@@ -69,6 +69,7 @@ impl<T> ExpectUnwrap<T> for Option<T> {
 #[cold]
 fn expect_failed(msg: &str) -> ! {
   error!("{}", msg);
+  log::logger().flush();
   panic!("{}", msg)
 }
 
@@ -76,6 +77,7 @@ fn expect_failed(msg: &str) -> ! {
 #[cold]
 fn unwrap_failed(msg: &str, error: &dyn std::fmt::Debug) -> ! {
   error!("{}: {:?}", msg, error);
+  log::logger().flush();
   panic!("{}: {:?}", msg, error)
 }
 
@@ -645,10 +647,11 @@ impl Handler {
               // check instructions hash
               if &good_hash != "" {
                 let mut sha256 = Sha256::new();
-                sha256.input(&download_contents);
-                let hash = hex::encode_upper(sha256.result());
+                sha256.write(&download_contents);
+                let hash = hex::encode_upper(sha256.finalize());
                 if &hash != &good_hash {
                   error!("The hashes don't match one another!");
+                  log::logger().flush();
                   panic!("The hashes don't match one another!");
                 }
               }
@@ -943,6 +946,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   frame.run_app();
 
   info!("Gracefully shutting down app!");
-
+  log::logger().flush();
   Ok(())
 }
