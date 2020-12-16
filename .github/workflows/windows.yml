@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-devel
 
     steps:
     - uses: actions/checkout@v2
@@ -20,7 +20,7 @@ jobs:
           override: true
 
     - name: Update Cargo
-      run: sh resolve-link-issues.sh && cargo update --manifest-path="windows-target/Cargo.toml" || (sh fix-build-issues.sh && cargo update --manifest-path="windows-target/Cargo.toml")
+      run: cargo update --manifest-path="windows-target/Cargo.toml"
 
     - name: Build
       run: cargo build --manifest-path="windows-target/Cargo.toml" --target-dir="windows-target" --target=i686-pc-windows-gnu --release
