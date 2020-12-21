@@ -19,7 +19,7 @@ renegadex_patcher = { git = "https://github.com/SonnyX/RenegadeX-patcher-lib" }
 rust-ini = "0.13"
 single-instance = "0.1"
 socket2 = "0.3"
-rand = "0.7"
+rand = "0.8"
 percent-encoding = "^2.1"
 unzip = { git = "https://github.com/SonnyX/unzip-rs" }
 dirs = "3.0"
