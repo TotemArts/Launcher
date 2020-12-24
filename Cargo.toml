@@ -15,7 +15,7 @@ tokio-reactor = "0.1"
 url = "2.1"
 futures = "0.3"
 sciter-rs = "0.5"
-renegadex_patcher = { git = "https://github.com/SonnyX/RenegadeX-patcher-lib" }
+renegadex_patcher = { git = "https://github.com/SonnyX/RenegadeX-patcher-lib", rev = "1b82927" }
 rust-ini = "0.13"
 single-instance = "0.1"
 socket2 = "0.3"
