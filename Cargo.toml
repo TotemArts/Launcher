@@ -6,7 +6,7 @@ edition = "2018"
 exclude = ["target-windows/**", "target/**", "dom", "dom/**"]
 
 [dependencies]
-hyper = "0.13"
+hyper = "0.14"
 hyper-tls = "0.4"
 tokio = { version = "0.2", features = ["full"] }
 tokio-tls = "0.3"
