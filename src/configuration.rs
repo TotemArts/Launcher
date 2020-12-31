@@ -48,11 +48,6 @@ impl Configuration {
             global_conf: Arc::new(Mutex::new(global_conf))
         }
     }
-
-    pub fn save_local(&self) {
-        self.local_conf.lock().unwrap().write_to_file("RenegadeX-Launcher.ini").expect("");
-    }
-
     
     fn save_global(&self) {
         let mut config_directory = Configuration::get_global_configuration_directory();
@@ -136,16 +131,6 @@ impl Configuration {
         let conf = conf_unlocked.lock().expect("");
         let section = conf.section(Some("RenX_Launcher".to_owned())).expect("");
         section.get(&setting).expect("").to_string()
-    }
-
-    pub fn set_local_setting(&self, setting: &str, value: &str) {
-        let conf_unlocked = self.local_conf.clone();
-        let mut conf = conf_unlocked.lock().expect("");
-        let mut section = conf.with_section(Some("RenX_Launcher".to_owned()));
-        section.set(setting, value);
-        drop(conf);
-
-        self.save_local();
     }
 
     pub fn get_log_directory(&self) -> String {

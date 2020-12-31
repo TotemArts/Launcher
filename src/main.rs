@@ -507,19 +507,29 @@ impl Handler {
         }
 
         //run installer of UE3Redist and quit this.
-        match runas::Command::new(cache_dir.to_str().unexpected(concat!(file!(),":",line!()))).gui(true).spawn().unexpected("Couldn't spawn UE3Redist.").wait() {
-          Ok(output) => {
-            if output.success() {
-              std::thread::spawn(move || {done.call(None, &make_args!(), None).unexpected(concat!(file!(),":",line!()));});
-            } else {
-              std::thread::spawn(move || {error_callback.call(None, &make_args!(format!("UE3Redist.exe exited in a crash: {}", output.code().unexpected(concat!(file!(),":",line!())))), None).unexpected(concat!(file!(),":",line!()));});
+        match runas::Command::new(cache_dir.to_str().unexpected(concat!(file!(),":",line!()))).gui(true).spawn() {
+          Ok(mut child) => {
+            match child.wait() {
+              Ok(output) => {
+                if output.success() {
+                  std::thread::spawn(move || {done.call(None, &make_args!(), None).unexpected(concat!(file!(),":",line!()));});
+                } else {
+                  std::thread::spawn(move || {error_callback.call(None, &make_args!(format!("UE3Redist.exe exited in a crash: {}", output.code().unexpected(concat!(file!(),":",line!())))), None).unexpected(concat!(file!(),":",line!()));});
+                }
+              },
+              Err(e) => {
+                error!("Failed to wait for UE3Redist: {}", &e);
+                std::thread::spawn(move || {error_callback.call(None, &make_args!(format!("Failed to wait for UE3Redist: {}", &e)), None).unexpected(concat!(file!(),":",line!()));});
+              }
             }
           },
           Err(e) => {
-            error!("Failed to open UE3Redist: {}", &e);
-            std::thread::spawn(move || {error_callback.call(None, &make_args!(format!("Failed to open UE3Redist: {}", &e)), None).unexpected(concat!(file!(),":",line!()));});
+            // todo: the user might have cancelled the UAC dialog on purpose, ask if they want to continue the installation?
+            error!("Failed to open UE3 Redistributables: {}", &e);
+            std::thread::spawn(move || {error_callback.call(None, &make_args!(format!("Failed to open UE3 Redistributables: {}", &e)), None).unexpected(concat!(file!(),":",line!()));});
           }
         };
+
         Ok::<(), Error>(())
       });
     }
@@ -801,10 +811,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   info!("Launching sciter!");
 
   let mut frame = sciter::Window::new();
-  let mut downloader = Downloader::new();
-
-  downloader.set_location(game_location);
-  downloader.set_version_url(version_url);
+  let mut locked_patcher = patcher.lock().unwrap();
+  locked_patcher.set_location(game_location);
+  locked_patcher.set_version_url(version_url);
+  drop(locked_patcher);
   
   frame.event_handler(Handler{patcher: patcher.clone(), configuration});
   frame.load_file(&format!("file://{}/{}/frontpage.htm", current_dir, &launcher_theme));
