@@ -732,9 +732,35 @@ impl sciter::EventHandler for UpdateResultHandler {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+  let mut current_dir = std::env::current_exe()?;
+  current_dir.pop();
+  info!("Working in directory: {}", &current_dir.to_string_lossy());
+  std::env::set_current_dir(&current_dir)?;
+  const WEBIFY: &percent_encoding::AsciiSet = &percent_encoding::NON_ALPHANUMERIC.remove(b'/').remove(b'\\').remove(b':');
+  let current_dir = percent_encoding::utf8_percent_encode(current_dir.to_str().unexpected(concat!(file!(),":",line!())), WEBIFY).to_string();
+
+  sciter::set_options(
+    sciter::RuntimeOptions::DebugMode(true)
+  ).unexpected(concat!(file!(),":",line!()));
+
+  sciter::set_options(
+    sciter::RuntimeOptions::ScriptFeatures(
+      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_FILE_IO as u8 |
+      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SYSINFO as u8 |
+      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SOCKET_IO as u8 | // Enables connecting to the inspector via Ctrl+Shift+I
+      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_EVAL as u8  // Enables execution of Eval inside of TI-Script
+    )
+  ).unexpected(concat!(file!(),":",line!()));
+
   let instance = SingleInstance::new("RenegadeX-Launcher")?;
   //TODO: Create "Another instance is already running" window.
-  assert!(instance.is_single());
+  if !instance.is_single() {
+    let mut frame = sciter::Window::new();
+    frame.event_handler(UpdateResultHandler{update_result: "".to_owned()});
+    frame.load_file(&format!("file://{}/dom/instance.htm", &current_dir));
+    frame.run_app();
+    std::process::exit(0);
+  }
 
   let configuration = configuration::Configuration::load_or_default();
   let log_directory = configuration.get_log_directory();
@@ -750,26 +776,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
   info!("Starting RenegadeX Launcher version {}", &VERSION);
 
-  sciter::set_options(
-    sciter::RuntimeOptions::DebugMode(true)
-  ).unexpected(concat!(file!(),":",line!()));
-  sciter::set_options(
-    sciter::RuntimeOptions::ScriptFeatures(
-      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_FILE_IO as u8 |
-      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SYSINFO as u8 |
-      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SOCKET_IO as u8 | // Enables connecting to the inspector via Ctrl+Shift+I
-      sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_EVAL as u8  // Enables execution of Eval inside of TI-Script
-    )
-  ).unexpected(concat!(file!(),":",line!()));
-
-
-  let mut current_dir = std::env::current_exe()?;
-  current_dir.pop();
-  info!("Working in directory: {}", &current_dir.to_string_lossy());
-  std::env::set_current_dir(&current_dir)?;
-  const WEBIFY: &percent_encoding::AsciiSet = &percent_encoding::NON_ALPHANUMERIC.remove(b'/').remove(b'\\').remove(b':');
-  let current_dir = percent_encoding::utf8_percent_encode(current_dir.to_str().unexpected(concat!(file!(),":",line!())), WEBIFY).to_string();
-
   for argument in std::env::args() {
     if argument.starts_with("--patch-result=") {
       info!("Update result: {}", &argument[15..].to_string());
@@ -780,9 +786,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
   }
 
+  let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(Downloader::new()));
   if configuration.get_playername().eq("UnknownPlayer") {
     let mut frame = sciter::Window::new();
-    let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(Downloader::new()));
     frame.event_handler(Handler{patcher: patcher.clone(), configuration: configuration.clone()});
     frame.load_file(&format!("file://{}/dom/first-startup.htm", &current_dir));
     frame.run_app();
@@ -796,9 +802,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
   let mut frame = sciter::Window::new();
   let mut downloader = Downloader::new();
+
   downloader.set_location(game_location);
   downloader.set_version_url(version_url);
-  let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(downloader));
+  
   frame.event_handler(Handler{patcher: patcher.clone(), configuration});
   frame.load_file(&format!("file://{}/{}/frontpage.htm", current_dir, &launcher_theme));
   info!("Launching app!");

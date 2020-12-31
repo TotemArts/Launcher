@@ -1,0 +1,38 @@
+<html window-icon="images/rx.ico" window-frame="solid">
+  <head>
+    <title>Renegade X Launcher - Welcome Back Commander!</title>
+    <style>
+      @import url(elements.css);
+      @import url(containers.css);
+      @import url(fonts.css);
+
+      html, body, div {
+        margin: 0 0 !important;
+        padding: 0 0 !important;
+      }
+    </style>
+    <script type="text/tiscript">
+      function self.ready() {
+        var (sx,sy,sw,sh) = View.screenBox(0,#workarea,#rectw);
+        var (w,h) = $(div.username-window).box(#dimension, #margin);
+        view.move( sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
+      }
+
+      self.on("click","[onclick]",function(evt) {
+        stdout.println("onclick");
+        return eval.call(this, this.attributes["onclick"] );
+      });
+    </script>
+  </head>
+  <body>
+    <div.username-window role="window-caption">
+      <div.titlebar>
+        <h3.title.center.uppercase style="width: *;">Another instance is already running!</h3>
+      </div>
+      <div.child-margin.vflow>
+        <p.result>Another Instance of the launcher is still running, use that instance, of close all instances and try again!</p>
+        <button.orange onclick="view.close();">Negative!</button>
+      </div>
+    </div>
+  </body>
+</html>

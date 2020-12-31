@@ -28,7 +28,8 @@ impl Configuration {
             }
         };
 
-        let config_directory = Configuration::get_global_configuration_directory();
+        let mut config_directory = Configuration::get_global_configuration_directory();
+        config_directory.push("Renegade X Launcher.ini");
         let global_conf = match Ini::load_from_file(config_directory) {
             Ok(conf) => {
                 conf
@@ -54,8 +55,7 @@ impl Configuration {
 
     
     fn save_global(&self) {
-        let mut config_directory = dirs::config_dir().expect("");
-        config_directory.push("Renegade X");
+        let mut config_directory = Configuration::get_global_configuration_directory();
         std::fs::create_dir_all(&config_directory).expect("Creation of config-directory went wrong!");
         config_directory.push("Renegade X Launcher.ini");
     
@@ -144,21 +144,20 @@ impl Configuration {
         let mut section = conf.with_section(Some("RenX_Launcher".to_owned()));
         section.set(setting, value);
         drop(conf);
-        
+
         self.save_local();
     }
 
     pub fn get_log_directory(&self) -> String {
-        let mut config_directory = dirs::config_dir().expect("");
-        config_directory.push("Renegade X");
+        let mut config_directory = Configuration::get_global_configuration_directory();
         config_directory.push("logs");
         config_directory.to_str().expect("").to_owned()
     }
 
-    fn get_global_configuration_directory() -> String {
+    fn get_global_configuration_directory() -> std::path::PathBuf {
         let mut config_directory = dirs::config_dir().expect("");
         config_directory.push("Renegade X");
-        config_directory.to_str().expect("").to_owned()
+        config_directory
     }
 
     pub fn get_launcher_theme(&self) -> String {
