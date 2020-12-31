@@ -1,13 +1,7 @@
 #![windows_subsystem="windows"]
 #![warn(clippy::multiple_crate_versions)]
 
-extern crate native_tls;
-extern crate hyper;
-extern crate hyper_tls;
 extern crate tokio;
-extern crate tokio_tls;
-extern crate tokio_reactor;
-extern crate futures;
 #[macro_use] extern crate sciter;
 extern crate renegadex_patcher;
 extern crate ini;
@@ -16,16 +10,14 @@ extern crate socket2;
 extern crate rand;
 extern crate unzip;
 extern crate dirs;
-extern crate tower;
 extern crate runas;
 extern crate sha2;
 extern crate hex;
 extern crate log;
+extern crate download_async;
+extern crate async_trait;
 
 use flexi_logger::{Age, Criterion, Cleanup, Logger, Naming};
-use hyper::body::HttpBody; 
-use hyper::client::{Client, HttpConnector, connect::dns::Name};
-use hyper::http::header::{HeaderMap, HeaderName, HeaderValue};
 use ini::Ini;
 use log::*;
 use renegadex_patcher::{Downloader,Update, traits::Error};
@@ -33,13 +25,78 @@ use sciter::Value;
 use sha2::{Sha256, Digest};
 use single_instance::SingleInstance;
 use socket2::*;
+use async_trait::async_trait;
 
-use std::future::Future;
 use std::io::Write;
 use std::net::ToSocketAddrs;
-use std::pin::Pin;
 use std::sync::{Arc,Mutex};
-use std::task::Poll;
+
+pub struct Progress {
+
+}
+
+#[async_trait]
+impl download_async::Progress for Progress {
+  async fn get_file_size(&self) -> usize {
+    64
+  }
+
+  async fn get_progess(&self) -> usize {
+    64
+  }
+
+  async fn set_file_size(&mut self, size: usize) {
+
+  }
+
+  async fn add_to_progress(&mut self, amount: usize) {
+
+  }
+
+  async fn remove_from_progress(&mut self, bytes: usize) {
+
+  }
+}
+
+pub struct ValueProgress {
+  progress: std::sync::Arc<std::sync::Mutex<Value>>,
+  file_size: usize,
+  downloaded: usize,
+}
+
+impl ValueProgress {
+  pub fn new(value: Value) -> Self {
+    Self {
+      progress: std::sync::Arc::new(std::sync::Mutex::new(value)),
+      file_size: 0,
+      downloaded: 0
+    }
+  }
+}
+
+#[async_trait]
+impl download_async::Progress for ValueProgress {
+  async fn get_file_size(&self) -> usize {
+    64
+  }
+
+  async fn get_progess(&self) -> usize {
+    64
+  }
+
+  async fn set_file_size(&mut self, size: usize) {
+    self.file_size = size;
+    self.progress.lock().unwrap().call(None, &make_args!(format!("[0, {}]", size)), None).unexpected(concat!(file!(),":",line!()));
+  }
+
+  async fn add_to_progress(&mut self, amount: usize) {
+    self.downloaded += amount;
+  }
+
+  async fn remove_from_progress(&mut self, bytes: usize) {
+
+  }
+}
 
 pub trait ExpectUnwrap<T> :  {
   fn unexpected(self, msg: &str) -> T;
@@ -79,75 +136,6 @@ fn unwrap_failed(msg: &str, error: &dyn std::fmt::Debug) -> ! {
   error!("{}: {:?}", msg, error);
   log::logger().flush();
   panic!("{}: {:?}", msg, error)
-}
-
-
-#[derive(Debug, Clone)]
-pub struct SocketAddrs {
-  inner: std::vec::IntoIter<std::net::SocketAddr>
-}
-
-impl PartialEq for SocketAddrs {
-  fn eq(&self, other: &SocketAddrs) -> bool {
-    self.inner.as_slice() == other.inner.as_slice()
-  }
-}
-
-impl From<Vec<std::net::SocketAddr>> for SocketAddrs {
-  fn from(other: Vec<std::net::SocketAddr>) -> Self {
-    SocketAddrs {
-      inner: other.into_iter()
-    }
-  }
-}
-
-impl ToSocketAddrs for SocketAddrs {
-  type Iter = std::vec::IntoIter<std::net::SocketAddr>;
-  fn to_socket_addrs(&self) -> std::io::Result<std::vec::IntoIter<std::net::SocketAddr>> {
-    Ok(self.inner.clone())
-  }
-}
-
-impl Iterator for SocketAddrs {
-  type Item = std::net::IpAddr;
-
-  fn next(&mut self) -> Option<Self::Item> {
-      self.inner.next().map(|sa| sa.ip())
-  }
-}
-
-
-#[derive(Clone)]
-pub struct ResolverService {
-  pub socket_addrs: SocketAddrs
-}
-
-impl ResolverService {
-  pub fn new(socket_addrs: SocketAddrs) -> Self {
-    ResolverService {
-      socket_addrs
-    }
-  }
-}
-
-impl tower::Service<Name> for ResolverService {
-  type Response = SocketAddrs;
-  type Error = Error;
-  // We can't "name" an `async` generated future.
-  type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send >>;
-
-  fn poll_ready(&mut self, _: &mut std::task::Context<'_>) -> Poll<Result<(), Self::Error>> {
-      // This connector is always ready, but others might not be.
-      Poll::Ready(Ok(()))
-  }
-
-  fn call(&mut self, _: Name) -> Self::Future {
-    let socket_addrs = self.socket_addrs.clone();
-    let fut = async move { 
-      Ok(socket_addrs) 
-    };
-    Box::pin(fut)
-  }
 }
 
 /// The current launcher's version
@@ -358,27 +346,31 @@ impl Handler {
     info!("Getting Servers!");
 
     std::thread::spawn(move || {
-      let mut rt = tokio::runtime::Builder::new().basic_scheduler().enable_time().enable_io().build().unexpected(concat!(file!(),":",line!()));
-      let result = rt.enter(|| {
-        rt.spawn(async move {
-          let url = "https://serverlist.renegade-x.com/servers.jsp?id=launcher".parse::<hyper::Uri>()?;
-          let https = hyper_tls::HttpsConnector::new();
-          let client = hyper::Client::builder().build::<_, hyper::Body>(https);
-          let req = hyper::Request::builder();
-          if let Some(host) = url.host() {
-            let req = req.uri(url.clone()).header("host", host).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
-            let req = req.body(hyper::Body::empty())?;
-            let res = client.request(req).await?;
-            if res.status() == 200 || res.status() == 206 {
-              let buffer = hyper::body::to_bytes(res).await?;
-              std::thread::spawn(move || {
-                let text : Value = ::std::str::from_utf8(&buffer).unexpected("Expected an utf-8 string").parse().unexpected(concat!(file!(),":",line!()));
-                callback.call(None, &make_args!(text), None).unexpected(concat!(file!(),":",line!()));
-              });
-            }
+      let mut rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unexpected(concat!(file!(),":",line!()));
+      let _guard = rt.enter();
+      let result = rt.spawn(async move {
+        let url = "https://serverlist.renegade-x.com/servers.jsp?id=launcher".parse::<download_async::http::Uri>()?;
+        let req = download_async::http::Request::builder();
+        if let Some(host) = url.host() {
+          let req = req.uri(url.clone()).header("host", host).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
+          let req = req.body(download_async::Body::empty())?;
+
+          let mut buffer = vec![];
+          let mut progress : Option<&mut Progress> = None;
+
+          let response = download_async::download(req, &mut buffer, true, &mut progress, None).await;
+          if response.is_ok() {
+            std::thread::spawn(move || {
+              let text : Value = std::str::from_utf8(&buffer).unexpected("Expected an utf-8 string").parse().unexpected(concat!(file!(),":",line!()));
+              callback.call(None, &make_args!(text), None).unexpected(concat!(file!(),":",line!()));
+            });
+            Ok::<(), Error>(())
+          } else {
+            Err::<(), Error>(Error::new("".to_owned()))
           }
-          Ok::<(), Error>(())
-        })
+        } else {
+          Err::<(), Error>(Error::new("".to_owned()))
+        }
       });
       let _ = rt.block_on(result).unexpected(concat!(file!(),":",line!()));
     });
@@ -592,97 +584,63 @@ impl Handler {
     let launcher_info = self.patcher.lock().unexpected(concat!(file!(),":",line!())).get_launcher_info().unexpected(concat!(file!(),":",line!()));
     if VERSION != launcher_info.version_name {
       let socket_addrs = launcher_info.patch_url.parse::<url::Url>().unexpected(concat!(file!(),":",line!())).socket_addrs(|| None).unexpected(concat!(file!(),":",line!()));
-      let uri = launcher_info.patch_url.parse::<hyper::Uri>().unexpected(concat!(file!(),":",line!()));
+      let uri = launcher_info.patch_url.parse::<download_async::http::Uri>().unexpected(concat!(file!(),":",line!()));
       let good_hash = launcher_info.patch_hash.clone();
       drop(launcher_info);
       std::thread::spawn(move || {
-        let mut rt = tokio::runtime::Builder::new().basic_scheduler().enable_time().enable_io().build().unexpected(concat!(file!(),":",line!()));
-        let result = rt.enter(|| {
-          rt.spawn(async move {
-            //Connect tcp stream to a hostname:port
-            let tls : tokio_tls::TlsConnector = native_tls::TlsConnector::new().unexpected(concat!(file!(),":",line!())).into();
-            let resolver_service = ResolverService::new(socket_addrs.into());
-            let mut http_connector : HttpConnector<ResolverService> = HttpConnector::new_with_resolver(resolver_service);
-            http_connector.enforce_http(false);
-            let https_connector : hyper_tls::HttpsConnector<HttpConnector<ResolverService>> = (http_connector, tls).into();
-            let client = Client::builder().build::<_, hyper::Body>(https_connector);
+        let mut rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unexpected(concat!(file!(),":",line!()));
+        let _guard = rt.enter();
+        let result = rt.spawn(async move {
+          // Set up a request
+          let req = download_async::http::Request::builder();
+          let req = req.uri(uri).header("User-Agent", "sonny-launcher/1.0");
+          let req = req.body(download_async::Body::empty()).unexpected(concat!(file!(),":",line!()));
 
-            // Set up a request
-            let req = hyper::Request::builder();
-            let req = req.uri(uri).header("User-Agent", "sonny-launcher/1.0");
-            let req = req.body(hyper::Body::empty()).unexpected(concat!(file!(),":",line!()));
+          let mut valueProgress = ValueProgress::new(progress.clone());
+          let mut progress : Option<&mut ValueProgress> = Some(&mut valueProgress);
+          let mut buffer = vec![];
+          let res = download_async::download(req, &mut buffer, false, &mut progress, Some(socket_addrs.into())).await;
 
-            // Send request
-            let res = client.request(req).await?;
+          if res.is_ok() {
 
-            if res.status() == 200 || res.status() == 206 {
-              // Initialize progress in front-end to be 0 up to maximum content_length
-              let content_length : usize = res.headers().get("content-length").unexpected("Expected a content-length header, however none was found.").to_str().unexpected("Couldn't convert content-length value to str.").parse().unexpected("Couldn't parse content-length as a usize.");
-              let progress_clone = progress.clone();
-              std::thread::spawn(move || {
-                progress.call(None, &make_args!(format!("[0, {}]", content_length)), None).unexpected(concat!(file!(),":",line!()));
-              });
-
-              // Set up vector where the stream will write into
-              let mut download_contents = Vec::with_capacity(content_length);
-              let mut downloaded = 0;
-              let mut body = res.into_body();
-
-              while !body.is_end_stream() {
-                if let Some(chunk) = body.data().await {
-                  let chunk = chunk?;
-                  let chunk_size = chunk.len();
-                  downloaded += chunk_size;
-                  let progress_clone = progress_clone.clone();
-                  if downloaded*100/content_length > (downloaded-chunk_size)*100/content_length {
-                    std::thread::spawn(move || {
-                      progress_clone.call(None, &make_args!(format!("[{},{}]", downloaded.to_string(), content_length.to_string())), None).unexpected(concat!(file!(),":",line!()));
-                    });
-                  }
-                  download_contents.write_all(&chunk)?;
-                }
+            // check instructions hash
+            if &good_hash != "" {
+              let mut sha256 = Sha256::new();
+              sha256.write(&buffer);
+              let hash = hex::encode_upper(sha256.finalize());
+              if &hash != &good_hash {
+                error!("The hashes don't match one another!");
+                log::logger().flush();
+                panic!("The hashes don't match one another!");
               }
-              drop(client);
-
-              // check instructions hash
-              if &good_hash != "" {
-                let mut sha256 = Sha256::new();
-                sha256.write(&download_contents);
-                let hash = hex::encode_upper(sha256.finalize());
-                if &hash != &good_hash {
-                  error!("The hashes don't match one another!");
-                  log::logger().flush();
-                  panic!("The hashes don't match one another!");
-                }
-              }
-
-              let download_contents = std::io::Cursor::new(download_contents);
-              let mut output_path = std::env::current_exe().unexpected(concat!(file!(),":",line!()));
-              output_path.pop();
-              let target_dir = output_path.clone();
-              output_path.pop();
-              let working_dir = output_path.clone();
-              output_path.push("launcher_update_extracted/");
-              info!("Extracting launcher update to: {:?}", output_path);
-              let mut self_update_executor = output_path.clone();
-
-              //extract files
-              let result = unzip::Unzipper::new(download_contents, output_path).unzip().unexpected(concat!(file!(),":",line!()));
-              info!("{:#?}", result);
-              
-              //run updater program and quit this.
-              self_update_executor.push("SelfUpdateExecutor.exe");
-              let args = vec![format!("--pid={}",std::process::id()), format!("--target={}", target_dir.to_str().unexpected(concat!(file!(),":",line!())))];
-              std::process::Command::new(self_update_executor)
-                                          .current_dir(working_dir)
-                                          .args(&args)
-                                          .stdout(std::process::Stdio::piped())
-                                          .stderr(std::process::Stdio::inherit())
-                                          .spawn().unexpected(concat!(file!(),":",line!()));
-              std::process::exit(0);
             }
-            Err::<(), Error>("Launcher update: File not found.".into())
-          })
+
+            let download_contents = std::io::Cursor::new(buffer);
+            let mut output_path = std::env::current_exe().unexpected(concat!(file!(),":",line!()));
+            output_path.pop();
+            let target_dir = output_path.clone();
+            output_path.pop();
+            let working_dir = output_path.clone();
+            output_path.push("launcher_update_extracted/");
+            info!("Extracting launcher update to: {:?}", output_path);
+            let mut self_update_executor = output_path.clone();
+
+            //extract files
+            let result = unzip::Unzipper::new(download_contents, output_path).unzip().unexpected(concat!(file!(),":",line!()));
+            info!("{:#?}", result);
+            
+            //run updater program and quit this.
+            self_update_executor.push("SelfUpdateExecutor.exe");
+            let args = vec![format!("--pid={}",std::process::id()), format!("--target={}", target_dir.to_str().unexpected(concat!(file!(),":",line!())))];
+            std::process::Command::new(self_update_executor)
+                                        .current_dir(working_dir)
+                                        .args(&args)
+                                        .stdout(std::process::Stdio::piped())
+                                        .stderr(std::process::Stdio::inherit())
+                                        .spawn().unexpected(concat!(file!(),":",line!()));
+            std::process::exit(0);
+          }
+          Err::<(), Error>("Launcher update: File not found.".into())
         });
         let _ = rt.block_on(result).unexpected(concat!(file!(),":",line!()));
       });
@@ -693,44 +651,44 @@ impl Handler {
   fn fetch_resource(&self, url: Value, mut headers_value: Value, callback: Value, context: Value) {
     info!("Fetching resource!");
 
-    let mut headers = HeaderMap::new();
+    let mut headers = download_async::http::HeaderMap::new();
     headers_value.isolate();
     for (key,value) in headers_value.items() {
-      if let Ok(value) = HeaderValue::from_str(&value.as_string().unexpected("header value was empty.")) {
-        let key = HeaderName::from_bytes(key.as_string().unexpected("Key value was empty.").as_bytes()).unexpected("Invalid Header Name");
+      if let Ok(value) = download_async::http::HeaderValue::from_str(&value.as_string().unexpected("header value was empty.")) {
+        let key = download_async::http::header::HeaderName::from_bytes(key.as_string().unexpected("Key value was empty.").as_bytes()).unexpected("Invalid Header Name");
         headers.insert(key, value);
       }
     }
-    let url = url.as_string().unexpected("Couldn't parse url as string.").parse::<hyper::Uri>();
+    let url = url.as_string().unexpected("Couldn't parse url as string.").parse::<download_async::http::Uri>();
     std::thread::spawn(move || {
-      let mut rt = tokio::runtime::Builder::new().basic_scheduler().enable_time().enable_io().build().unexpected(concat!(file!(),":",line!()));
-      let result = rt.enter(|| {
-        rt.spawn(async move {
-          let url = url?;
-          if let Some(host) = url.host() {
-            let https = hyper_tls::HttpsConnector::new();
-            let client = hyper::Client::builder().build::<_, hyper::Body>(https);
-            let mut req = hyper::Request::builder();
-            let headers_mut = req.headers_mut().unexpected(concat!(file!(),":",line!()));
-            *headers_mut = headers;
+      let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unexpected(concat!(file!(),":",line!()));
+      let _guard = rt.enter();
+      let result = rt.spawn(async move {
+        let url = url?;
+        if let Some(host) = url.host() {
+          let mut progress : Option<&mut Progress> = None;
+          let sockets = None;
+          let mut buffer = vec![];
 
-            let req = req.uri(url.clone()).header("host", host).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
-            let req = req.body(hyper::Body::empty()).unexpected(concat!(file!(),":",line!()));
-            let res = client.request(req).await?;
+          let mut req = download_async::http::Request::builder();
+          let headers_mut = req.headers_mut().unexpected(concat!(file!(),":",line!()));
+          *headers_mut = headers;
+          let req = req.uri(url.clone()).header("host", host).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
+          let req = req.body(download_async::Body::empty()).unexpected(concat!(file!(),":",line!()));
 
-            let abort_in_error = res.status() != 200 && res.status() != 206;
-            let body = hyper::body::to_bytes(res.into_body()).await?;
+          let result = download_async::download(req, &mut buffer, false, &mut progress, sockets).await;
+          if result.is_ok() {
             std::thread::spawn(move || {
-              if !abort_in_error {
-                let text = ::std::str::from_utf8(&body).unexpected("Expected an utf-8 string");
-                callback.call(Some(context), &make_args!(text), None).unexpected(concat!(file!(),":",line!()));
-              } else {
-                callback.call(Some(context), &make_args!(""), None).unexpected(concat!(file!(),":",line!()));
-              }
+              let text = ::std::str::from_utf8(&buffer).unexpected("Expected an utf-8 string");
+              callback.call(Some(context), &make_args!(text), None).unexpected(concat!(file!(),":",line!()));
             });
+            Ok::<(), Error>(())
+          } else {
+            Err::<(), Error>(Error::new(format!("Download of {} failed, see: {}", url, result.unwrap_err())))
           }
-          Ok::<(), Error>(())
-        })
+        } else {
+          Err::<(), Error>(Error::new("Not a valid url.".to_owned()))
+        }
       });
       let _ = rt.block_on(result).unexpected(concat!(file!(),":",line!()));
     });
@@ -738,43 +696,43 @@ impl Handler {
 
   /// Fetch the image at url with specified headers
   fn fetch_image(&self, url: Value, mut headers_value: Value, callback: Value, context: Value) {
-    let mut headers = HeaderMap::new();
+    let mut headers = download_async::http::HeaderMap::new();
     headers_value.isolate();
     for (key,value) in headers_value.items() {
-      if let Ok(value) = HeaderValue::from_str(&value.as_string().unexpected("header value was empty.")) {
-        let key = HeaderName::from_bytes(key.as_string().unexpected("Key value was empty.").as_bytes()).unexpected("Invalid Header Name");
+      if let Ok(value) = download_async::http::HeaderValue::from_str(&value.as_string().unexpected("header value was empty.")) {
+        let key = download_async::http::header::HeaderName::from_bytes(key.as_string().unexpected("Key value was empty.").as_bytes()).unexpected("Invalid Header Name");
         headers.insert(key, value);
       }
     }
-    let url = url.as_string().unexpected("Couldn't parse url as string.").parse::<hyper::Uri>();
+    let url = url.as_string().unexpected("Couldn't parse url as string.").parse::<download_async::http::Uri>();
     std::thread::spawn(move || {
-      let mut rt = tokio::runtime::Builder::new().basic_scheduler().enable_time().enable_io().build().unexpected(concat!(file!(),":",line!()));
-      let result = rt.enter(|| {
-        rt.spawn(async move {
-          let url = url?;
-          if let Some(host) = url.host() {
-            let https = hyper_tls::HttpsConnector::new();
-            let client = hyper::Client::builder().build::<_, hyper::Body>(https);
-            let mut req = hyper::Request::builder();
-            let headers_mut = req.headers_mut().unexpected(concat!(file!(),":",line!()));
-            *headers_mut = headers;
+      let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unexpected(concat!(file!(),":",line!()));
+      let _guard = rt.enter();
+      let result = rt.spawn(async move {
+        let url = url?;
+        if let Some(host) = url.host() {
+          let mut progress : Option<&mut Progress> = None;
+          let sockets = None;
+          let mut buffer = vec![];
 
-            let req = req.uri(url.clone()).header("host", host).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
-            let req = req.body(hyper::Body::empty()).unexpected(concat!(file!(),":",line!()));
-            let res = client.request(req).await?;
+          let mut req = download_async::http::Request::builder();
+          let headers_mut = req.headers_mut().unexpected(concat!(file!(),":",line!()));
+          *headers_mut = headers;
+          let req = req.uri(url.clone()).header("host", host).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
+          let req = req.body(download_async::Body::empty()).unexpected(concat!(file!(),":",line!()));
 
-            let abort_in_error = res.status() != 200 && res.status() != 206;
-            let body = hyper::body::to_bytes(res.into_body()).await?;
+          let result = download_async::download(req, &mut buffer, false, &mut progress, sockets).await;
+          if result.is_ok() {
             std::thread::spawn(move || {
-              if !abort_in_error {
-                callback.call(Some(context), &make_args!(body.as_ref()), None).unexpected(concat!(file!(),":",line!()));
-              } else {
-                callback.call(Some(context), &make_args!(Value::null()), None).unexpected(concat!(file!(),":",line!()));
-              }
+              callback.call(Some(context), &make_args!(buffer.as_slice()), None).unexpected(concat!(file!(),":",line!()));
             });
+            Ok::<(), Error>(())
+          } else {
+            Err::<(), Error>(Error::new(format!("Download of {} failed, see: {}", url, result.unwrap_err())))
           }
-          Ok::<(), Error>(())
-        })
+        } else {
+          Err::<(), Error>(Error::new("Not a valid url.".to_owned()))
+        }
       });
       let _ = rt.block_on(result).unexpected(concat!(file!(),":",line!()));
     });
