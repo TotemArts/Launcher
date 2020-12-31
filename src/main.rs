@@ -1,6 +1,5 @@
 #![windows_subsystem="windows"]
 #![warn(clippy::multiple_crate_versions)]
-
 extern crate tokio;
 #[macro_use] extern crate sciter;
 extern crate renegadex_patcher;
@@ -17,8 +16,9 @@ extern crate log;
 extern crate download_async;
 extern crate async_trait;
 
+mod configuration;
+
 use flexi_logger::{Age, Criterion, Cleanup, Logger, Naming};
-use ini::Ini;
 use log::*;
 use renegadex_patcher::{Downloader,Update, traits::Error};
 use sciter::Value;
@@ -86,11 +86,23 @@ impl download_async::Progress for ValueProgress {
 
   async fn set_file_size(&mut self, size: usize) {
     self.file_size = size;
-    self.progress.lock().unwrap().call(None, &make_args!(format!("[0, {}]", size)), None).unexpected(concat!(file!(),":",line!()));
+
+    let file_size = self.file_size;
+    let downloaded = 0;
+    let progress = self.progress.lock().unwrap().clone();
+    std::thread::spawn(move || {
+      progress.call(None, &make_args!(format!("[{}, {}]", downloaded, file_size)), None).unexpected(concat!(file!(),":",line!()));
+    });
   }
 
   async fn add_to_progress(&mut self, amount: usize) {
     self.downloaded += amount;
+    let file_size = self.file_size;
+    let downloaded = self.downloaded;
+    let progress = self.progress.lock().unwrap().clone();
+    std::thread::spawn(move || {
+      progress.call(None, &make_args!(format!("[{}, {}]", downloaded, file_size)), None).unexpected(concat!(file!(),":",line!()));
+    });
   }
 
   async fn remove_from_progress(&mut self, bytes: usize) {
@@ -146,8 +158,7 @@ struct Handler {
   /// The reference to the back-end library which is responsible for downloading and updating the game.
   patcher: Arc<Mutex<Downloader>>,
   /// The configuration file for the launcher.
-  global_conf: Arc<Mutex<ini::Ini>>,
-  local_conf: Arc<Mutex<ini::Ini>>
+  configuration: configuration::Configuration
 }
 
 impl Handler {
@@ -299,46 +310,19 @@ impl Handler {
   }
 
   fn get_video_location(&self, map_name: sciter::Value) -> String {
-    let conf_unlocked = self.local_conf.clone();
-    let conf = conf_unlocked.lock().unexpected(concat!(file!(),":",line!()));
-    let section = conf.section(Some("RenX_Launcher".to_owned())).unexpected(concat!(file!(),":",line!()));
-    let relative_path = section.get("GameLocation").unexpected(concat!(file!(),":",line!())).to_string();
-    let mut absolute_path = std::path::PathBuf::from(relative_path).canonicalize().unexpected("Couldn't create absolute path from relative one");
-    absolute_path.push("PreviewVids");
-    absolute_path.push(map_name.as_string().unexpected(concat!(file!(),":",line!())));
-    absolute_path.set_extension("avi");
-    if !absolute_path.is_file() {
-      absolute_path.pop();
-      absolute_path.push("Default.avi");
-    }
-    url::Url::from_file_path(absolute_path).unexpected("Cannot convert path to a url.").into_string()
+    self.configuration.get_video_location(map_name.to_string())
   }
 
   /// Retrieve the playername
   fn get_playername(&self) -> String {
     info!("Requested playername!");
-
-    let conf_unlocked = self.global_conf.clone();
-    let conf = conf_unlocked.lock().unexpected(concat!(file!(),":",line!()));
-    let section = conf.section(Some("RenX_Launcher".to_owned())).unexpected(concat!(file!(),":",line!()));
-    section.get("PlayerName").unexpected(concat!(file!(),":",line!())).to_string()
+    self.configuration.get_playername()
   }
 
   /// Set the playername
   fn set_playername(&self, username: sciter::Value) {
     info!("Setting playername!");
-
-    let conf_unlocked = self.global_conf.clone();
-    let mut conf = conf_unlocked.lock().unexpected(concat!(file!(),":",line!()));
-    let mut section = conf.with_section(Some("RenX_Launcher".to_owned()));
-    section.set("PlayerName", username.as_string().unexpected(concat!(file!(),":",line!())));
-
-    let mut config_directory = dirs::config_dir().unexpected(concat!(file!(),":",line!()));
-    config_directory.push("Renegade X");
-    std::fs::create_dir_all(&config_directory).unexpected("Creation of config-directory went wrong!");
-    config_directory.push("Renegade X Launcher.ini");
-
-    conf.write_to_file(config_directory.to_str().unexpected(concat!(file!(),":",line!()))).unexpected(concat!(file!(),":",line!()));
+    self.configuration.set_playername(&username.as_string().expect(""))
   }
 
   /// Get Server List as plain text
@@ -346,7 +330,7 @@ impl Handler {
     info!("Getting Servers!");
 
     std::thread::spawn(move || {
-      let mut rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unexpected(concat!(file!(),":",line!()));
+      let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unexpected(concat!(file!(),":",line!()));
       let _guard = rt.enter();
       let result = rt.spawn(async move {
         let url = "https://serverlist.renegade-x.com/servers.jsp?id=launcher".parse::<download_async::http::Uri>()?;
@@ -414,36 +398,15 @@ impl Handler {
   /// Get the installed game's version
   fn get_game_version(&self) -> String {
     info!("Getting game version!");
-
-    let conf = self.local_conf.lock().unexpected(concat!(file!(),":",line!()));
-    let section = conf.section(Some("RenX_Launcher".to_owned())).unexpected(concat!(file!(),":",line!()));
-    let game_location = section.get("GameLocation").unexpected(concat!(file!(),":",line!())).clone();
-    match Ini::load_from_file(format!("{}/UDKGame/Config/DefaultRenegadeX.ini", game_location)) {
-      Ok(conf) => {
-        let section = conf.section(Some("RenX_Game.Rx_Game".to_owned())).unexpected(concat!(file!(),":",line!()));
-        section.get("GameVersion").unexpected(concat!(file!(),":",line!())).to_string()
-      },
-      Err(_e) => {
-        "Not installed".to_string()
-      }
-    }
+    self.configuration.get_game_version()
   }
 
   /// Launch the game, if server variable it's value is "", then the game will be launched to the menu.
   fn launch_game(&self, server: Value, done: Value, error: Value) {
     info!("Launching game!");
-    
-    let local_conf = self.local_conf.lock().unexpected(concat!(file!(),":",line!()));
-    let local_section = local_conf.section(Some("RenX_Launcher".to_owned())).unexpected(concat!(file!(),":",line!()));
-    let game_location = local_section.get("GameLocation").unexpected(concat!(file!(),":",line!())).clone();
-    drop(local_conf);
+    let game_location = self.configuration.get_game_location();
+    let launch_info =  self.configuration.get_launch_info();
 
-    let global_conf = self.global_conf.lock().unexpected(concat!(file!(),":",line!()));
-    let global_section = global_conf.section(Some("RenX_Launcher".to_owned())).unexpected(concat!(file!(),":",line!()));
-    let playername = global_section.get("PlayerName").unexpected(concat!(file!(),":",line!())).clone();
-    let startup_movie_disabled = global_section.get("skipMovies").unexpected(concat!(file!(),":",line!())).clone() == "true";
-    let bit_version = if global_section.get("64-bit-version").unexpected(concat!(file!(),":",line!())).clone() == "true" { "64" } else { "32" };
-    drop(global_conf);
     std::thread::spawn(move || {
       let server = server.as_string().unexpected(concat!(file!(),":",line!()));
       let mut args = vec![];
@@ -451,13 +414,13 @@ impl Handler {
         "" => {},
         _ => args.push(server)
       };
-      args.push(format!("-ini:UDKGame:DefaultPlayer.Name={}", playername));
-      if startup_movie_disabled {
+      args.push(format!("-ini:UDKGame:DefaultPlayer.Name={}", &launch_info.player_name));
+      if launch_info.startup_movie_disabled {
         args.push("-nomoviestartup".to_string());
       }
       args.push("-UseAllAvailableCores".to_string());
 
-      match std::process::Command::new(format!("{}/Binaries/Win{}/UDK.exe", game_location, bit_version))
+      match std::process::Command::new(format!("{}/Binaries/Win{}/UDK.exe", game_location, launch_info.bit_version))
                                      .args(&args)	
                                      .stdout(std::process::Stdio::piped())
                                      .stderr(std::process::Stdio::inherit())
@@ -482,28 +445,13 @@ impl Handler {
   /// Gets the setting from the launchers configuration file.
   fn get_setting(&self, setting: sciter::Value) -> String {
     info!("Getting settings!");
-
-    let conf_unlocked = self.global_conf.clone();
-    let conf = conf_unlocked.lock().unexpected(concat!(file!(),":",line!()));
-    let section = conf.section(Some("RenX_Launcher".to_owned())).unexpected(concat!(file!(),":",line!()));
-    section.get(&setting.as_string().unexpected(concat!(file!(),":",line!()))).unexpected(concat!(file!(),":",line!())).to_string()
+    self.configuration.get_global_setting(&setting.as_string().expect(""))
   }
 
   /// Sets the setting in the launchers configuration file.
   fn set_setting(&self, setting: sciter::Value, value: sciter::Value) {
     info!("Setting settings!");
-
-    let conf_unlocked = self.global_conf.clone();
-    let mut conf = conf_unlocked.lock().unexpected(concat!(file!(),":",line!()));
-    let mut section = conf.with_section(Some("RenX_Launcher".to_owned()));
-    section.set(setting.as_string().unexpected(concat!(file!(),":",line!())), value.as_string().unexpected(concat!(file!(),":",line!())));
-    
-    let mut config_directory = dirs::config_dir().unexpected("");
-    config_directory.push("Renegade X");
-    std::fs::create_dir_all(&config_directory).unexpected("Creation of config-directory went wrong!");
-    config_directory.push("Renegade X Launcher.ini");
-
-    conf.write_to_file(config_directory.to_str().unexpected(concat!(file!(),":",line!()))).unexpected(concat!(file!(),":",line!()));
+    self.configuration.set_global_setting(&setting.as_string().expect(""), &value.as_string().expect(""))
   }
 
   /// Get the current launcher version
@@ -588,7 +536,7 @@ impl Handler {
       let good_hash = launcher_info.patch_hash.clone();
       drop(launcher_info);
       std::thread::spawn(move || {
-        let mut rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unexpected(concat!(file!(),":",line!()));
+        let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unexpected(concat!(file!(),":",line!()));
         let _guard = rt.enter();
         let result = rt.spawn(async move {
           // Set up a request
@@ -596,8 +544,8 @@ impl Handler {
           let req = req.uri(uri).header("User-Agent", "sonny-launcher/1.0");
           let req = req.body(download_async::Body::empty()).unexpected(concat!(file!(),":",line!()));
 
-          let mut valueProgress = ValueProgress::new(progress.clone());
-          let mut progress : Option<&mut ValueProgress> = Some(&mut valueProgress);
+          let mut value_progress = ValueProgress::new(progress.clone());
+          let mut progress : Option<&mut ValueProgress> = Some(&mut value_progress);
           let mut buffer = vec![];
           let res = download_async::download(req, &mut buffer, false, &mut progress, Some(socket_addrs.into())).await;
 
@@ -606,7 +554,7 @@ impl Handler {
             // check instructions hash
             if &good_hash != "" {
               let mut sha256 = Sha256::new();
-              sha256.write(&buffer);
+              sha256.write(&buffer)?;
               let hash = hex::encode_upper(sha256.finalize());
               if &hash != &good_hash {
                 error!("The hashes don't match one another!");
@@ -788,21 +736,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   //TODO: Create "Another instance is already running" window.
   assert!(instance.is_single());
 
-  let mut config_directory = dirs::config_dir().unexpected(concat!(file!(),":",line!()));
-  config_directory.push("Renegade X");
-  config_directory.push("logs");
+  let configuration = configuration::Configuration::load_or_default();
+  let log_directory = configuration.get_log_directory();
 
   Logger::with_env_or_str("info")
     .format(flexi_logger::opt_format)
-    .directory(&config_directory)
+    .directory(&log_directory)
     .rotate(Criterion::Age(Age::Day), Naming::Numbers, Cleanup::KeepLogFiles(5))
     .print_message()
     .log_to_file()
     .start()
     .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
-
-  config_directory.pop();
-  config_directory.push("Renegade X Launcher.ini");
 
   info!("Starting RenegadeX Launcher version {}", &VERSION);
 
@@ -836,69 +780,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
   }
 
-  let local_conf = match Ini::load_from_file("RenegadeX-Launcher.ini") {
-    Ok(conf) => conf,
-    Err(_e) => {
-      let mut conf = Ini::new();
-      conf.with_section(Some("RenX_Launcher"))
-        .set("GameLocation", "../")
-        .set("VersionUrl", "https://static.renegade-x.com/launcher_data/version/launcher.json")
-        .set("LauncherTheme", "dom");
-        conf.write_to_file("RenegadeX-Launcher.ini").unexpected(concat!(file!(),":",line!()));
-        conf
-    }
-  };
+  if configuration.get_playername().eq("UnknownPlayer") {
+    let mut frame = sciter::Window::new();
+    let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(Downloader::new()));
+    frame.event_handler(Handler{patcher: patcher.clone(), configuration: configuration.clone()});
+    frame.load_file(&format!("file://{}/dom/first-startup.htm", &current_dir));
+    frame.run_app();
+  }
 
-  info!("Checking directory {} for configuration file.", &config_directory.to_str().unexpected(concat!(file!(),":",line!())));
-  let global_conf = match Ini::load_from_file(config_directory.to_str().unexpected(concat!(file!(),":",line!()))) {
-    Ok(conf) => {
-      info!("Configuration file found in config directory.");
-      conf
-    },
-    Err(_e) => {
-      let mut conf = Ini::new();
-      conf.with_section(Some("RenX_Launcher"))
-        .set("PlayerName", "UnknownPlayer")
-        .set("64-bit-version", "true")
-        .set("skipMovies", "false");
-      let local_conf_arc = Arc::new(Mutex::new(local_conf.clone()));
-      let conf_arc = Arc::new(Mutex::new(conf.clone()));
-      {
-        let mut frame = sciter::Window::new();
-        let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(Downloader::new()));
-        frame.event_handler(Handler{patcher: patcher.clone(), global_conf: conf_arc.clone(), local_conf: local_conf_arc});
-        frame.load_file(&format!("file://{}/dom/first-startup.htm", &current_dir));
-        frame.run_app();
-      }
-      conf = match Arc::try_unwrap(conf_arc) {
-        Ok(conf_mutex) => {
-          conf_mutex.into_inner().unexpected(concat!(file!(),":",line!())).clone()
-        },
-        Err(_e) => {
-          panic!(concat!(file!(),":",line!(),": No way to deal with this for now"));
-        }
-      };
-      info!("Created a new configuration file in config directory");
-      conf
-    }
-  };
-
-  let section = local_conf.section(Some("RenX_Launcher".to_owned())).unexpected(concat!(file!(),":",line!()));
-  let game_location = section.get("GameLocation").unexpected(concat!(file!(),":",line!()));
-  let version_url = section.get("VersionUrl").unexpected(concat!(file!(),":",line!()));
-  let launcher_theme = section.get("LauncherTheme").unexpected(concat!(file!(),":",line!()));
+  let game_location = configuration.get_game_location();
+  let version_url = configuration.get_version_url();
+  let launcher_theme = configuration.get_launcher_theme();
   
   info!("Launching sciter!");
 
   let mut frame = sciter::Window::new();
   let mut downloader = Downloader::new();
-  downloader.set_location(game_location.to_string());
-  downloader.set_version_url(version_url.to_string());
+  downloader.set_location(game_location);
+  downloader.set_version_url(version_url);
   let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(downloader));
-  let local_conf_arc = Arc::new(Mutex::new(local_conf.clone()));
-  let global_conf_arc = Arc::new(Mutex::new(global_conf.clone()));
-  frame.event_handler(Handler{patcher: patcher.clone(), local_conf: local_conf_arc, global_conf: global_conf_arc});
-  frame.load_file(&format!("file://{}/{}/frontpage.htm", current_dir, launcher_theme));
+  frame.event_handler(Handler{patcher: patcher.clone(), configuration});
+  frame.load_file(&format!("file://{}/{}/frontpage.htm", current_dir, &launcher_theme));
   info!("Launching app!");
 
   frame.run_app();
