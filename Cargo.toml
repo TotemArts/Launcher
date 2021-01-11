@@ -21,6 +21,6 @@ runas = { git = "https://github.com/SonnyX/rust-runas" }
 sha2 = "0.9"
 hex = "0.4"
 log = "0.4"
-flexi_logger = "0.16"
+flexi_logger = "0.17"
 download-async = "0.1"
 async-trait = "0.1"
