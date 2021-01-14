@@ -1,4 +1,16 @@
 # RenegadeX Launcher
+
+### Makes use of the following dependencies of the same developer (SonnyX):
+
+[xDelta-decoder](https://github.com/SonnyX/xdelta-decoder-rust)
+
+[Download-Async](https://github.com/SonnyX/download-async)
+
+[UnZip](https://github.com/SonnyX/unzip-rs)
+
+[RunAs](https://github.com/SonnyX/rust-runas)
+
+## Compilation Instructions
 To compile for windows (only compile from linux/wsl):
 ```bash
 ./package-windows.sh
