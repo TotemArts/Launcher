@@ -11,7 +11,7 @@ url = "2.2"
 sciter-rs = "0.5"
 renegadex_patcher = { git = "https://github.com/SonnyX/RenegadeX-patcher-lib", rev = "1b82927" }
 rust-ini = "0.16"
-single-instance = "0.1"
+single-instance = "0.3"
 socket2 = "0.3"
 rand = "0.8"
 percent-encoding = "2.1"
