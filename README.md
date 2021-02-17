@@ -2,6 +2,8 @@
 
 ### Makes use of the following dependencies of the same developer (SonnyX):
 
+[RenegadeX-patcher-lib](https://github.com/SonnyX/RenegadeX-patcher-lib)
+
 [xDelta-decoder](https://github.com/SonnyX/xdelta-decoder-rust)
 
 [Download-Async](https://github.com/SonnyX/download-async)
