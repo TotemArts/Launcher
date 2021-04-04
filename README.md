@@ -1,5 +1,7 @@
 # RenegadeX Launcher
 
+![screenshot](screenshot.png)
+
 ### Makes use of the following dependencies of the same developer (SonnyX):
 
 [RenegadeX-patcher-lib](https://github.com/SonnyX/RenegadeX-patcher-lib)
