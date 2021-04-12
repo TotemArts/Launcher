@@ -17,12 +17,12 @@ jobs:
     - name: Package Files
       shell: pwsh
       run: >
-        cp windows-target/i686-pc-windows-msvc/release/RenegadeX-Launcher.exe "windows-target/Renegade X Launcher.exe"
+        cp windows-target/i686-pc-windows-msvc/release/RenegadeX-Launcher.exe "windows-target/Renegade X Launcher.exe";
         $compress = @{
-          Path = "windows-target/Renegade X Launcher.exe", "windows-target/RenegadeX-folder-permissions.exe", "windows-target/sciter.dll", "windows-target/SelfUpdateExecutor.exe", "dom"
-          CompressionLevel = "Optimal"
+          Path = "windows-target/Renegade X Launcher.exe", "windows-target/RenegadeX-folder-permissions.exe", "windows-target/sciter.dll", "windows-target/SelfUpdateExecutor.exe", "dom";
+          CompressionLevel = "Optimal";
           DestinationPath = "windows-target/RenX-Launcher.zip"
-        }
+        };
         Compress-Archive @compress
 
     - uses: actions/upload-artifact@v2
