@@ -36,5 +36,5 @@ jobs:
         host: ${{ secrets.FTP_URL }}
         user: ${{ secrets.FTP_USER }}
         password: ${{ secrets.FTP_PASSWORD }}
-        src: "./windows-target/RenX-Launcher.zip"
-        dest: "/renxdownloads/RenX-Launcher.zip"
+        src: windows-target/RenX-Launcher.zip
+        dest: renxdownloads/RenX-Launcher.zip
