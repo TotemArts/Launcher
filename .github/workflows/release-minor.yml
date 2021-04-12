@@ -31,10 +31,10 @@ jobs:
         path: windows-target/RenX-Launcher.zip
 
     - name: Upload ftp
-      uses: sebastianpopp/ftp-action@releases/v2
+      uses: bayssmekanique/action-simple-file-upload@v1
       with:
         host: ${{ secrets.FTP_URL }}
         user: ${{ secrets.FTP_USER }}
         password: ${{ secrets.FTP_PASSWORD }}
-        localDir: "./windows-target/RenX-Launcher.zip"
-        remoteDir: "/renxdownloads/"
+        src: "./windows-target/RenX-Launcher.zip"
+        dest: "/renxdownloads/RenX-Launcher.zip"
