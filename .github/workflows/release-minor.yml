@@ -38,3 +38,11 @@ jobs:
         password: ${{ secrets.FTP_PASSWORD }}
         src: windows-target/RenX-Launcher.zip
         dest: renxdownloads/RenX-Launcher.zip
+
+    - name: Update versions
+      uses: garygrossgarten/github-action-ssh@release
+      with:
+        command: jq '.launcher={"version_name":.launcher.version_name,"version_number":110,"patch_url":"https://renxdownloads.b-cdn.net/"}' static.renegade-x.com/data/launcher_data/version/launcher.json > static.renegade-x.com/data/launcher_data/version/launcher.json
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        privateKey: ${{ secrets.SSH_KEY}}
