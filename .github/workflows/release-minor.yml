@@ -21,11 +21,28 @@ jobs:
         zip -j9 windows-target/RenX-Launcher "windows-target/Renegade X Launcher.exe" "windows-target/sciter.dll" "windows-target/SelfUpdateExecutor.exe" &&
         zip -9 windows-target/RenX-Launcher -r "dom"
 
+    - name: Package Files
+      shell: pwsh
+      run: >
+        cp windows-target/i686-pc-windows-msvc/release/RenegadeX-Launcher.exe "windows-target/Renegade X Launcher.exe"
+        $compress = @{
+          Path = "windows-target/Renegade X Launcher.exe", "windows-target/RenegadeX-folder-permissions.exe", "windows-target/sciter.dll", "windows-target/SelfUpdateExecutor.exe", "dom"
+          CompressionLevel = "Optimal"
+          DestinationPath = "windows-target/RenX-Launcher.zip"
+        }
+        Compress-Archive @compress
+
     - uses: actions/upload-artifact@v2
       with:
         name: RenX-Launcher
         path: windows-target/RenX-Launcher.zip
 
-    - name: Upload File
-      shell: bash
-      run: curl -T windows-target/RenX-Launcher.zip ${{ secrets.FTP_URL }} --user ${{ secrets.FTP_USER }}:${{ secrets.FTP_PASSWORD }}
+    - name: Upload file
+      uses: SamKirkland/FTP-Deploy-Action@4.0.0
+      with:
+        server: ${{ secrets.FTP_URL }}
+        username: ${{ secrets.FTP_USER }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        local-dir: ./windows-target/
+        server-dir: /renxdownloads/
+        include: RenX-Launcher.zip
