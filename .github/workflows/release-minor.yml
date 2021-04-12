@@ -3,30 +3,22 @@ name: Publish new version
 on:
   workflow_dispatch:
 
-jobs:
-  commit-and-build:
-    runs-on: ubuntu-latest
+env:
+  RUSTFLAGS: -Dwarnings
 
+jobs:
+  test:
+    runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
+    - run: rustup update --no-self-update stable && rustup default stable
+    - run: rustup target add i686-pc-windows-gnu
 
-    - name: Update dependencies
-      run: sudo apt install --no-install-recommends gcc-mingw-w64-i686
-
-    - name: Install latest toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-          toolchain: stable
-          target: i686-pc-windows-gnu
-          override: true
-
-    - name: Update Cargo
-      run: sh resolve-link-issues.sh && cargo update --manifest-path="windows-target/Cargo.toml" || (sh fix-build-issues.sh && cargo update --manifest-path="windows-target/Cargo.toml")
-
-    - name: Build
+    - name: build
       run: cargo build --manifest-path="windows-target/Cargo.toml" --target-dir="windows-target" --target=i686-pc-windows-gnu --release
 
     - name: Package Files
+      shell: bash
       run: >
         cp ./windows-target/i686-pc-windows-gnu/release/RenegadeX-Launcher.exe "./windows-target/Renegade X Launcher.exe" &&
         zip -j9 windows-target/RenX-Launcher "windows-target/Renegade X Launcher.exe" "windows-target/sciter.dll" "windows-target/SelfUpdateExecutor.exe" &&
