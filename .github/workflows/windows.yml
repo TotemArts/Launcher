@@ -5,6 +5,11 @@ on:
   push:
     branches:
       - master
+    paths:
+    - '.github/workflows/windows.yml'
+    - 'src/**'
+    - 'windows-target/Cargo.toml'
+    - 'windows-target/Cargo.lock'
 
 jobs:
   build:

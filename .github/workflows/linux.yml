@@ -5,6 +5,11 @@ on:
   push:
     branches:
       - master
+    paths:
+    - '.github/workflows/linux.yml'
+    - 'src/**'
+    - 'Cargo.toml'
+    - 'Cargo.lock'
 
 jobs:
   build:

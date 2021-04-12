@@ -30,15 +30,11 @@ jobs:
         name: RenX-Launcher
         path: windows-target/RenX-Launcher.zip
 
-    - name: Upload file
-      uses: SamKirkland/FTP-Deploy-Action@4.0.0
+    - name: Upload ftp
+      uses: sebastianpopp/ftp-action@releases/v2
       with:
-        server: ${{ secrets.FTP_URL }}
-        username: ${{ secrets.FTP_USER }}
+        host: ${{ secrets.FTP_URL }}
+        user: ${{ secrets.FTP_USER }}
         password: ${{ secrets.FTP_PASSWORD }}
-        local-dir: ./windows-target/
-        server-dir: /renxdownloads/
-        include: 'RenX-Launcher.zip'
-        exclude: '*'
-         - '**'
-         - '**/*'
+        localDir: "./windows-target/RenX-Launcher.zip"
+        remoteDir: "/renxdownloads/"
