@@ -12,10 +12,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: rustup update --no-self-update stable && rustup default stable
-    - run: rustup target add i686-pc-windows-gnu
+    - run: rustup target add i686-pc-windows-msvc
 
     - name: build
-      run: cargo build --manifest-path="windows-target/Cargo.toml" --target-dir="windows-target" --target=i686-pc-windows-gnu --release
+      run: cargo build --manifest-path="windows-target/Cargo.toml" --target-dir="windows-target" --target=i686-pc-windows-msvc --release
 
     - name: Package Files
       shell: bash
