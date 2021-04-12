@@ -1,6 +1,10 @@
 name: Linux
 
-on: [push]
+on:
+  pull-request:
+  push:
+    branches:
+      - master
 
 jobs:
   build:

@@ -17,7 +17,7 @@ jobs:
     - name: Package Files
       shell: bash
       run: >
-        cp ./windows-target/i686-pc-windows-gnu/release/RenegadeX-Launcher.exe "./windows-target/Renegade X Launcher.exe" &&
+        cp ./windows-target/i686-pc-windows-msvc/release/RenegadeX-Launcher.exe "./windows-target/Renegade X Launcher.exe" &&
         zip -j9 windows-target/RenX-Launcher "windows-target/Renegade X Launcher.exe" "windows-target/sciter.dll" "windows-target/SelfUpdateExecutor.exe" &&
         zip -9 windows-target/RenX-Launcher -r "dom"
 
