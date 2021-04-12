@@ -38,4 +38,7 @@ jobs:
         password: ${{ secrets.FTP_PASSWORD }}
         local-dir: ./windows-target/
         server-dir: /renxdownloads/
-        include: RenX-Launcher.zip
+        include: 'RenX-Launcher.zip'
+        exclude: '*'
+         - '**'
+         - '**/*'
