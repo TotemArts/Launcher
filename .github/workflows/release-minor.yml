@@ -15,13 +15,6 @@ jobs:
       run: cargo build --manifest-path="windows-target/Cargo.toml" --target-dir="windows-target" --target=i686-pc-windows-msvc --release
 
     - name: Package Files
-      shell: bash
-      run: >
-        cp ./windows-target/i686-pc-windows-msvc/release/RenegadeX-Launcher.exe "./windows-target/Renegade X Launcher.exe" &&
-        zip -j9 windows-target/RenX-Launcher "windows-target/Renegade X Launcher.exe" "windows-target/sciter.dll" "windows-target/SelfUpdateExecutor.exe" &&
-        zip -9 windows-target/RenX-Launcher -r "dom"
-
-    - name: Package Files
       shell: pwsh
       run: >
         cp windows-target/i686-pc-windows-msvc/release/RenegadeX-Launcher.exe "windows-target/Renegade X Launcher.exe"
