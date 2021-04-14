@@ -31,33 +31,6 @@ use std::io::Write;
 use std::net::ToSocketAddrs;
 use std::sync::{Arc,Mutex};
 
-pub struct Progress {
-
-}
-
-#[async_trait]
-impl download_async::Progress for Progress {
-  async fn get_file_size(&self) -> usize {
-    64
-  }
-
-  async fn get_progess(&self) -> usize {
-    64
-  }
-
-  async fn set_file_size(&mut self, size: usize) {
-
-  }
-
-  async fn add_to_progress(&mut self, amount: usize) {
-
-  }
-
-  async fn remove_from_progress(&mut self, bytes: usize) {
-
-  }
-}
-
 pub struct ValueProgress {
   progress: std::sync::Arc<std::sync::Mutex<Value>>,
   file_size: usize,
@@ -76,14 +49,6 @@ impl ValueProgress {
 
 #[async_trait]
 impl download_async::Progress for ValueProgress {
-  async fn get_file_size(&self) -> usize {
-    64
-  }
-
-  async fn get_progess(&self) -> usize {
-    64
-  }
-
   async fn set_file_size(&mut self, size: usize) {
     self.file_size = size;
 
@@ -158,7 +123,8 @@ struct Handler {
   /// The reference to the back-end library which is responsible for downloading and updating the game.
   patcher: Arc<Mutex<Downloader>>,
   /// The configuration file for the launcher.
-  configuration: configuration::Configuration
+  configuration: configuration::Configuration,
+  runtime: tokio::runtime::Handle
 }
 
 impl Handler {
@@ -328,35 +294,25 @@ impl Handler {
   /// Get Server List as plain text
   fn get_servers(&self, callback: sciter::Value) {
     info!("Getting Servers!");
+    self.runtime.spawn(async move {
+      let uri = "https://serverlist.renegade-x.com/servers.jsp?id=launcher".parse::<download_async::http::Uri>()?;
+      let mut downloader = download_async::Downloader::new();
+      downloader.use_uri(uri);
+      let mut headers = downloader.headers().expect("Could not unwrap headers");
+      headers.append("User-Agent".parse::<download_async::http::header::HeaderName>().unwrap(), format!("RenX-Launcher ({})", VERSION).parse::<download_async::http::header::HeaderValue>().unwrap());
 
-    std::thread::spawn(move || {
-      let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unexpected(concat!(file!(),":",line!()));
-      let _guard = rt.enter();
-      let result = rt.spawn(async move {
-        let url = "https://serverlist.renegade-x.com/servers.jsp?id=launcher".parse::<download_async::http::Uri>()?;
-        let req = download_async::http::Request::builder();
-        if let Some(host) = url.host() {
-          let req = req.uri(url.clone()).header("host", host).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
-          let req = req.body(download_async::Body::empty())?;
+      let mut buffer = vec![];
 
-          let mut buffer = vec![];
-          let mut progress : Option<&mut Progress> = None;
-
-          let response = download_async::download(req, &mut buffer, true, &mut progress, None).await;
-          if response.is_ok() {
-            std::thread::spawn(move || {
-              let text : Value = std::str::from_utf8(&buffer).unexpected("Expected an utf-8 string").parse().unexpected(concat!(file!(),":",line!()));
-              callback.call(None, &make_args!(text), None).unexpected(concat!(file!(),":",line!()));
-            });
-            Ok::<(), Error>(())
-          } else {
-            Err::<(), Error>(Error::new("".to_owned()))
-          }
-        } else {
-          Err::<(), Error>(Error::new("".to_owned()))
-        }
-      });
-      let _ = rt.block_on(result).unexpected(concat!(file!(),":",line!()));
+      let response = downloader.download(download_async::Body::empty(), &mut buffer).await;
+      if response.is_ok() {
+        std::thread::spawn(move || {
+          let text : Value = std::str::from_utf8(&buffer).unexpected("Expected an utf-8 string").parse().unexpected(concat!(file!(),":",line!()));
+          callback.call(None, &make_args!(text), None).unexpected(concat!(file!(),":",line!()));
+        });
+        Ok::<(), Error>(())
+      } else {
+        Err::<(), Error>(Error::new("".to_owned()))
+      }
     });
   }
 
@@ -545,62 +501,57 @@ impl Handler {
       let uri = launcher_info.patch_url.parse::<download_async::http::Uri>().unexpected(concat!(file!(),":",line!()));
       let good_hash = launcher_info.patch_hash.clone();
       drop(launcher_info);
-      std::thread::spawn(move || {
-        let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unexpected(concat!(file!(),":",line!()));
-        let _guard = rt.enter();
-        let result = rt.spawn(async move {
-          // Set up a request
-          let req = download_async::http::Request::builder();
-          let req = req.uri(uri).header("User-Agent", "sonny-launcher/1.0");
-          let req = req.body(download_async::Body::empty()).unexpected(concat!(file!(),":",line!()));
+      self.runtime.spawn(async move {
+        // Set up a request
+        let mut downloader = download_async::Downloader::new();
+        downloader.use_uri(uri);
+        downloader.allow_http();
+        downloader.use_sockets(socket_addrs.into());
+        let value_progress = ValueProgress::new(progress.clone());
+        downloader.use_progress(value_progress);
+        downloader.headers().unwrap().append("User-Agent".parse::<download_async::http::header::HeaderName>().unwrap(), "sonny-launcher/1.0".parse::<download_async::http::header::HeaderValue>().unwrap());
+        let mut buffer = vec![];
+        let res = downloader.download(download_async::Body::empty(), &mut buffer).await;
+        if res.is_ok() {
 
-          let mut value_progress = ValueProgress::new(progress.clone());
-          let mut progress : Option<&mut ValueProgress> = Some(&mut value_progress);
-          let mut buffer = vec![];
-          let res = download_async::download(req, &mut buffer, false, &mut progress, Some(socket_addrs.into())).await;
-
-          if res.is_ok() {
-
-            // check instructions hash
-            if &good_hash != "" {
-              let mut sha256 = Sha256::new();
-              sha256.write(&buffer)?;
-              let hash = hex::encode_upper(sha256.finalize());
-              if &hash != &good_hash {
-                error!("The hashes don't match one another!");
-                log::logger().flush();
-                panic!("The hashes don't match one another!");
-              }
+          // check instructions hash
+          if &good_hash != "" {
+            let mut sha256 = Sha256::new();
+            sha256.write(&buffer)?;
+            let hash = hex::encode_upper(sha256.finalize());
+            if &hash != &good_hash {
+              error!("The hashes don't match one another!");
+              log::logger().flush();
+              panic!("The hashes don't match one another!");
             }
-
-            let download_contents = std::io::Cursor::new(buffer);
-            let mut output_path = std::env::current_exe().unexpected(concat!(file!(),":",line!()));
-            output_path.pop();
-            let target_dir = output_path.clone();
-            output_path.pop();
-            let working_dir = output_path.clone();
-            output_path.push("launcher_update_extracted/");
-            info!("Extracting launcher update to: {:?}", output_path);
-            let mut self_update_executor = output_path.clone();
-
-            //extract files
-            let result = unzip::Unzipper::new(download_contents, output_path).unzip().unexpected(concat!(file!(),":",line!()));
-            info!("{:#?}", result);
-            
-            //run updater program and quit this.
-            self_update_executor.push("SelfUpdateExecutor.exe");
-            let args = vec![format!("--pid={}",std::process::id()), format!("--target={}", target_dir.to_str().unexpected(concat!(file!(),":",line!())))];
-            std::process::Command::new(self_update_executor)
-                                        .current_dir(working_dir)
-                                        .args(&args)
-                                        .stdout(std::process::Stdio::piped())
-                                        .stderr(std::process::Stdio::inherit())
-                                        .spawn().unexpected(concat!(file!(),":",line!()));
-            std::process::exit(0);
           }
-          Err::<(), Error>("Launcher update: File not found.".into())
-        });
-        let _ = rt.block_on(result).unexpected(concat!(file!(),":",line!()));
+
+          let download_contents = std::io::Cursor::new(buffer);
+          let mut output_path = std::env::current_exe().unexpected(concat!(file!(),":",line!()));
+          output_path.pop();
+          let target_dir = output_path.clone();
+          output_path.pop();
+          let working_dir = output_path.clone();
+          output_path.push("launcher_update_extracted/");
+          info!("Extracting launcher update to: {:?}", output_path);
+          let mut self_update_executor = output_path.clone();
+
+          //extract files
+          let result = unzip::Unzipper::new(download_contents, output_path).unzip().unexpected(concat!(file!(),":",line!()));
+          info!("{:#?}", result);
+          
+          //run updater program and quit this.
+          self_update_executor.push("SelfUpdateExecutor.exe");
+          let args = vec![format!("--pid={}",std::process::id()), format!("--target={}", target_dir.to_str().unexpected(concat!(file!(),":",line!())))];
+          std::process::Command::new(self_update_executor)
+                                      .current_dir(working_dir)
+                                      .args(&args)
+                                      .stdout(std::process::Stdio::piped())
+                                      .stderr(std::process::Stdio::inherit())
+                                      .spawn().unexpected(concat!(file!(),":",line!()));
+          std::process::exit(0);
+        }
+        Err::<(), Error>("Launcher update: File not found.".into())
       });
     }
   }
@@ -609,90 +560,59 @@ impl Handler {
   fn fetch_resource(&self, url: Value, mut headers_value: Value, callback: Value, context: Value) {
     info!("Fetching resource!");
 
-    let mut headers = download_async::http::HeaderMap::new();
     headers_value.isolate();
+    let mut downloader = download_async::Downloader::new();
+    let mut headers = downloader.headers().expect("Couldn't get the headers of the request");
+
     for (key,value) in headers_value.items() {
-      if let Ok(value) = download_async::http::HeaderValue::from_str(&value.as_string().unexpected("header value was empty.")) {
-        let key = download_async::http::header::HeaderName::from_bytes(key.as_string().unexpected("Key value was empty.").as_bytes()).unexpected("Invalid Header Name");
-        headers.insert(key, value);
-      }
+      headers.insert(key.as_string().unexpected("Key value was empty.").parse::<download_async::http::header::HeaderName>().unwrap(), value.as_string().unexpected("header value was empty.").parse::<download_async::http::header::HeaderValue>().unwrap());
     }
-    let url = url.as_string().unexpected("Couldn't parse url as string.").parse::<download_async::http::Uri>();
-    std::thread::spawn(move || {
-      let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unexpected(concat!(file!(),":",line!()));
-      let _guard = rt.enter();
-      let result = rt.spawn(async move {
-        let url = url?;
-        if let Some(host) = url.host() {
-          let mut progress : Option<&mut Progress> = None;
-          let sockets = None;
-          let mut buffer = vec![];
+    headers.insert("User-Agent".parse::<download_async::http::header::HeaderName>().unwrap(), format!("RenX-Launcher ({})", VERSION).parse::<download_async::http::header::HeaderValue>().unwrap());
+    let uri = url.as_string().unexpected("Couldn't parse url as string.").parse::<download_async::http::Uri>().unwrap();
+    downloader.use_uri(uri);
+    downloader.allow_http();
 
-          let mut req = download_async::http::Request::builder();
-          let headers_mut = req.headers_mut().unexpected(concat!(file!(),":",line!()));
-          *headers_mut = headers;
-          let req = req.uri(url.clone()).header("host", host).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
-          let req = req.body(download_async::Body::empty()).unexpected(concat!(file!(),":",line!()));
-
-          let result = download_async::download(req, &mut buffer, false, &mut progress, sockets).await;
-          if result.is_ok() {
-            std::thread::spawn(move || {
-              let text = ::std::str::from_utf8(&buffer).unexpected("Expected an utf-8 string");
-              callback.call(Some(context), &make_args!(text), None).unexpected(concat!(file!(),":",line!()));
-            });
-            Ok::<(), Error>(())
-          } else {
-            Err::<(), Error>(Error::new(format!("Download of {} failed, see: {}", url, result.unwrap_err())))
-          }
-        } else {
-          Err::<(), Error>(Error::new("Not a valid url.".to_owned()))
-        }
-      });
-      let _ = rt.block_on(result).unexpected(concat!(file!(),":",line!()));
+    self.runtime.spawn(async move {
+      let mut buffer = vec![];
+      let result = downloader.download(download_async::Body::empty(), &mut buffer).await;
+      if result.is_ok() {
+        std::thread::spawn(move || {
+          let text = ::std::str::from_utf8(&buffer).unexpected("Expected an utf-8 string");
+          callback.call(Some(context), &make_args!(text), None).unexpected(concat!(file!(),":",line!()));
+        });
+        Ok::<(), Error>(())
+      } else {
+        Err::<(), Error>(Error::new(format!("Download of {} failed, see: {}", url, result.unwrap_err())))
+      }
     });
   }
 
   /// Fetch the image at url with specified headers
   fn fetch_image(&self, url: Value, mut headers_value: Value, callback: Value, context: Value) {
-    let mut headers = download_async::http::HeaderMap::new();
+
     headers_value.isolate();
+    let mut downloader = download_async::Downloader::new();
+    let mut headers = downloader.headers().expect("Couldn't get the headers of the request");
     for (key,value) in headers_value.items() {
-      if let Ok(value) = download_async::http::HeaderValue::from_str(&value.as_string().unexpected("header value was empty.")) {
-        let key = download_async::http::header::HeaderName::from_bytes(key.as_string().unexpected("Key value was empty.").as_bytes()).unexpected("Invalid Header Name");
-        headers.insert(key, value);
-      }
+      headers.insert(key.as_string().unexpected("Key value was empty.").parse::<download_async::http::header::HeaderName>().unwrap(), value.as_string().unexpected("header value was empty.").parse::<download_async::http::header::HeaderValue>().unwrap());
     }
-    let url = url.as_string().unexpected("Couldn't parse url as string.").parse::<download_async::http::Uri>();
-    std::thread::spawn(move || {
-      let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unexpected(concat!(file!(),":",line!()));
-      let _guard = rt.enter();
-      let result = rt.spawn(async move {
-        let url = url?;
-        if let Some(host) = url.host() {
-          let mut progress : Option<&mut Progress> = None;
-          let sockets = None;
-          let mut buffer = vec![];
+    headers.insert("User-Agent".parse::<download_async::http::header::HeaderName>().unwrap(), format!("RenX-Launcher ({})", VERSION).parse::<download_async::http::header::HeaderValue>().unwrap());
+    let uri = url.as_string().unexpected("Couldn't parse url as string.").parse::<download_async::http::Uri>().unwrap();
+    downloader.use_uri(uri);
+    downloader.allow_http();
 
-          let mut req = download_async::http::Request::builder();
-          let headers_mut = req.headers_mut().unexpected(concat!(file!(),":",line!()));
-          *headers_mut = headers;
-          let req = req.uri(url.clone()).header("host", host).header("User-Agent", format!("RenX-Launcher ({})", VERSION));
-          let req = req.body(download_async::Body::empty()).unexpected(concat!(file!(),":",line!()));
+    self.runtime.spawn(async move {
+      let mut buffer = vec![];
 
-          let result = download_async::download(req, &mut buffer, false, &mut progress, sockets).await;
-          if result.is_ok() {
-            std::thread::spawn(move || {
-              callback.call(Some(context), &make_args!(buffer.as_slice()), None).unexpected(concat!(file!(),":",line!()));
-            });
-            Ok::<(), Error>(())
-          } else {
-            Err::<(), Error>(Error::new(format!("Download of {} failed, see: {}", url, result.unwrap_err())))
-          }
-        } else {
-          Err::<(), Error>(Error::new("Not a valid url.".to_owned()))
-        }
-      });
-      let _ = rt.block_on(result).unexpected(concat!(file!(),":",line!()));
+      let result = downloader.download(download_async::Body::empty(), &mut buffer).await;
+      if result.is_ok() {
+        std::thread::spawn(move || {
+          callback.call(Some(context), &make_args!(buffer.as_slice()), None).unexpected(concat!(file!(),":",line!()));
+        });
+        Ok::<(), Error>(())
+      } else {
+        Err::<(), Error>(Error::new(format!("Download of {} failed, see: {}", url, result.unwrap_err())))
+      }
     });
   }
 }
@@ -799,7 +719,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(Downloader::new()));
   if configuration.get_playername().eq("UnknownPlayer") {
     let mut frame = sciter::Window::new();
-    frame.event_handler(Handler{patcher: patcher.clone(), configuration: configuration.clone()});
+    frame.event_handler(Handler{patcher: patcher.clone(), configuration: configuration.clone(), runtime: tokio::runtime::Handle::current()});
     frame.load_file(&format!("file://{}/dom/first-startup.htm", &current_dir));
     frame.run_app();
   }
@@ -816,7 +736,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   locked_patcher.set_version_url(version_url);
   drop(locked_patcher);
   
-  frame.event_handler(Handler{patcher: patcher.clone(), configuration});
+  frame.event_handler(Handler{patcher: patcher.clone(), configuration, runtime: tokio::runtime::Handle::current()});
   frame.load_file(&format!("file://{}/{}/frontpage.htm", current_dir, &launcher_theme));
   info!("Launching app!");
 
