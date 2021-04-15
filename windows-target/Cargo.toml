@@ -1,6 +1,6 @@
 [package]
 name = "RenegadeX-Launcher"
-version = "0.9.25"
+version = "0.9.26"
 authors = ["SonnyX"]
 edition = "2018"
 build = "windows.rs"
@@ -36,4 +36,3 @@ embed-resource = "1.6"
 [profile.release]
 opt-level = 'z'
 lto = true
-panic = "abort"
