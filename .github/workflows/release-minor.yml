@@ -49,7 +49,7 @@ jobs:
       uses: garygrossgarten/github-action-ssh@release
       with:
         command: >
-         echo "$(jq '.launcher={"version_name":"${{ steps.cargo_version.outputs.version }}","version_number":(.launcher.version_number + 1),"patch_url":"https://renxdownloads.b-cdn.net/renxdownloads/RenX-Launcher-${{ steps.cargo_version.outputs.version }}.zip","patch_hash":"${{ steps.package.outputs.hash }}","banners_url":.launcher.banners_url}' static.renegade-x.com/data/launcher_data/version/launcher.json)" > static.renegade-x.com/data/launcher_data/version/launcher.json
+         echo "$(jq '.launcher={"version_name":"${{ steps.cargo_version.outputs.version }}","version_number":(.launcher.version_number + 1),"patch_url":"https://renxdownloads.b-cdn.net/RenX-Launcher-${{ steps.cargo_version.outputs.version }}.zip","patch_hash":"${{ steps.package.outputs.hash }}","banners_url":.launcher.banners_url}' static.renegade-x.com/data/launcher_data/version/launcher.json)" > static.renegade-x.com/data/launcher_data/version/launcher.json
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
         privateKey: ${{ secrets.SSH_KEY}}
