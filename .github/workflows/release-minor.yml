@@ -5,25 +5,29 @@ on:
 
 jobs:
   publish:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+
+    - name: Get version from file
+      id: cargo_version
+      run: 
+        version=$(cat Cargo.toml | grep version | head -n1);
+        version=${version//[*version| |=|\"]};
+        echo '::set-output name=version::'${version};
+
     - run: rustup update --no-self-update stable && rustup default stable
-    - run: rustup target add i686-pc-windows-msvc
+    - run: cargo install cross
 
     - name: build
-      run: cargo build --manifest-path="windows-target/Cargo.toml" --target-dir="windows-target" --target=i686-pc-windows-msvc --release
+      run: cross build --manifest-path="windows-target/Cargo.toml" --target=i686-pc-windows-gnu --release
 
     - name: Package Files
-      shell: pwsh
+      shell: bash
       run: >
-        cp windows-target/i686-pc-windows-msvc/release/RenegadeX-Launcher.exe "windows-target/Renegade X Launcher.exe";
-        $compress = @{
-          Path = "windows-target/Renegade X Launcher.exe", "windows-target/RenegadeX-folder-permissions.exe", "windows-target/sciter.dll", "windows-target/SelfUpdateExecutor.exe", "dom";
-          CompressionLevel = "Optimal";
-          DestinationPath = "windows-target/RenX-Launcher.zip"
-        };
-        Compress-Archive @compress
+        cp ./target/i686-pc-windows-gnu/release/RenegadeX-Launcher.exe "./windows-target/Renegade X Launcher.exe";
+        zip -j9 windows-target/RenX-Launcher "windows-target/Renegade X Launcher.exe" "windows-target/RenegadeX-folder-permissions.exe" "windows-target/sciter.dll" "windows-target/SelfUpdateExecutor.exe";
+        zip -9 windows-target/RenX-Launcher -r "dom";
 
     - uses: actions/upload-artifact@v2
       with:
@@ -37,12 +41,12 @@ jobs:
         user: ${{ secrets.FTP_USER }}
         password: ${{ secrets.FTP_PASSWORD }}
         src: windows-target/RenX-Launcher.zip
-        dest: renxdownloads/RenX-Launcher.zip
+        dest: RenX-Launcher-${{ steps.cargo_version.outputs.version }}.zip
 
     - name: Update versions
       uses: garygrossgarten/github-action-ssh@release
       with:
-        command: jq '.launcher={"version_name":.launcher.version_name,"version_number":110,"patch_url":"https://renxdownloads.b-cdn.net/"}' static.renegade-x.com/data/launcher_data/version/launcher.json > static.renegade-x.com/data/launcher_data/version/launcher.json
+        command: jq '.launcher={"version_name": "${{ steps.cargo_version.outputs.version }}","version_number":110,"patch_url":"https://renxdownloads.b-cdn.net/renxdownloads/RenX-Launcher-${{ steps.cargo_version.outputs.version }}.zip"}' static.renegade-x.com/data/launcher_data/version/launcher.json > static.renegade-x.com/data/launcher_data/version/launcher-try.json
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
         privateKey: ${{ secrets.SSH_KEY}}

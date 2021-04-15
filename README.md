@@ -15,6 +15,11 @@
 [RunAs](https://github.com/SonnyX/rust-runas)
 
 ## Compilation Instructions
+Cross-Compiling relies on Docker, make sure to have it installed!
+```bash
+cargo install cross
+```
+
 To compile for windows (only compile from linux/wsl):
 ```bash
 ./package-windows.sh
@@ -22,13 +27,7 @@ To compile for windows (only compile from linux/wsl):
 
 Some build-requirements for Arch Linux:
 ```bash
-sudo tee -a /etc/pacman.conf > /dev/null <<EOT
-[ownstuff]
-SigLevel = PackageOptional
-Server = https://ftp.f3l.de/~martchus/$repo/os/$arch
-Server = https://martchus.no-ip.biz/repo/arch/$repo/os/$arch
-EOT
-sudo pacman -Syu cmake gcc pkgconf wget openssl mingw-w64-gcc
+sudo pacman -Syu cmake gcc pkgconf wget openssl
 ```
 
 Build commands for linux:
@@ -42,9 +41,4 @@ Download Sciter from `https://github.com/c-smile/sciter-sdk/` and add the path t
 ```
 export PATH=$PATH:$SCITER_PATH/bin.gtk/x64
 cargo run --release
-```
-
-Build commands for windows from linux:
-```bash
-./package-windows.sh
 ```

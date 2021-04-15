@@ -70,8 +70,14 @@ impl download_async::Progress for ValueProgress {
     });
   }
 
-  async fn remove_from_progress(&mut self, bytes: usize) {
-
+  async fn remove_from_progress(&mut self, amount: usize) {
+    self.downloaded -= amount;
+    let file_size = self.file_size;
+    let downloaded = self.downloaded;
+    let progress = self.progress.lock().unwrap().clone();
+    std::thread::spawn(move || {
+      progress.call(None, &make_args!(format!("[{}, {}]", downloaded, file_size)), None).unexpected(concat!(file!(),":",line!()));
+    });
   }
 }
 
@@ -298,7 +304,7 @@ impl Handler {
       let uri = "https://serverlist.renegade-x.com/servers.jsp?id=launcher".parse::<download_async::http::Uri>()?;
       let mut downloader = download_async::Downloader::new();
       downloader.use_uri(uri);
-      let mut headers = downloader.headers().expect("Could not unwrap headers");
+      let headers = downloader.headers().expect("Could not unwrap headers");
       headers.append("User-Agent".parse::<download_async::http::header::HeaderName>().unwrap(), format!("RenX-Launcher ({})", VERSION).parse::<download_async::http::header::HeaderValue>().unwrap());
 
       let mut buffer = vec![];
@@ -562,7 +568,7 @@ impl Handler {
 
     headers_value.isolate();
     let mut downloader = download_async::Downloader::new();
-    let mut headers = downloader.headers().expect("Couldn't get the headers of the request");
+    let headers = downloader.headers().expect("Couldn't get the headers of the request");
 
     for (key,value) in headers_value.items() {
       headers.insert(key.as_string().unexpected("Key value was empty.").parse::<download_async::http::header::HeaderName>().unwrap(), value.as_string().unexpected("header value was empty.").parse::<download_async::http::header::HeaderValue>().unwrap());
@@ -592,7 +598,7 @@ impl Handler {
 
     headers_value.isolate();
     let mut downloader = download_async::Downloader::new();
-    let mut headers = downloader.headers().expect("Couldn't get the headers of the request");
+    let headers = downloader.headers().expect("Couldn't get the headers of the request");
     for (key,value) in headers_value.items() {
       headers.insert(key.as_string().unexpected("Key value was empty.").parse::<download_async::http::header::HeaderName>().unwrap(), value.as_string().unexpected("header value was empty.").parse::<download_async::http::header::HeaderValue>().unwrap());
     }
