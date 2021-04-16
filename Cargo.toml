@@ -27,4 +27,3 @@ async-trait = "0.1"
 
 [profile.release]
 lto = true
-panic = "abort"
