@@ -15,6 +15,24 @@ jobs:
         version=$(cat Cargo.toml | grep version | head -n1);
         version=${version//[*version| |=|\"]};
         echo '::set-output name=version::'${version};
+        
+    - name: Bump minor version
+      id: minor_version
+      run: 
+        IFS='.' read -ra ver <<< ${{ steps.cargo_version.outputs.version }};
+        version=$((${ver[0]})).$((${ver[1]})).$((${ver[2]}+1));
+        echo 'Bumping project from version '${{ steps.cargo_version.outputs.version }}' to version '$version;
+        sed -i '0,/version[ |=|\"|0-9|.]*/s//version = "'$version'"/' Cargo.toml;
+        sed -i '0,/version[ |=|\"|0-9|.]*/s//version = "'$version'"/' windows-target/Cargo.toml;
+        echo '::set-output name=version::'${version};
+        
+    - name: Git Commit/Push Changes
+      uses: actions-x/commit@v2
+      with:
+        message: Release minor version ${{ steps.minor_version.outputs.version }}
+        files: Cargo.toml windows-target/Cargo.toml
+        name: SonnyX
+        email: randy@vonderweide.nl
 
     - run: rustup update --no-self-update stable && rustup default stable
     - run: cargo install cross
@@ -43,13 +61,13 @@ jobs:
         user: ${{ secrets.FTP_USER }}
         password: ${{ secrets.FTP_PASSWORD }}
         src: windows-target/RenX-Launcher.zip
-        dest: RenX-Launcher-${{ steps.cargo_version.outputs.version }}.zip
+        dest: RenX-Launcher-${{ steps.minor_version.outputs.version }}.zip
 
     - name: Update versions
       uses: garygrossgarten/github-action-ssh@release
       with:
         command: >
-         echo "$(jq '.launcher={"version_name":"${{ steps.cargo_version.outputs.version }}","version_number":(.launcher.version_number + 1),"patch_url":"https://renxdownloads.b-cdn.net/RenX-Launcher-${{ steps.cargo_version.outputs.version }}.zip","patch_hash":"${{ steps.package.outputs.hash }}","banners_url":.launcher.banners_url}' static.renegade-x.com/data/launcher_data/version/launcher.json)" > static.renegade-x.com/data/launcher_data/version/launcher.json
+         echo "$(jq '.launcher={"version_name":"${{ steps.minor_version.outputs.version }}","version_number":(.launcher.version_number + 1),"patch_url":"https://renxdownloads.b-cdn.net/RenX-Launcher-${{ steps.minor_version.outputs.version }}.zip","patch_hash":"${{ steps.package.outputs.hash }}","banners_url":.launcher.banners_url}' static.renegade-x.com/data/launcher_data/version/launcher.json)" > static.renegade-x.com/data/launcher_data/version/launcher.json
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
         privateKey: ${{ secrets.SSH_KEY}}
