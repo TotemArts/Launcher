@@ -184,14 +184,14 @@ impl Handler {
             std::thread::spawn(move || {done.call(None, &make_args!("patch"), None).unexpected(concat!(file!(),":",line!()));});
           },
           Update::Unknown => {
-            eprintln!("Update::Unknown");
+            error!("Update::Unknown");
           }
         };
         Ok(())
 		  };
       let result : Result<(),Error> = check_update();
       if let Err(err) = result {
-        eprintln!("{:#?}", &err);
+        error!("check_update failed with: {:#?}", &err);
         std::thread::spawn(move || {error.call(None, &make_args!(err.to_string()), None).unexpected(concat!(file!(),":",line!()));});
       }
     });
@@ -392,7 +392,7 @@ impl Handler {
           if output.success() {
             std::thread::spawn(move || {done.call(None, &make_args!(), None).unexpected(concat!(file!(),":",line!()));});
           } else {
-            //eprintln!("{:#?}", output.unwrap_err());
+            error!("The game exited in a crash: {}", output.code().unexpected(concat!(file!(),":",line!())));
             std::thread::spawn(move || {error.call(None, &make_args!(format!("The game exited in a crash: {}", output.code().unexpected(concat!(file!(),":",line!())))), None).unexpected(concat!(file!(),":",line!()));});
           }
         },
@@ -709,6 +709,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .log_to_file()
     .start()
     .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
+
+  std::panic::set_hook(Box::new(|panic_info| {
+    log::logger().log(&Record::builder()
+    .args(format_args!("{}", panic_info.to_string()))
+    .level(Level::Error)
+    .file(panic_info.location().map(|a| a.file()))
+    .line(panic_info.location().map(|a| a.line()))
+    .module_path(None)
+    .build());
+  }));
 
   info!("Starting RenegadeX Launcher version {}", &VERSION);
 
