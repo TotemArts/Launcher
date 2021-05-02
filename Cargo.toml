@@ -1,6 +1,6 @@
 [package]
 name = "RenegadeX-Launcher"
-version = "0.9.28"
+version = "0.9.29"
 authors = ["SonnyX"]
 edition = "2018"
 exclude = ["target-windows/**", "target/**", "dom", "dom/**"]
