@@ -36,19 +36,19 @@ impl Handler {
     let update = &progress.lock().or_else(|_| Err(Error::MutexPoisoned(format!(""))))?.update.clone();
     match update {
       Update::UpToDate => {
-        std::thread::spawn(move || -> Result<(), Error> { done.call(None, &make_args!("up_to_date"), None)?; Ok(()) });
+        crate::spawn_wrapper::spawn(move || -> Result<(), Error> { done.call(None, &make_args!("up_to_date"), None)?; Ok(()) });
         return Ok(());
       },
       Update::Full => {
-        std::thread::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("full"), None)?; Ok(()) });
+        crate::spawn_wrapper::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("full"), None)?; Ok(()) });
         return Ok(());
       },
       Update::Resume => {
-        std::thread::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("resume"), None)?; Ok(()) });
+        crate::spawn_wrapper::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("resume"), None)?; Ok(()) });
         return Ok(());
       },
       Update::Delta => {
-        std::thread::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("update"), None)?; Ok(()) });
+        crate::spawn_wrapper::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("update"), None)?; Ok(()) });
         return Ok(());
       },
       Update::Unknown => {}
@@ -57,7 +57,7 @@ impl Handler {
     drop(update);
     
     let patcher = self.patcher.clone();
-		std::thread::spawn(move || -> Result<(), Error> {
+		crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
       let check_update = || -> Result<(), Error> {
         let mut patcher = patcher.lock().or_else(|_| Err(Error::MutexPoisoned(format!(""))))?;
         patcher.retrieve_mirrors()?;
@@ -66,16 +66,16 @@ impl Handler {
 
         match update_available {
           Update::UpToDate => {
-            std::thread::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("up_to_date"), None)?; Ok(()) });
+            crate::spawn_wrapper::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("up_to_date"), None)?; Ok(()) });
           },
           Update::Full => {
-            std::thread::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("full"), None)?; Ok(()) });
+            crate::spawn_wrapper::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("full"), None)?; Ok(()) });
           },
           Update::Resume => {
-            std::thread::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("resume"), None)?; Ok(()) });
+            crate::spawn_wrapper::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("resume"), None)?; Ok(()) });
           },
           Update::Delta => {
-            std::thread::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("patch"), None)?; Ok(()) });
+            crate::spawn_wrapper::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("patch"), None)?; Ok(()) });
           },
           Update::Unknown => {
             error!("Update::Unknown");
@@ -86,7 +86,7 @@ impl Handler {
       let result : Result<(), Error> = check_update();
       if let Err(err) = result {
         error!("check_update failed with: {:#?}", &err);
-        std::thread::spawn(move || -> Result<(), Error> { error.call(None, &make_args!(err.to_string()), None)?; Ok(()) });
+        crate::spawn_wrapper::spawn(move || -> Result<(), Error> { error.call(None, &make_args!(err.to_string()), None)?; Ok(()) });
       }
       Ok(())
     });
@@ -98,7 +98,7 @@ impl Handler {
     info!("Starting game download!");
 
     let progress = self.patcher.clone().lock().or_else(|_| Err(Error::MutexPoisoned(format!(""))))?.get_progress();
-		std::thread::spawn(move || -> Result<(), Error> {
+		crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
       let mut not_finished = true;
       let mut last_download_size : u64 = 0;
       while not_finished {
@@ -126,12 +126,12 @@ impl Handler {
         not_finished = !progress_locked.finished_patching;
         drop(progress_locked);
         let callback_clone = callback.clone();
-        std::thread::spawn(move || -> Result<(), Error> {callback_clone.call(None, &make_args!(me), None)?; Ok(()) });
+        crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback_clone.call(None, &make_args!(me), None)?; Ok(()) });
       }
       Ok(())
 		});
     let patcher = self.patcher.clone();
-    std::thread::spawn(move || -> Result<(), Error> {
+    crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
       let result : Result<(), renegadex_patcher::traits::Error>;
       {
         let mut locked_patcher = patcher.lock().or_else(|e| Err(Error::MutexPoisoned(format!("A poisoned Mutex: {}", e))))?;
@@ -142,11 +142,11 @@ impl Handler {
       match result {
         Ok(()) => {
           info!("Calling download done");
-          std::thread::spawn(move || -> Result<(), Error> {callback_done.call(None, &make_args!(false,false), None)?; Ok(()) });
+          crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback_done.call(None, &make_args!(false,false), None)?; Ok(()) });
         },
         Err(e) => {
           error!("{:#?}", &e);
-          std::thread::spawn(move || -> Result<(), Error> {error.call(None, &make_args!(e.to_string()), None)?; Ok(()) });
+          crate::spawn_wrapper::spawn(move || -> Result<(), Error> {error.call(None, &make_args!(e.to_string()), None)?; Ok(()) });
         }
       };
       Ok(())
@@ -159,7 +159,7 @@ impl Handler {
     info!("Removing unused!");
 
     let patcher = self.patcher.clone();
-    std::thread::spawn(move || -> Result<(), Error> {
+    crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
       let result : Result<(), renegadex_patcher::traits::Error>;
       {
         let mut locked_patcher = patcher.lock().or_else(|e| Err(Error::MutexPoisoned(format!("A poisoned Mutex: {}", e))))?;
@@ -169,11 +169,11 @@ impl Handler {
       match result {
         Ok(()) => {
           info!("Calling remove unversioned done");
-          std::thread::spawn(move || -> Result<(), Error> {callback_done.call(None, &make_args!("validate"), None)?; Ok(()) });
+          crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback_done.call(None, &make_args!("validate"), None)?; Ok(()) });
         },
         Err(e) => {
           error!("Error in remove_unversioned(): {:#?}", &e);
-          std::thread::spawn(move || -> Result<(), Error> {error.call(None, &make_args!(e.to_string()), None)?; Ok(()) });
+          crate::spawn_wrapper::spawn(move || -> Result<(), Error> {error.call(None, &make_args!(e.to_string()), None)?; Ok(()) });
         }
       };
       Ok(())
@@ -199,7 +199,7 @@ impl Handler {
   /// Get Server List as plain text
   fn get_servers(&self, callback: sciter::Value) {
     info!("Getting Servers!");
-    self.runtime.spawn(async move {
+    crate::spawn_wrapper::spawn_async(&self.runtime, async move {
       let uri = "https://serverlist.renegade-x.com/servers.jsp?id=launcher".parse::<download_async::http::Uri>()?;
       let mut downloader = download_async::Downloader::new();
       downloader.use_uri(uri);
@@ -210,7 +210,7 @@ impl Handler {
 
       downloader.download(download_async::Body::empty(), &mut buffer).await?;
 
-      std::thread::spawn(move || -> Result<(), Error> {
+      crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
         let text : Value = std::str::from_utf8(&buffer).expect("Expected an utf-8 string").parse().expect(concat!(file!(),":",line!()));
         callback.call(None, &make_args!(text), None)?;
         Ok(())
@@ -221,7 +221,7 @@ impl Handler {
 
   /// Get ping of server
   fn get_ping(&self, server: sciter::Value, callback: sciter::Value) {
-    std::thread::spawn(move || -> Result<(), Error> {
+    crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
       let socket = Socket::new(Domain::ipv4(), Type::raw(), Some(Protocol::icmpv4())).expect(concat!(file!(),":",line!(),": New socket"));
       let server_string = server.as_string().ok_or_else(|| Error::None(format!("Couldn't cast server \"{:?}\" to string", &server)))?;
       let mut server_socket = server_string.to_socket_addrs().expect(&format!("Couldn't unwrap socket address of server \"{}\"", &server_string));
@@ -249,7 +249,7 @@ impl Handler {
       let result = socket.recv(&mut buf);
       let elapsed = start_time.elapsed().as_millis() as i32;
       if result.is_ok() && buf[36..36+48] == code[16..] {
-        std::thread::spawn(move || -> Result<(), Error> {callback.call(None, &make_args!(server, elapsed), None)?; Ok(()) });
+        crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback.call(None, &make_args!(server, elapsed), None)?; Ok(()) });
       }
       Ok(())
     });
@@ -267,7 +267,7 @@ impl Handler {
     let game_location = self.configuration.get_game_location();
     let launch_info =  self.configuration.get_launch_info();
 
-    std::thread::spawn(move || -> Result<(), Error> {
+    crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
       let server = server.as_string().ok_or_else(|| Error::None(format!("{}", concat!(file!(),":",line!()))))?;
       let mut args = vec![];
       match server.as_str() {
@@ -288,16 +288,16 @@ impl Handler {
         Ok(mut child) => {
           let output = child.wait()?;
           if output.success() {
-            std::thread::spawn(move || -> Result<(), Error> {done.call(None, &make_args!(), None)?; Ok(()) });
+            crate::spawn_wrapper::spawn(move || -> Result<(), Error> {done.call(None, &make_args!(), None)?; Ok(()) });
           } else {
             let code = output.code().ok_or_else(|| Error::None(format!("Couldn't get the exit code of the Game")))?;
             error!("The game exited in a crash: {}", code);
-            std::thread::spawn(move || -> Result<(), Error> {error.call(None, &make_args!(format!("The game exited in a crash: {}", code)), None)?; Ok(()) });
+            crate::spawn_wrapper::spawn(move || -> Result<(), Error> {error.call(None, &make_args!(format!("The game exited in a crash: {}", code)), None)?; Ok(()) });
           }
         },
         Err(e) => {
           error!("Failed to open game: {}", &e);
-          std::thread::spawn(move || -> Result<(), Error> {error.call(None, &make_args!(format!("Failed to open game: {}", &e)), None)?; Ok(()) });
+          crate::spawn_wrapper::spawn(move || -> Result<(), Error> {error.call(None, &make_args!(format!("Failed to open game: {}", &e)), None)?; Ok(()) });
         }
       };
       Ok(())
@@ -328,22 +328,22 @@ impl Handler {
     let launcher_info_option = self.patcher.lock().or_else(|e| Err(Error::MutexPoisoned(format!("A mutex got poisoned: {}", e))))?.get_launcher_info();
     if let Some(launcher_info) = launcher_info_option {
       if VERSION != launcher_info.version_name && !launcher_info.prompted {
-        std::thread::spawn(move || -> Result<(), Error> {callback.call(None, &make_args!(launcher_info.version_name), None)?; Ok(()) });
+        crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback.call(None, &make_args!(launcher_info.version_name), None)?; Ok(()) });
       } else {
-        std::thread::spawn(move || -> Result<(), Error> {callback.call(None, &make_args!(Value::null()), None)?; Ok(()) });
+        crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback.call(None, &make_args!(Value::null()), None)?; Ok(()) });
       }
     } else {
       let patcher = self.patcher.clone();
-      std::thread::spawn(move || -> Result<(), Error> {
+      crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
         let mut patcher = patcher.lock().or_else(|e| Err(Error::MutexPoisoned(format!("A mutex got poisoned: {}", e))))?;
         patcher.retrieve_mirrors()?;
         let launcher_info_option = patcher.get_launcher_info();
         drop(patcher);
         if let Some(launcher_info) = launcher_info_option {
           if VERSION != launcher_info.version_name && !launcher_info.prompted {
-            std::thread::spawn(move || -> Result<(), Error> {callback.call(None, &make_args!(launcher_info.version_name), None)?; Ok(()) });
+            crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback.call(None, &make_args!(launcher_info.version_name), None)?; Ok(()) });
           } else {
-            std::thread::spawn(move || -> Result<(), Error> {callback.call(None, &make_args!(Value::null()), None)?; Ok(()) });
+            crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback.call(None, &make_args!(Value::null()), None)?; Ok(()) });
           }
         }
         Ok(())
@@ -358,7 +358,7 @@ impl Handler {
     let mut cache_dir = dirs::cache_dir().ok_or_else(|| Error::None(format!("")))?;
     let patcher = self.patcher.clone();
     // Spawn thread, to not block the main process.
-    std::thread::spawn(move || -> Result<(), Error> {
+    crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
       cache_dir.set_file_name("UE3Redist.exe");
       let file = std::fs::File::create(&cache_dir)?;
       let mut patcher = patcher.lock().or_else(|e| Err(Error::MutexPoisoned(format!("A mutex got poisoned: {}", e))))?;
@@ -367,7 +367,7 @@ impl Handler {
       drop(patcher);
       if let Err(error) = result {
         let error_string = format!("Failed to download UE3Redist: {}", error);
-        std::thread::spawn(move || -> Result<(), Error> {error_callback.call(None, &make_args!(error_string), None)?; Ok(()) });
+        crate::spawn_wrapper::spawn(move || -> Result<(), Error> {error_callback.call(None, &make_args!(error_string), None)?; Ok(()) });
         return Err(Error::PatcherError(error));
       }
 
@@ -377,22 +377,22 @@ impl Handler {
           match child.wait() {
             Ok(output) => {
               if output.success() {
-                std::thread::spawn(move || -> Result<(), Error> {done.call(None, &make_args!(), None)?; Ok(()) });
+                crate::spawn_wrapper::spawn(move || -> Result<(), Error> {done.call(None, &make_args!(), None)?; Ok(()) });
               } else {
                 let code = output.code().ok_or_else(|| Error::None(format!("")))?;
-                std::thread::spawn(move || -> Result<(), Error> {error_callback.call(None, &make_args!(format!("UE3Redist.exe exited in a crash: {}", code)), None)?; Ok(()) });
+                crate::spawn_wrapper::spawn(move || -> Result<(), Error> {error_callback.call(None, &make_args!(format!("UE3Redist.exe exited in a crash: {}", code)), None)?; Ok(()) });
               }
             },
             Err(e) => {
               error!("Failed to wait for UE3Redist: {}", &e);
-              std::thread::spawn(move || -> Result<(), Error> {error_callback.call(None, &make_args!(format!("Failed to wait for UE3Redist: {}", &e)), None)?; Ok(()) });
+              crate::spawn_wrapper::spawn(move || -> Result<(), Error> {error_callback.call(None, &make_args!(format!("Failed to wait for UE3Redist: {}", &e)), None)?; Ok(()) });
             }
           }
         },
         Err(e) => {
           // todo: the user might have cancelled the UAC dialog on purpose, ask if they want to continue the installation?
           error!("Failed to open UE3 Redistributables: {}", &e);
-          std::thread::spawn(move || -> Result<(), Error> {error_callback.call(None, &make_args!(format!("Failed to open UE3 Redistributables: {}", &e)), None)?; Ok(()) });
+          crate::spawn_wrapper::spawn(move || -> Result<(), Error> {error_callback.call(None, &make_args!(format!("Failed to open UE3 Redistributables: {}", &e)), None)?; Ok(()) });
         }
       };
 
@@ -411,7 +411,7 @@ impl Handler {
       let uri = launcher_info.patch_url.parse::<download_async::http::Uri>()?;
       let good_hash = launcher_info.patch_hash.clone();
       drop(launcher_info);
-      self.runtime.spawn(async move {
+      crate::spawn_wrapper::spawn_async(&self.runtime, async move {
         // Set up a request
         let mut downloader = download_async::Downloader::new();
         downloader.use_uri(uri);
@@ -481,10 +481,10 @@ impl Handler {
     downloader.use_uri(uri);
     downloader.allow_http();
 
-    self.runtime.spawn(async move {
+    crate::spawn_wrapper::spawn_async(&self.runtime, async move {
       let mut buffer = vec![];
       downloader.download(download_async::Body::empty(), &mut buffer).await?;
-      std::thread::spawn(move || -> Result<(), Error> {
+      crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
         let text = ::std::str::from_utf8(&buffer)?;
         callback.call(Some(context), &make_args!(text), None)?;
         Ok::<(), Error>(())
@@ -508,11 +508,11 @@ impl Handler {
     downloader.use_uri(uri);
     downloader.allow_http();
 
-    self.runtime.spawn(async move {
+    crate::spawn_wrapper::spawn_async(&self.runtime, async move {
       let mut buffer = vec![];
 
       downloader.download(download_async::Body::empty(), &mut buffer).await?;
-      std::thread::spawn(move || -> Result<(), Error> {
+      crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
         callback.call(Some(context), &make_args!(buffer.as_slice()), None)?;
         Ok(())
       });

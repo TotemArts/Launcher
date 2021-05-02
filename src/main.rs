@@ -20,58 +20,17 @@ mod configuration;
 mod handler;
 mod progress;
 mod error;
+mod spawn_wrapper;
 
+use crate::error::Error;
 use flexi_logger::{Age, Criterion, Cleanup, Logger, Naming};
 use log::*;
-
 use single_instance::SingleInstance;
-
 use std::sync::{Arc,Mutex};
 use renegadex_patcher::{Downloader};
 use handler::Handler;
 
 static VERSION: &str = env!("CARGO_PKG_VERSION");
-
-
-pub trait ExpectUnwrap<T> :  {
-  fn unexpected(self, msg: &str) -> T;
-}
-
-impl<T, E: std::fmt::Debug> ExpectUnwrap<T> for Result<T, E> {
-  #[inline]
-  fn unexpected(self, msg: &str) -> T {
-    match self {
-      Ok(val) => val,
-      Err(e) => unwrap_failed(msg, &e),
-    }
-  }
-}
-
-impl<T> ExpectUnwrap<T> for Option<T> {
-  #[inline]
-  fn unexpected(self, msg: &str) -> T {
-    match self {
-      Some(val) => val,
-      None => expect_failed(msg),
-    }
-  }
-}
-
-#[inline(never)]
-#[cold]
-fn expect_failed(msg: &str) -> ! {
-  error!("{}", msg);
-  log::logger().flush();
-  panic!("{}", msg)
-}
-
-#[inline(never)]
-#[cold]
-fn unwrap_failed(msg: &str, error: &dyn std::fmt::Debug) -> ! {
-  error!("{}: {:?}", msg, error);
-  log::logger().flush();
-  panic!("{}: {:?}", msg, error)
-}
 
 struct UpdateResultHandler {
   update_result: String,
@@ -89,18 +48,38 @@ impl sciter::EventHandler for UpdateResultHandler {
   }
 }
 
+#[derive(Default)]
+struct DebugHandler;
+
+impl sciter::HostHandler for DebugHandler {
+  fn on_debug_output(&mut self, subsystem: sciter::host::OUTPUT_SUBSYTEMS, severity: sciter::host::OUTPUT_SEVERITY, message: &str) {
+    let severity = match severity {
+      sciter::host::OUTPUT_SEVERITY::INFO => Level::Info,
+      sciter::host::OUTPUT_SEVERITY::WARNING => Level::Warn,
+      sciter::host::OUTPUT_SEVERITY::ERROR => Level::Error
+    };
+
+    log::logger().log(&Record::builder()
+    .args(format_args!("{}", message))
+    .level(severity)
+    .file(Some(&format!("sciter:{:?}", subsystem)))
+    .module_path(None)
+    .build());
+  }
+}
+
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), Error> {
   let mut current_dir = std::env::current_exe()?;
   current_dir.pop();
   info!("Working in directory: {}", &current_dir.to_string_lossy());
   std::env::set_current_dir(&current_dir)?;
   const WEBIFY: &percent_encoding::AsciiSet = &percent_encoding::NON_ALPHANUMERIC.remove(b'/').remove(b'\\').remove(b':');
-  let current_dir = percent_encoding::utf8_percent_encode(current_dir.to_str().unexpected(concat!(file!(),":",line!())), WEBIFY).to_string();
+  let current_dir = percent_encoding::utf8_percent_encode(current_dir.to_str().expect(concat!(file!(),":",line!())), WEBIFY).to_string();
 
   sciter::set_options(
     sciter::RuntimeOptions::DebugMode(true)
-  ).unexpected(concat!(file!(),":",line!()));
+  ).expect(concat!(file!(),":",line!()));
 
   sciter::set_options(
     sciter::RuntimeOptions::ScriptFeatures(
@@ -109,9 +88,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
       sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_SOCKET_IO as u8 | // Enables connecting to the inspector via Ctrl+Shift+I
       sciter::SCRIPT_RUNTIME_FEATURES::ALLOW_EVAL as u8  // Enables execution of Eval inside of TI-Script
     )
-  ).unexpected(concat!(file!(),":",line!()));
+  ).expect(concat!(file!(),":",line!()));
 
-  let instance = SingleInstance::new("RenegadeX-Launcher")?;
+  let instance = SingleInstance::new("RenegadeX-Launcher").unwrap();
   //TODO: Create "Another instance is already running" window.
   if !instance.is_single() {
     let mut frame = sciter::Window::new();
@@ -170,11 +149,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   info!("Launching sciter!");
 
   let mut frame = sciter::Window::new();
-  let mut locked_patcher = patcher.lock().unwrap();
+  frame.sciter_handler(DebugHandler {});
+  let mut locked_patcher = patcher.lock().or_else(|e| Err(Error::MutexPoisoned(format!("A Mutex was poisoned: {}", e))))?;
   locked_patcher.set_location(game_location);
   locked_patcher.set_version_url(version_url);
   drop(locked_patcher);
-  
+  info!("Set patcher information!");
+
   frame.event_handler(Handler{patcher: patcher.clone(), configuration, runtime: tokio::runtime::Handle::current()});
   frame.load_file(&format!("file://{}/{}/frontpage.htm", current_dir, &launcher_theme));
   info!("Launching app!");

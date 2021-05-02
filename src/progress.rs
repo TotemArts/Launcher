@@ -26,7 +26,7 @@ impl download_async::Progress for ValueProgress {
     let file_size = self.file_size;
     let downloaded = 0;
     let progress = self.progress.lock().unwrap().clone();
-    std::thread::spawn(move || -> Result<(), Error> {
+    crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
       progress.call(None, &make_args!(format!("[{}, {}]", downloaded, file_size)), None).or_else(|e| Err(Error::ValueError(e)))?;
       Ok(())
     });
@@ -37,7 +37,7 @@ impl download_async::Progress for ValueProgress {
     let file_size = self.file_size;
     let downloaded = self.downloaded;
     let progress = self.progress.lock().unwrap().clone();
-    std::thread::spawn(move || -> Result<(), Error> {
+    crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
       progress.call(None, &make_args!(format!("[{}, {}]", downloaded, file_size)), None).or_else(|e| Err(Error::ValueError(e)))?;
       Ok(())
     });
@@ -48,7 +48,7 @@ impl download_async::Progress for ValueProgress {
     let file_size = self.file_size;
     let downloaded = self.downloaded;
     let progress = self.progress.lock().unwrap().clone();
-    std::thread::spawn(move || -> Result<(), Error> {
+    crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
       progress.call(None, &make_args!(format!("[{}, {}]", downloaded, file_size)), None).or_else(|e| Err(Error::ValueError(e)))?;
       Ok(())
     });

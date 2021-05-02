@@ -22,7 +22,19 @@ impl std::fmt::Display for Error {
   #[track_caller]
   #[inline(always)]
   fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-    write!(f,"{}", self)
+    match self {
+      Self::InvalidUri(e) => write!(f,"InvalidUri({:?})", e),
+      Self::MutexPoisoned(e) => write!(f,"MutexPoisoned({:?})", e),
+      Self::None(e) => write!(f,"None({:?})", e),
+      Self::IoError(e) => write!(f,"IoError({:?})", e),
+      Self::DownloadError(e) => write!(f,"DownloadError({:?})", e),
+      Self::PatcherError(e) => write!(f,"PatcherError({:?})", e),
+      Self::ValueError(e) => write!(f,"ValueError({:?})", e),
+      Self::NotUtf8(e) => write!(f,"NotUtf8({:?})", e),
+      Self::Utf8Error(e) => write!(f,"Utf8Error({:?})", e),
+      Self::ParseError(e) => write!(f,"ParseError({:?})", e),
+      Self::UnzipError(e) => write!(f,"UnzipError({:?})", e),
+    }
   }
 }
 
@@ -120,4 +132,5 @@ fn log_error(error: &impl std::error::Error) {
   .line(location.map(|a| a.line()))
   .module_path(None)
   .build());
+  log::logger().flush();
 }
