@@ -107,7 +107,7 @@ namespace Emu {
     this.value = server_list;
 
     this.tbody.currentIndex = 0;
-
+    // The following event happens when the user changes the entry in the list, and will update the currently selected entry on the rest of the page
     this << event change {
         var entry = this.value[this.tbody.currentIndex].data;
         output_variables["title_menu"] = entry["Name"];

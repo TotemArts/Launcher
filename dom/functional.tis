@@ -220,6 +220,33 @@ function launchGame() {
 }
 
 function getServersCallback(results) {
+/* Example entry of results
+  {
+    "Name": "blabla",
+    "Current Map": "CNC-LakeSide",
+    "Bots": 1,
+    "Players": 0,
+    "Game Version": "5.48.145",
+    "Variables": {
+      "Mine Limit": 24,
+      "bSteamRequired": false,
+      "bPrivateMessageTeamOnly": false,
+      "bPassworded": false,
+      "bAllowPrivateMessaging": true,
+      "bRanked": true,
+      "Game Type": 1,
+      "Player Limit": 10,
+      "Vehicle Limit": 11,
+      "bAutoBalanceTeams": false,
+      "Team Mode": 6,
+      "bSpawnCrates": true,
+      "CrateRespawnAfterPickup": 35.0,
+      "Time Limit": 0
+    },
+    "Port": 7777,
+    "IP": "00.00.00.143"
+  },
+*/
   var updated = [];
   var old_length = server_list.length;
   output_variables["players_online"] = 0;
@@ -255,7 +282,7 @@ function getServersCallback(results) {
     }
   }
   for (var i = old_length-1; i > 0; i--) if( !updated[i] ) server_list.remove(i);
-  stdout.println("refreshed servers");
+  stdout.println("refreshed servers"+ JSON.stringify(server_list));
 }
 
 function updateFilter(arg1, arg2 = undefined) {
@@ -293,8 +320,8 @@ function update_launcher() {
 }
 
 function check_launcher_result(new_version = undefined) {
-  stdout.println("result launcher: " + new_version);
   if(new_version != null) {
+    stdout.println("New launcher version available: " + new_version);
     output_variables["popup_title"] = "A new launcher update is available";
     output_variables["popup_message"] = "Version " + new_version + " of the launcher is now available!";
     output_variables["popup_green"] = "UPDATE";
@@ -302,6 +329,7 @@ function check_launcher_result(new_version = undefined) {
     $(#overlay button.green).@["onclick"] = "update_launcher();";
     $(#overlay .close).@["onclick"] = "view.check_update(onUpdateCallback, onUpdateErr);";
   } else {
+    stdout.println("No new launcher version available.");
     view.check_update(onUpdateCallback, onUpdateErr);
   }
 }
