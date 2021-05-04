@@ -6,6 +6,10 @@
   height: *;
 }
 
+.news-grid span {
+  display: inline;
+}
+
 .news-grid > div:nth-child(1), .news-grid > div:nth-child(4) {
   height: 80dip;
   width: *;
