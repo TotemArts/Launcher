@@ -14,6 +14,27 @@ var output_variables = {
 };
 
 var server_list = [];
+var filtered_server_list = [];
+
+function server_observer(changeDefinition) {
+  stdout.println("changeDefinition[0]: " + changeDefinition[0]);
+  if (changeDefinition[0] == "update-range" || changeDefinition[0] == "add-range") {
+    for (var value in changeDefinition[1]) {
+      Object.addObserver(value, server_observer);
+    }
+    for(var i = filtered_server_list.length; i >= 0; i--) filtered_server_list.remove(i);
+    var list = server_list.filter(:server: server.display);
+    for(var i = 0; i < list.length; i++) filtered_server_list.push(list[i]);
+    stdout.println("Jsonified filtered_server_list: " + JSON.stringify(filtered_server_list));
+  }
+  if (changeDefinition[0] == "update" && changeDefinition[2] == "display") {
+    if(changeDefinition[3]) filtered_server_list.push(changeDefinition[1]);
+    if(!changeDefinition[3]) filtered_server_list.removeByValue(changeDefinition[1]);
+  }
+
+}
+Object.addObserver(server_list, server_observer);
+
 
 var news_items = [];
 var footer;
@@ -282,7 +303,7 @@ function getServersCallback(results) {
     }
   }
   for (var i = old_length-1; i > 0; i--) if( !updated[i] ) server_list.remove(i);
-  stdout.println("refreshed servers"+ JSON.stringify(server_list));
+  stdout.println("refreshed servers");
 }
 
 function updateFilter(arg1, arg2 = undefined) {
