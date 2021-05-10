@@ -50,7 +50,7 @@ function set_footer() {
     case "None":
       if(!output_variables["update_available"]) {
         footer.html = "<div.hexpand.hflow.vcenter><p.uppercase.green.hexpand.vcenter>&#10003; Your game is up-to-date!</p><button.green #launch>Launch to Menu</button></div>";
-        $(button.green#launch).@["onclick"] = "launchGame(\"\"");";
+        $(button.green#launch).@["onclick"] = "launchGame(\"\");";
       } else {
         footer.html = "<div.hexpand.hflow.vcenter><p.uppercase.red.hexpand.vcenter>&#10005; "+output_variables["popup_title"]+"</p><button.green #update>"+output_variables["popup_green"]+" Game</button></div>";
         $(button.green#update).@["onclick"] = output_variables["button_onclick"];
