@@ -373,7 +373,7 @@ function onProgress(progress) {
   output_variables["patch_progress_done"] = progress["patch"][0];
   output_variables["patch_progress_total"] = progress["patch"][1];
   output_variables["patch_progress"] = ( progress["patch"][1] != 0 )? progress["patch"][0]*100 / progress["patch"][1]:0;
-  output_variables["update_progress"] = output_variables["hash_progress"]/3 + output_variables["download_progress"]/3 + output_variables["patch_progress"]/3;
+  output_variables["update_progress"] = String.printf("%.1f",(output_variables["hash_progress"]/3.0 + download_progress/3.0 + output_variables["patch_progress"]/3.0));
 }
 
 function onUpdateCallback(reason) {
