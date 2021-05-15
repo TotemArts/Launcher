@@ -520,6 +520,11 @@ impl Handler {
     });
     Ok(())
   }
+
+  fn open_launcher_logs_folder(&self) {
+    log::info!("Opening launcher logs folder!");
+    let spawned_process = std::process::Command::new("explorer.exe").arg(self.configuration.get_log_directory()).spawn();
+  }
 }
 
 impl sciter::EventHandler for Handler {
@@ -541,6 +546,8 @@ impl sciter::EventHandler for Handler {
     fn get_setting(Value);
     fn set_setting(Value, Value);
     fn get_launcher_version();
+    fn open_launcher_logs_folder();
+
     fn check_launcher_update(Value);
     fn update_launcher(Value);
     fn fetch_resource(Value,Value,Value,Value);
