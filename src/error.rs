@@ -8,6 +8,7 @@ pub enum Error {
 	None(String),
   IoError(std::io::Error),
 	DownloadError(Box<dyn std::error::Error + Sync + std::marker::Send>),
+	DownloadAsyncError(download_async::Error),
   PatcherError(renegadex_patcher::traits::Error),
   ValueError(VALUE_RESULT),
   NotUtf8(std::string::FromUtf8Error),
@@ -28,6 +29,7 @@ impl std::fmt::Display for Error {
       Self::None(e) => write!(f,"None({:?})", e),
       Self::IoError(e) => write!(f,"IoError({:?})", e),
       Self::DownloadError(e) => write!(f,"DownloadError({:?})", e),
+      Self::DownloadAsyncError(e) => write!(f,"DownloadAsyncError({:?})", e),
       Self::PatcherError(e) => write!(f,"PatcherError({:?})", e),
       Self::ValueError(e) => write!(f,"ValueError({:?})", e),
       Self::NotUtf8(e) => write!(f,"NotUtf8({:?})", e),
@@ -56,6 +58,15 @@ impl From<Box<dyn std::error::Error + Sync + std::marker::Send>> for Error {
   fn from(error: Box<dyn std::error::Error + Sync + std::marker::Send>) -> Self {
     log_error(&error.source().unwrap());
     Self::DownloadError(error)
+  }
+}
+
+impl From<download_async::Error> for Error {
+  #[track_caller]
+  #[inline(always)]
+  fn from(error: download_async::Error) -> Self {
+    log_error(&error);
+    Self::DownloadAsyncError(error)
   }
 }
 
