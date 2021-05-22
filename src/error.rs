@@ -1,5 +1,5 @@
 use sciter::value::VALUE_RESULT;
-use log::*;
+use log::{Record, Level};
 
 #[derive(Debug)]
 pub enum Error {
