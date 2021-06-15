@@ -1,0 +1,63 @@
+name: Release for branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      json:
+        description: 'json'
+        required: true
+        default: 'release'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Get version from file
+      id: cargo_version
+      run: 
+        version=$(cat Cargo.toml | grep version | head -n1);
+        version=${version//[*version| |=|\"]};
+        sed -i 's/launcher.json/${{ github.event.inputs.json }}.json/' src/*;
+        echo '::set-output name=version::'${version};
+        
+    - run: rustup update --no-self-update stable && rustup default stable
+    - run: cargo install cross
+
+    - name: build
+      run: cross build --manifest-path="windows-target/Cargo.toml" --target=i686-pc-windows-gnu --release
+
+    - name: Package Files
+      id: package
+      shell: bash
+      run: >
+        cp ./target/i686-pc-windows-gnu/release/RenegadeX-Launcher.exe "./windows-target/Renegade X Launcher.exe";
+        zip -j9 windows-target/RenX-Launcher "windows-target/Renegade X Launcher.exe" "windows-target/RenegadeX-folder-permissions.exe" "windows-target/sciter.dll" "windows-target/SelfUpdateExecutor.exe";
+        zip -9 windows-target/RenX-Launcher -r "dom";
+        echo '::set-output name=hash::'$(sha256sum windows-target/RenX-Launcher.zip | awk '{print toupper($1)}');
+
+    - name: Upload ftp
+      uses: bayssmekanique/action-simple-file-upload@v1
+      with:
+        host: ${{ secrets.FTP_URL }}
+        user: ${{ secrets.FTP_USER }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        src: windows-target/RenX-Launcher.zip
+        dest: RenX-Launcher-${{ steps.cargo_version.outputs.version }}-${{ github.event.inputs.json }}.zip
+
+    - name: Update versions file
+      shell: bash
+      run: >
+        wget --header="User-Agent: RenX-Launcher" https://static.renegade-x.com/launcher_data/version/${{ github.event.inputs.json }}.json ;
+        echo "$(jq '.launcher={"version_name":"${{ steps.cargo_version.outputs.version }}","version_number":(.launcher.version_number + 1),"patch_url":"https://renxdownloads.b-cdn.net/RenX-Launcher-${{ steps.cargo_version.outputs.version }}-${{ github.event.inputs.json }}.zip","patch_hash":"${{ steps.package.outputs.hash }}","banners_url":.launcher.banners_url}' ${{ github.event.inputs.json }}.json)" > ${{ github.event.inputs.json }}.json
+
+
+    - name: Upload version files
+      uses: bayssmekanique/action-simple-file-upload@v1
+      with:
+        host: ${{ secrets.FTP_URL }}
+        user: ${{ secrets.VERSIONS_FTP_USER }}
+        password: ${{ secrets.VERSIONS_FTP_PASSWORD }}
+        src: ${{ github.event.inputs.json }}.json
+        dest: launcher_data/version/${{ github.event.inputs.json }}.json
