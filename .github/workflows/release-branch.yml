@@ -52,5 +52,6 @@ jobs:
         command: >
          echo "$(jq '.launcher={"version_name":"${{ steps.minor_version.outputs.version }}","version_number":(.launcher.version_number + 1),"patch_url":"https://renxdownloads.b-cdn.net/RenX-Launcher-${{ steps.minor_version.outputs.version }}-${{ github.event.inputs.json }}.zip","patch_hash":"${{ steps.package.outputs.hash }}","banners_url":.launcher.banners_url}' static.renegade-x.com/data/launcher_data/version/${{ github.event.inputs.json }}.json)" > static.renegade-x.com/data/launcher_data/version/${{ github.event.inputs.json }}.json
         host: ${{ secrets.SSH_URL }}
+        port: ${{ secrets.SSH_PORT }}
         username: ${{ secrets.SSH_USERNAME }}
-        privateKey: ${{ secrets.SSH_PRIVATE_KEY}}
+        privateKey: ${{ secrets.SSH_PRIVATE_KEY }}
