@@ -46,18 +46,11 @@ jobs:
         src: windows-target/RenX-Launcher.zip
         dest: RenX-Launcher-${{ steps.cargo_version.outputs.version }}-${{ github.event.inputs.json }}.zip
 
-    - name: Update versions file
-      shell: bash
-      run: >
-        wget --header="User-Agent: RenX-Launcher" https://static.renegade-x.com/launcher_data/version/${{ github.event.inputs.json }}.json ;
-        echo "$(jq '.launcher={"version_name":"${{ steps.cargo_version.outputs.version }}","version_number":(.launcher.version_number + 1),"patch_url":"https://renxdownloads.b-cdn.net/RenX-Launcher-${{ steps.cargo_version.outputs.version }}-${{ github.event.inputs.json }}.zip","patch_hash":"${{ steps.package.outputs.hash }}","banners_url":.launcher.banners_url}' ${{ github.event.inputs.json }}.json)" > ${{ github.event.inputs.json }}.json
-
-
-    - name: Upload version files
-      uses: bayssmekanique/action-simple-file-upload@v1
+    - name: Update version file
+      uses: garygrossgarten/github-action-ssh@release
       with:
-        host: ${{ secrets.FTP_URL }}
-        user: ${{ secrets.VERSIONS_FTP_USER }}
-        password: ${{ secrets.VERSIONS_FTP_PASSWORD }}
-        src: ${{ github.event.inputs.json }}.json
-        dest: launcher_data/version/${{ github.event.inputs.json }}.json
+        command: >
+         echo "$(jq '.launcher={"version_name":"${{ steps.minor_version.outputs.version }}","version_number":(.launcher.version_number + 1),"patch_url":"https://renxdownloads.b-cdn.net/RenX-Launcher-${{ steps.minor_version.outputs.version }}-${{ github.event.inputs.json }}.zip","patch_hash":"${{ steps.package.outputs.hash }}","banners_url":.launcher.banners_url}' static.renegade-x.com/data/launcher_data/version/${{ github.event.inputs.json }}.json)" > static.renegade-x.com/data/launcher_data/version/${{ github.event.inputs.json }}.json
+        host: ${{ secrets.SSH_URL }}
+        username: ${{ secrets.SSH_USERNAME }}
+        privateKey: ${{ secrets.SSH_PRIVATE_KEY}}

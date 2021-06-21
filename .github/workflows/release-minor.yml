@@ -63,18 +63,11 @@ jobs:
         src: windows-target/RenX-Launcher.zip
         dest: RenX-Launcher-${{ steps.minor_version.outputs.version }}.zip
 
-    - name: Update versions file
-      shell: bash
-      run: >
-        wget --header="User-Agent: RenX-Launcher" https://static.renegade-x.com/launcher_data/version/launcher.json ;
-        echo "$(jq '.launcher={"version_name":"${{ steps.minor_version.outputs.version }}","version_number":(.launcher.version_number + 1),"patch_url":"https://renxdownloads.b-cdn.net/RenX-Launcher-${{ steps.minor_version.outputs.version }}.zip","patch_hash":"${{ steps.package.outputs.hash }}","banners_url":.launcher.banners_url}' launcher.json)" > launcher.json
-
-
-    - name: Upload version files
-      uses: bayssmekanique/action-simple-file-upload@v1
+    - name: Update version file
+      uses: garygrossgarten/github-action-ssh@release
       with:
-        host: ${{ secrets.FTP_URL }}
-        user: ${{ secrets.VERSIONS_FTP_USER }}
-        password: ${{ secrets.VERSIONS_FTP_PASSWORD }}
-        src: launcher.json
-        dest: launcher_data/version/launcher.json
+        command: >
+         echo "$(jq '.launcher={"version_name":"${{ steps.minor_version.outputs.version }}","version_number":(.launcher.version_number + 1),"patch_url":"https://renxdownloads.b-cdn.net/RenX-Launcher-${{ steps.minor_version.outputs.version }}.zip","patch_hash":"${{ steps.package.outputs.hash }}","banners_url":.launcher.banners_url}' static.renegade-x.com/data/launcher_data/version/launcher.json)" > static.renegade-x.com/data/launcher_data/version/launcher.json
+        host: ${{ secrets.SSH_URL }}
+        username: ${{ secrets.SSH_USERNAME }}
+        privateKey: ${{ secrets.SSH_PRIVATE_KEY}}
