@@ -20,7 +20,7 @@ Cross-Compiling relies on Docker, make sure to have it installed!
 cargo install cross
 ```
 
-To compile for windows (only compile from linux/wsl):
+To compile for windows:
 ```bash
 ./package-windows.sh
 ```
