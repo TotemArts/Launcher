@@ -8,19 +8,8 @@
   @import url(news.css);
   @import url(chat.css);
 </style>
-<script type="text/tiscript">
-  include "events.tis";
-  include "functional.tis";
+<script type="text/javascript">
 
-  function self.ready() {
-    view.check_launcher_update(check_launcher_result);
-    $(#content).load($(div.current).attributes["page"]);
-    current_page = $(div.current);
-
-    initialize_variables();
-    view.get_servers(getServersCallback);
-    load_news_feed();
-  }
 </script>
 </head>
 <body model="Data">
