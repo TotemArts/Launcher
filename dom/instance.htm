@@ -13,8 +13,8 @@
     </style>
     <script type="text/tiscript">
       function self.ready() {
-        var (sx,sy,sw,sh) = View.screenBox(0,#workarea,#rectw);
-        var (w,h) = $(div.username-window).box(#dimension, #margin);
+        var (sx,sy,sw,sh) = View.screenBox(0,"#workarea","#rectw");
+        var (w,h) = document.$("div.username-window").box("#dimension", #margin);
         view.move( sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
       }
 

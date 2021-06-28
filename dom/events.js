@@ -1,4 +1,3 @@
-namespace Emu {
   function loadOutput() {
     for(var name in this.attributes) {
       var attribute = output_variables[name];
@@ -43,17 +42,17 @@ namespace Emu {
   }
 
   function chat_menu() {
-    var chat = $(div.chat);
+    var chat = document.$("div.chat");
     stdout.println("Context menu enabled!");
     if (chat.selection.html != "") {
       stdout.println("Text selected: " + chat.selection.html);
     } else {
-      this.$(#copy).state.disabled = true;
+      this.$("#copy").state.disabled = true;
     }
   }
 
   function render_news_items() {
-    var frame = $(#news)
+    var frame = document.$("#news")
     for (var i=0; i<news_items.length;i++) {
       var date = new Date(news_items[i].pubDate);
       var date_string = "<day>" + (date.day<10?'0':'') + date.day + "</day><month>" + date.monthName(false) + "</month>";
@@ -61,20 +60,20 @@ namespace Emu {
       if (news_items[i].title.match(/\sPATCH\s/i)) type_string = "Patch";
       this.append("<div.news_item.hflow id="+i+"><pubDate>"+date_string+"</pubDate><div.vflow><p.news_type>"+type_string+"</p><p.news_title>"+news_items[i].title+"</p></div></div>");
       var element = this.lastNode;
-      element << event click {
+      element.on("click", function() {
         var id = this.attributes["id"].toNumber();
         frame_id = id;
         output_variables["current_news_title"] = news_items[id].title;
-        var current = this.parent.$(.current);
+        var current = this.parent.$(".current");
         if (current) current.attributes.removeClass("current");
         this.attributes.addClass("current");
         if (news_items[id].html) {
           frame.load(news_items[id].html, "");
         } else {
           frame.load("", "");
-          view.fetch_resource(news_items[id].link+"?preview=1", {Referer: "https://renegade-x.com/forums/forum/7-news/", X-Requested-With: "XMLHttpRequest", TE: "Trailers", Pragma: "no-cache"}, load_news_item, {id: id, frame: frame});
+          view.fetch_resource(news_items[id].link+"?preview=1", { "Referer": "https://renegade-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache"}, load_news_item, {id: id, frame: frame});
         }
-      }
+      });
     }
     if (news_items.length > 0) {
       var id = 0;
@@ -85,14 +84,14 @@ namespace Emu {
         frame.load(news_items[0].html, "");
       } else {
         frame.load("", "");
-        view.fetch_resource(news_items[id].link+"?preview=1", {Referer: "https://renegade-x.com/forums/forum/7-news/", X-Requested-With: "XMLHttpRequest", TE: "Trailers", Pragma: "no-cache"}, load_news_item, {id: id, frame: frame});
+        view.fetch_resource(news_items[id].link+"?preview=1", {Referer: "https://renegade-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", TE: "Trailers", Pragma: "no-cache"}, load_news_item, {id: id, frame: frame});
       }
     }
   }
 
   function spoiler() {
     var spoiler = this.next;
-    this << event click {
+    this.on("click", function() {
       if (spoiler.style["visibility"] == "collapse") {
         spoiler.style["visibility"] = "visible";
       } else if (spoiler.style["visibility"] == "visible") {
@@ -100,7 +99,7 @@ namespace Emu {
       } else {
         stdout.println("Weird");
       }
-    }
+    });
   }
 
   function server_table() {
@@ -108,54 +107,54 @@ namespace Emu {
 
     this.tbody.currentIndex = 0;
     // The following event happens when the user changes the entry in the list, and will update the currently selected entry on the rest of the page
-    this << event change {
+    this.on("change", function() {
         var entry = this.value[this.tbody.currentIndex].data;
         output_variables["title_menu"] = entry["Name"];
-        $(#mine-limit).html = entry["Variables"]["Mine Limit"].toString();
-        $(#player-limit).html = entry["Variables"]["Player Limit"].toString();
-        $(#vehicle-limit).html = entry["Variables"]["Vehicle Limit"].toString();
-        $(#time-limit).html = entry["Variables"]["Time Limit"].toString();
-        tick_checkmark($(checkmark#crates), entry["Variables"]["bSpawnCrates"]);
-        tick_checkmark($(checkmark#steam), entry["Variables"]["bSteamRequired"]);
-        tick_checkmark($(checkmark#ranked), true);
-        tick_checkmark($(checkmark#balance), entry["Variables"]["bAutoBalanceTeams"]);
-        tick_checkmark($(checkmark#infantry), false);
+        document.$("#mine-limit").html = entry["Variables"]["Mine Limit"].toString();
+        document.$("#player-limit").html = entry["Variables"]["Player Limit"].toString();
+        document.$("#vehicle-limit").html = entry["Variables"]["Vehicle Limit"].toString();
+        document.$("#time-limit").html = entry["Variables"]["Time Limit"].toString();
+        tick_checkmark(document.$("checkmark#crates"), entry["Variables"]["bSpawnCrates"]);
+        tick_checkmark(document.$("checkmark#steam"), entry["Variables"]["bSteamRequired"]);
+        tick_checkmark(document.$("checkmark#ranked"), true);
+        tick_checkmark(document.$("checkmark#balance"), entry["Variables"]["bAutoBalanceTeams"]);
+        tick_checkmark(document.$("checkmark#infantry"), false);
         var currentMap = entry["Current Map"];
-        var video = $(#map_video);
+        var video = document.$("#map_video");
         video.videoLoad(view.get_video_location(entry["Current Map"]).replace("file:///", ""));
         video.videoPlay(0.0);
         var mapName = currentMap.split("-",1);
-        $(#game-mode).html = mapName[0];
-        $(#map-name).html = mapName[1].replace("_", " ");
-      }
-    this << event click $(th.sortable) {
+        document.$("#game-mode").html = mapName[0];
+        document.$("#map-name").html = mapName[1].replace("_", " ");
+      });
+    this.on("click", "th.sortable", function() {
       this.sortVlist();
-    }
-    this << event dblclick $(tr) {
+    });
+    this.on("dblclick", "tr", function() {
       joinServer();
-    }
+    });
   }
 
   function moveSliders() {
     var mousepressed = false;
-    var element = this.$(.start);
+    var element = this.$(".start");
     var min = this.attributes["minValue"].toInteger();
     var max = this.attributes["maxValue"].toInteger();
     var minPercentage = 100.0*this.attributes["min"].toFloat()/(max-min).toFloat();
     var maxPercentage = 100.0*this.attributes["max"].toFloat()/(max-min).toFloat();
     function updateRange() {
-      this.$(div.slider > div.range).style["width"] = maxPercentage - minPercentage + "%";
-      this.$(div.slider > div.range).style["left"] = minPercentage + "%";
-      this.$(div.slider > div.range).style["right"] = "auto";
+      this.$("div.slider > div.range").style["width"] = maxPercentage - minPercentage + "%";
+      this.$("div.slider > div.range").style["left"] = minPercentage + "%";
+      this.$("div.slider > div.range").style["right"] = "auto";
     }
 
     function updateElementByValue(integerValue) {
-        var width_element = element.box(#width,#outer);
-        var percentage_offset = 100.0*(width_element/2).toFloat()/element.parent.box(#width,#inner,#parent).toFloat();
+        var width_element = element.box("#width","#outer");
+        var percentage_offset = 100.0*(width_element/2).toFloat()/element.parent.box("#width","#inner","#parent").toFloat();
         var snapToEvery = 100.0/(max - min).toFloat();
         element.style["left"] = integerValue.toFloat()*snapToEvery-percentage_offset+"%";
         element.style["right"] = "auto";
-        if(element == this.$(.start)) {
+        if(element == this.$(".start")) {
           if(element.parent.attributes["min"] != min + integerValue) {
             element.parent.attributes["min"] = min + integerValue;
             minPercentage = integerValue.toFloat()*snapToEvery-percentage_offset;
@@ -172,59 +171,59 @@ namespace Emu {
         }
     }
 
-    $(body) << event mousemove (evt) {
+    document.$("body").on("mousemove", function(evt) {
       if(mousepressed) {
-        var left = element.parent.box(#left,#outer,#parent);
-        var percentage = 100.0*(evt.x - left).toFloat()/element.parent.box(#width,#inner,#body).toFloat();
+        var left = element.parent.box("#left","#outer","#parent");
+        var percentage = 100.0*(evt.x - left).toFloat()/element.parent.box("#width","#inner","#body").toFloat();
         var snapToEvery = 100.0/(max - min).toFloat();
         if(percentage > 100) percentage = 100.0;
         if(percentage < 0) percentage = 0.0;
         var integerValue = (percentage/snapToEvery).toInteger();
-        if(element == element.parent.$(.start)) {
+        if(element == element.parent.$(".start")) {
           if(integerValue + 1 >= element.parent.attributes["max"].toInteger()) integerValue = element.parent.attributes["max"].toInteger() - 1;
         } else {
           if(integerValue - 1 <= element.parent.attributes["min"].toInteger()) integerValue = element.parent.attributes["min"].toInteger() + 1;
         }
         updateElementByValue(integerValue);
       }
-    }
-    $(body) << event mouseup (evt) {
+    });
+    document.$("body").on("mouseup", function(evt) {
       mousepressed = false;
-    }
-    this.$(.end) << event mousedown (evt) {
+    });
+    this.$(".end").on("mousedown", function(evt) {
       mousepressed = true;
       element = this;
-    }
-    this.$(.start) << event mousedown (evt) {
+    });
+    this.$(".start").on("mousedown", function(evt) {
       mousepressed = true;
       element = this;
-    }
-    this << event change (evt) {
+    });
+    this.on("change", function(evt) {
       updateFilter(element.parent.attributes["min"].toInteger(), element.parent.attributes["max"].toInteger());
-    }
+    });
   }
-}
+
 
 function bool_setting() {
-  this.post(::this.attributes.addClass(view.get_setting(this.@["setting"])));
+  this.post(this.attributes.addClass(view.get_setting(this.getAttribute("setting"))));
 
-  this << event click (evt) {
+  this.on("click", function(evt) {
     if(this.attributes.hasClass("true")) {
       this.attributes.removeClass("true");
       this.attributes.addClass("false");
-      view.set_setting(this.@["setting"], "false");
+      view.set_setting(this.getAttribute("setting"), "false");
     } else if (this.attributes.hasClass("false")) {
       this.attributes.removeClass("false");
       this.attributes.addClass("true");
-      view.set_setting(this.@["setting"], "true");
+      view.set_setting(this.getAttribute("setting"), "true");
     }
-  }
+  });
 }
 
 function filter() {
-  var filterbar = $(.filterbar);
+  var filterbar = document.$(".filterbar");
 
-  this << event click (evt) {
+  this.on("click", function(evt) {
     if(this.attributes.hasClass("down")) {
       this.attributes.removeClass("down");
       this.attributes.addClass("up");
@@ -234,22 +233,22 @@ function filter() {
       this.attributes.addClass("down");
       filterbar.style["visibility"] = "collapse";
     }
-  }
+  });
 }
 
-event keydown (evt) {
+document.on("keydown", function(evt) {
   if ( evt.keyCode == Event.VK_F5 ) {
     self.reload();
   }
-}
+});
 
-event ~click $(a[href^=http]) (evt) {
+document.on("~click", "a[href^=http]", function(evt) {
   var url = evt.target.attributes["href"];
   Sciter.launch(url);
   return true;
-}
+});
 
-event ~click $(checkmark[toggle]) (evt) {
+document.on("~click", "checkmark[toggle]", function(evt) {
   if (!evt.target.attributes.hasClass("checked")) {
     evt.target.attributes.addClass("checked");
     updateFilter(true);
@@ -258,9 +257,9 @@ event ~click $(checkmark[toggle]) (evt) {
     updateFilter(false);
   }
   return true;
-}
+});
 
-function Element.reload() {
+function reload() {
   if( this.parent ) this.parent.load( this.url() );
   else view.load(this.url());
 }
@@ -271,7 +270,7 @@ function fillHeight() {
     for (var child in this) {
       min_width += child.toPixels(child.style["-min"]);
     }
-    var parent_width = this.box(#width, #border, #parent);
+    var parent_width = this.box("#width", "#border", "#parent");
     for (var child in this) {
       if( parent_width >= min_width ) {
         if(this.style["flow"] != "horizontal") {
@@ -295,20 +294,20 @@ self.on("click","[onclick]",function() {
 var current_page;
 
 self.on("click","[page]",function() {
-  $(div.menuEntries > .current).attributes.removeClass("current");
+  document.$("div.menuEntries > .current").attributes.removeClass("current");
   this.attributes.addClass("current");
   current_page = this;
-  $(#content).load(this.attributes["page"]);
+  document.$("#content").load(this.attributes["page"]);
   return false;
 });
 
 self.on("click","[overlay]",function() {
-  $(div.menuEntries > .current).attributes.removeClass("current");
+  document.$("div.menuEntries > .current").attributes.removeClass("current");
   this.attributes.addClass("current");
-  var overlay = $(#overlay);
+  var overlay = document.$("#overlay");
   overlay.load(this.attributes["overlay"]);
   overlay.style["visibility"] = "visible";
-  $(div.menuEntries).state.disabled = true;
+  document.$("div.menuEntries").state.disabled = true;
   return false;
 });
 

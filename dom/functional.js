@@ -23,7 +23,7 @@ function server_observer(changeDefinition) {
       Object.addObserver(value, server_observer);
     }
     for(var i = filtered_server_list.length; i >= 0; i--) filtered_server_list.remove(i);
-    var list = server_list.filter(:server: server.display);
+    var list = server_list.filter(server => server.display);
     for(var i = 0; i < list.length; i++) filtered_server_list.push(list[i]);
     stdout.println("Jsonified filtered_server_list: " + JSON.stringify(filtered_server_list));
   }
@@ -33,7 +33,7 @@ function server_observer(changeDefinition) {
   }
 
 }
-Object.addObserver(server_list, server_observer);
+//Object.addObserver(server_list, server_observer);
 
 
 var news_items = [];
@@ -50,25 +50,21 @@ function set_footer() {
     case "None":
       if(!output_variables["update_available"]) {
         footer.html = "<div.hexpand.hflow.vcenter><p.uppercase.green.hexpand.vcenter>&#10003; Your game is up-to-date!</p><button.green #launch>Launch to Menu</button></div>";
-        $(button.green#launch).@["onclick"] = "launchGame(\"\");";
+        document.$("button.green#launch").setAttribute("onclick", "launchGame(\"\");")
       } else {
         footer.html = "<div.hexpand.hflow.vcenter><p.uppercase.red.hexpand.vcenter>&#10005; "+output_variables["popup_title"]+"</p><button.green #update>"+output_variables["popup_green"]+" Game</button></div>";
-        $(button.green#update).@["onclick"] = output_variables["button_onclick"];
+        document.$("button.green#update").setAttribute("onclick", output_variables["button_onclick"]);
       }
       break;
     default:
-      footer.html = "\
-    <div.downloadBar><progressbar.indicator update_progress/></div>\
-    <p.nowrap style=\"float:left;\"><output current_action/>: <span.green><output update_progress/>%</span></p>\
-    <p overlay=\"verify.htm\" style=\"float:right;\">more details</p>";
-
+      footer.html = "<div.downloadBar><progressbar.indicator update_progress/></div><p.nowrap style=\"float:left;\"><output current_action/>: <span.green><output update_progress/>%</span></p><p overlay=\"verify.htm\" style=\"float:right;\">more details</p>";
       stdout.println("set_footer: Unhandled case for: " + output_variables["current_action"]);
   }
 }
 
 function news_feed_callback(text) {
   var arr = text.match(/(<item>(?:.|\n)+?<\/item>)/gm);
-  var frame = $(frame);
+  var frame = document.$("frame");
   for (var i=0; i < arr.length; i++) {
     var text = arr[i];
     var item = {
@@ -93,7 +89,7 @@ function image_callback(bytes) {
     if(image && url) {
       var url_regex = new RegExp(escaped_url, "g");
       var filetype = escaped_url.split('.').pop();
-      news_items[id].html = news_items[id].html.replace(url_regex, "data:image/webp;base64,"+image.toBytes(#webp, 100).toString("base64"));
+      news_items[id].html = news_items[id].html.replace(url_regex, "data:image/webp;base64,"+image.toBytes("#webp", 100).toString("base64"));
     } else {
       stdout.println("Image at url \""+escaped_url+"\" appears to be damaged.");
       var escaped_tag = "<img[^>]+?src=\""+escaped_url+"\"[^>]*?\/>";
@@ -110,9 +106,10 @@ function image_callback(bytes) {
   var img = news_items[id].html.match(regex);
   if (img && img[1]) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1],frame:this.frame});
   else if (id==frame_id) {
+    var news_frame = document.$("#news");
     if (this.frame) {
       this.frame.load(news_items[id].html, "");
-    } else if (var news_frame = $(#news) && news_frame) {
+    } else if (news_frame) {
       news_frame.load(news_items[id].html, "");
     }
   }
@@ -137,10 +134,10 @@ function load_news_item(text) {
 
 function variable_observer(changeDefinition) {
   if(changeDefinition[0] == "update" || changeDefinition[0] == "add") {
-    for(var element in $$(output[{changeDefinition[2]}]) ) {
+    for(var element in $$("output[{changeDefinition[2]}]") ) {
       element.value = changeDefinition[3]==0?"0":changeDefinition[3];
     }
-    for(var element in $$(progressbar[{changeDefinition[2]}]) ) {
+    for(var element in $$("progressbar[{changeDefinition[2]}]") ) {
       element.style["width"] = changeDefinition[3]==0?"0%":changeDefinition[3]+"%";
     }
     if(changeDefinition[2] == "current_action" || changeDefinition[2] == "update_available") {
@@ -149,7 +146,7 @@ function variable_observer(changeDefinition) {
   }
 }
 
-Object.addObserver(output_variables, variable_observer);
+//Object.addObserver(output_variables, variable_observer);
 
 function set_username(username) {
   output_variables["username"] = username;
@@ -157,24 +154,24 @@ function set_username(username) {
 }
 
 function show_overlay(page) {
-  if ($(div.menuEntries > .current)) {
-    $(div.menuEntries > .current).attributes.removeClass("current");
+  if (document.$("div.menuEntries > .current")) {
+    document.$("div.menuEntries > .current").attributes.removeClass("current");
   }
-  var overlay = $(#overlay);
+  var overlay = document.$("#overlay");
   overlay.load(page);
   overlay.style["visibility"] = "visible";
-  $(div.menuEntries).state.disabled = true;
+  document.$("div.menuEntries").state.disabled = true;
 }
 
 function close_overlay() {
-  if ($(div.menuEntries > .current)) {
-    $(div.menuEntries > .current).attributes.removeClass("current");
+  if (document.$("div.menuEntries > .current")) {
+    document.$("div.menuEntries > .current").attributes.removeClass("current");
   }
   current_page.attributes.addClass("current");
-  var overlay = $(#overlay);
+  var overlay = document.$("#overlay");
   overlay.text = "";
   overlay.style["visibility"] = "collapse";
-  $(div.menuEntries).state.disabled = false;
+  document.$("div.menuEntries").state.disabled = false;
 }
 
 function initialize_variables() {
@@ -184,9 +181,9 @@ function initialize_variables() {
 }
 
 function onPingResult(server, time_response) {
-  for ( var i = 0; i < server_list.length; i++ ) {
-    if ( server_list[i].data["IP"] + ":" + server_list[i].data["Port"] == server ) {
-      server_list[i].latency = time_response + " ms";
+  for (const s of server_list) {
+    if ( s.data["IP"] + ":" + s.data["Port"] == server ) {
+      s.latency = time_response + " ms";
       break;
     }
   }
@@ -202,7 +199,7 @@ function tick_checkmark(element, boolean) {
 
 /// Joining game related things
 function onGameExit() {
-  var video = $(#map_video);
+  var video = document.$("#map_video");
   if(video != undefined) {
     video.videoPlay();
   }
@@ -210,7 +207,7 @@ function onGameExit() {
 }
 
 function onGameError(ErrorMessage) {
-  var video = $(#map_video);
+  var video = document.$("#map_video");
   if(video != undefined) {
     video.videoPlay();
   }
@@ -219,13 +216,13 @@ function onGameError(ErrorMessage) {
 }
 
 function joinServer(password = undefined) {
-  var servers = $(table.servers);
+  var servers = document.$("table.servers");
   var entry = servers.value[servers.tbody.currentIndex]["data"];
   if (entry["Variables"]["bPassworded"] && !password) {
     show_overlay("password.htm");
   } else {
     view.launch_game( entry["IP"]+":"+entry["Port"] + ( password? "?Password="+password : "" ), onGameExit, onGameError);
-    var video = $(#map_video);
+    var video = document.$("#map_video");
     if(video != undefined) {
       video.videoStop();
     }
@@ -234,7 +231,7 @@ function joinServer(password = undefined) {
 
 function launchGame(server, password = undefined) {
   view.launch_game(server + ( password? "?Password="+password : "" ), onGameExit, onGameError);
-  var video = $(#map_video);
+  var video = document.$("#map_video");
   if(video != undefined) {
     video.videoStop();
   }
@@ -315,7 +312,7 @@ function updateFilter(arg1, arg2 = undefined) {
         server_list[i].in_player_range = true;
         stdout.println(server_list[i].data["Game Version"]);
         stdout.println(output_variables["game_version"]);
-        server_list[i].display = $(div.filterbar > checkmark).attributes.hasClass("checked")?(server_list[i].data["Game Version"] == output_variables["game_version"]):true;
+        server_list[i].display = document.$("div.filterbar > checkmark").attributes.hasClass("checked")?(server_list[i].data["Game Version"] == output_variables["game_version"]):true;
       } else {
         server_list[i].in_player_range = false;
         server_list[i].display = false;
@@ -347,8 +344,8 @@ function check_launcher_result(new_version = undefined) {
     output_variables["popup_message"] = "Version " + new_version + " of the launcher is now available!";
     output_variables["popup_green"] = "UPDATE";
     show_overlay("popup_ok.htm");
-    $(#overlay button.green).@["onclick"] = "update_launcher();";
-    $(#overlay .close).@["onclick"] = "view.check_update(onUpdateCallback, onUpdateErr);";
+    document.$("#overlay button.green").setAttribute("onclick", "update_launcher();")
+    document.$("#overlay .close").setAttribute("onclick", "view.check_update(onUpdateCallback, onUpdateErr);")
   } else {
     stdout.println("No new launcher version available.");
     view.check_update(onUpdateCallback, onUpdateErr);
@@ -388,7 +385,7 @@ function onUpdateCallback(reason) {
       output_variables["popup_gray"] = "NOT NOW";
       output_variables["button_onclick"] = "view.install_redists(onRedistDone, onUpdateErr); output_variables[\"current_action\"] = \"Installing game dependencies\"; show_overlay(\"launcher-update.htm\");";
       show_overlay("popup_choice.htm");
-      $(#overlay button.green).@["onclick"] = output_variables["button_onclick"];
+      document.$("#overlay button.green").setAttribute("onclick", output_variables["button_onclick"]);
       break;
     case "resume":
       output_variables["current_action"] = "Resuming game installation";
@@ -403,7 +400,7 @@ function onUpdateCallback(reason) {
       output_variables["popup_gray"] = "DELAY";
       output_variables["button_onclick"] = "view.start_download(onProgress, onUpdateDone, onUpdateErr); output_variables[\"current_action\"] = \"Updating game\"; show_overlay(\"verify.htm\");";
       show_overlay("popup_choice.htm");
-      $(#overlay button.green).@["onclick"] = output_variables["button_onclick"];
+      document.$("#overlay button.green").setAttribute("onclick", output_variables["button_onclick"]);
       break;
     case "validate":
       output_variables["current_action"] = "Validating game installation";
@@ -425,7 +422,7 @@ function onUpdateErr(err) {
 function onRedistDone() {
   view.start_download(onProgress, onUpdateDone, onUpdateErr);
   output_variables["current_action"] = "Installing game";
-  if($(#overlay) && $(#overlay).style["visibility"] == "visible") show_overlay("verify.htm");
+  if(document.$("#overlay") && document.$("#overlay").style["visibility"] == "visible") show_overlay("verify.htm");
 }
 
 function onUpdateDone() {
@@ -455,5 +452,5 @@ function resetGameUI() {
   output_variables["popup_green"] = "I AM SURE";
   output_variables["popup_gray"] = "CANCEL";
   show_overlay("popup_choice.htm");
-  $(#overlay button.green).@["onclick"] = "view.remove_unversioned(onUpdateCallback, onError); output_variables[\"current_action\"] = \"Removing unversioned files\"; show_overlay(\"verify.htm\"); ";
+  document.$("#overlay button.green").setAttribute("onclick", "view.remove_unversioned(onUpdateCallback, onError); output_variables[\"current_action\"] = \"Removing unversioned files\"; show_overlay(\"verify.htm\"); ")
 }

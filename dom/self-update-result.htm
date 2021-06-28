@@ -13,14 +13,14 @@
     </style>
     <script type="text/tiscript">
       function self.ready() {
-        var result = $(p.result);
+        var result = document.$("p.result");
         var return_code = view.get_return_code();
         switch(return_code) {
           case "Success":
             result.text = "Launcher updated succesfully!";
-            $(button).attributes.addClass("green");
-            $(button).attributes.removeClass("orange");
-            $(button).text = "Affirmative!";
+            document.$("button").attributes.addClass("green");
+            document.$("button").attributes.removeClass("orange");
+            document.$("button").text = "Affirmative!";
             break;
           case "InvalidArguments":
             result.text = "Launcher update failed: Invalid Arguments!";
@@ -48,8 +48,8 @@
         }
         view.update();
 
-        var (sx,sy,sw,sh) = View.screenBox(0,#workarea,#rectw);
-        var (w,h) = $(div.username-window).box(#dimension, #margin);
+        var (sx,sy,sw,sh) = View.screenBox(0,"#workarea","#rectw");
+        var (w,h) = document.$("div.username-window").box("#dimension", #margin);
         view.move( sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
       }
 

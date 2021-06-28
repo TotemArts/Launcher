@@ -96,8 +96,8 @@ function VirtualList(params) {
     function calcMetrics() // calcs item_height, returns true if buffer_size was increased; 
     {
       if(list.first)
-        item_height = list.first.box(#height,#border); // adjust real item height
-      var ch = isContentDependent(list) ? list.parent.box(#height,#inner) : list.box(#height,#client);
+        item_height = list.first.box("#height","#border"); // adjust real item height
+      var ch = isContentDependent(list) ? list.parent.box("#height","#inner") : list.box("#height","#client");
       var vi = ch / (item_height || 10);
       visible_items = vi;
       const old_buffer_size = buffer_size;
@@ -210,7 +210,7 @@ function VirtualList(params) {
     
     function resetView() { 
     
-      var sy = list.scroll(#top);
+      var sy = list.scroll("#top");
       
       if(list.first) {
         list.first.style#margin-top = undefined;
@@ -320,7 +320,7 @@ function VirtualList(params) {
         var extra = (end - start) * item_height; 
         var topm = buffer_start * item_height;
         
-        var sy = list.scroll(#top);
+        var sy = list.scroll("#top");
         
         buffer_start += (end - start);
 
@@ -353,7 +353,7 @@ function VirtualList(params) {
         buffer_start -= end - start;
         assert(buffer_start >= 0);
         var extra = (end - start) * item_height;
-        var sy = list.scroll(#top);
+        var sy = list.scroll("#top");
         list.scrollTo(0, sy - extra);
         if(list.first)
           list.first.style#margin-top = ppx(Integer.max(0,oldtop-extra));
@@ -378,7 +378,7 @@ function VirtualList(params) {
         function onRecordSetChange(changedef) { 
         
           // changedef here is:
-          //[0] - symbol, one of #add,#update,#delete,#add-range,#delete-range or #update-range
+          //[0] - symbol, one of #add,"#update","#delete","#add"-range,"#delete"-range or #update-range
           //[1] - object or vector, its element(s) was changed;
           //[2] - symbol or string, property name - for objects
           //      or start of changed range (index) in arrays  
@@ -463,7 +463,7 @@ function VirtualList(params) {
     };
         
     function setCurrent(index, generateEvent = true) {
-      if( var old = list.$(>li:current,>tr:current) ) {
+      if( var old = list.$(">li:current,>tr:current") ) {
         if(old.index + buffer_start == index) return; // already set
         old.state.current = false;
       }
@@ -479,16 +479,16 @@ function VirtualList(params) {
         list.scrollTo(0, y, true); 
       }
       else if( index >= buffer_start + list.length ) {
-        list.scrollTo(0, y - list.scroll(#height) + item_height,true); 
+        list.scrollTo(0, y - list.scroll("#height") + item_height,true); 
       }
       else {
         var el = list[index - buffer_start];
         el.state.current = true;
-        var sy = list.scroll(#top);
+        var sy = list.scroll("#top");
         if( y < sy )
           list.scrollTo(0, y,true); 
-        else if( y + item_height > sy + list.scroll(#height) )
-          list.scrollTo(0, y - list.scroll(#height) + item_height ,true); 
+        else if( y + item_height > sy + list.scroll("#height") )
+          list.scrollTo(0, y - list.scroll("#height") + item_height ,true); 
       }
       if(generateEvent)
         list.postEvent("change");
@@ -537,7 +537,7 @@ function VirtualList(params) {
 
     list.firstIndex = property(v) {
       get { 
-        var sy = list.scroll(#top);
+        var sy = list.scroll("#top");
         return sy / item_height;
       }
       set {
@@ -590,7 +590,7 @@ class VList : Behavior
 class VGrid : Behavior 
 {
   function attached() { 
-    this.tbody = this.$(tbody);
+    this.tbody = this.$("tbody");
     var setupItemView = function(i,r,el) 
     {
       if ( r.locked ) {
@@ -658,7 +658,7 @@ class VTh : Behavior
        vlist.value.sort(cmpascend);
     } else {
       // the column was not ordered before, remove @order from other columns
-      if(var psort = this.parent.$(th[order]) ) {
+      if(var psort = this.parent.$("th[order]") ) {
         psort.attributes["order"] = undefined; // remove the attribute from previously ordered sibling
       }
       // set this column as ascend order:
