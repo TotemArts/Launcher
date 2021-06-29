@@ -3,12 +3,8 @@ name = "RenegadeX-Launcher"
 version = "0.9.31"
 authors = ["SonnyX"]
 edition = "2018"
-build = "windows.rs"
-exclude = ["release/**", "i686-pc-windows-gnu/**", "RenX-Launcher.zip", "Renegade X Launcher.exe", "sciter.dll", "SelfUpdateExecutor.exe"]
-
-[[bin]]
-name = "RenegadeX-Launcher"
-path = "../src/main.rs"
+build = "build.rs"
+include = ["src/**/*", "Cargo.toml"]
 
 [dependencies]
 tokio = { version = "1.4", features = ["full"] }
@@ -26,7 +22,7 @@ runas = { git = "https://github.com/SonnyX/rust-runas" }
 sha2 = "0.9"
 hex = "0.4"
 log = "0.4"
-flexi_logger = "0.17"
+flexi_logger = "0.19"
 download-async = "0.10"
 async-trait = "0.1"
 
