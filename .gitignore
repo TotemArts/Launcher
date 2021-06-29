@@ -1,13 +1,8 @@
-target/
-Cargo.lock
+backend/target
+backend/Cargo.lock
 RenegadeX-Launcher.ini
+RenegadeX-Launcher.exe
 C:/
 .idea/
+.vs/
 RenegadeX-Launcher
-windows-target/release/
-windows-target/i686-pc-windows-gnu/
-windows-target/Renegade X Launcher.exe
-windows-target/RenegadeX-Launcher.ini
-windows-target/Cargo.lock
-windows-target/.rustc_info.json
-windows-target/RenX-Launcher.zip
