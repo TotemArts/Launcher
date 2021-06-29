@@ -7,9 +7,7 @@ on:
       - master
     paths:
     - '.github/workflows/linux.yml'
-    - 'src/**'
-    - 'Cargo.toml'
-    - 'Cargo.lock'
+    - 'backend/**/*'
 
 jobs:
   build:
@@ -21,4 +19,4 @@ jobs:
     - name: Update dependencies
       run: sudo apt-get install libgtk-3-dev && (cargo update || (sh fix-build-issues.sh && cargo update))
     - name: Build
-      run: cargo build --release --verbose
+      run: cd backend && cargo build --release --verbose

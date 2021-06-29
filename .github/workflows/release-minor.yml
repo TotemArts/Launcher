@@ -12,7 +12,7 @@ jobs:
     - name: Get version from file
       id: cargo_version
       run: 
-        version=$(cat Cargo.toml | grep version | head -n1);
+        version=$(cat backend/Cargo.toml | grep version | head -n1);
         version=${version//[*version| |=|\"]};
         echo '::set-output name=version::'${version};
         
@@ -22,37 +22,35 @@ jobs:
         IFS='.' read -ra ver <<< ${{ steps.cargo_version.outputs.version }};
         version=$((${ver[0]})).$((${ver[1]})).$((${ver[2]}+1));
         echo 'Bumping project from version '${{ steps.cargo_version.outputs.version }}' to version '$version;
-        sed -i '0,/version[ |=|\"|0-9|.]*/s//version = "'$version'"/' Cargo.toml;
-        sed -i '0,/version[ |=|\"|0-9|.]*/s//version = "'$version'"/' windows-target/Cargo.toml;
+        sed -i '0,/version[ |=|\"|0-9|.]*/s//version = "'$version'"/' backend/Cargo.toml;
         echo '::set-output name=version::'${version};
         
-    - name: Git Commit/Push Changes
-      uses: actions-x/commit@v2
-      with:
-        message: Release minor version ${{ steps.minor_version.outputs.version }}
-        files: Cargo.toml windows-target/Cargo.toml
-        name: SonnyX
-        email: randy@vonderweide.nl
-
-    - run: rustup update --no-self-update stable && rustup default stable
     - run: cargo install cross
 
     - name: build
-      run: cross build --manifest-path="windows-target/Cargo.toml" --target=i686-pc-windows-gnu --release
+      run: cd backend && cross update && cross build --target=i686-pc-windows-gnu --release
 
     - name: Package Files
       id: package
       shell: bash
       run: >
-        cp ./target/i686-pc-windows-gnu/release/RenegadeX-Launcher.exe "./windows-target/Renegade X Launcher.exe";
-        zip -j9 windows-target/RenX-Launcher "windows-target/Renegade X Launcher.exe" "windows-target/RenegadeX-folder-permissions.exe" "windows-target/sciter.dll" "windows-target/SelfUpdateExecutor.exe";
-        zip -9 windows-target/RenX-Launcher -r "dom";
-        echo '::set-output name=hash::'$(sha256sum windows-target/RenX-Launcher.zip | awk '{print toupper($1)}');
+        cp ./backend/target/i686-pc-windows-gnu/release/RenegadeX-Launcher.exe "./Renegade X Launcher.exe";
+        zip -j9 RenX-Launcher "Renegade X Launcher.exe" "RenegadeX-folder-permissions.exe" "sciter.dll" "SelfUpdateExecutor.exe";
+        zip -9 RenX-Launcher -r "dom";
+        echo '::set-output name=hash::'$(sha256sum RenX-Launcher.zip | awk '{print toupper($1)}');
 
     - uses: actions/upload-artifact@v2
       with:
         name: RenX-Launcher
-        path: windows-target/RenX-Launcher.zip
+        path: backend/RenX-Launcher.zip
+
+    - name: Git Commit/Push Changes
+      uses: actions-x/commit@v2
+      with:
+        message: Release minor version ${{ steps.minor_version.outputs.version }}
+        files: backend/Cargo.toml
+        name: SonnyX
+        email: randy@vonderweide.nl
 
     - name: Upload ftp
       uses: bayssmekanique/action-simple-file-upload@v1
@@ -60,8 +58,9 @@ jobs:
         host: ${{ secrets.FTP_URL }}
         user: ${{ secrets.FTP_USER }}
         password: ${{ secrets.FTP_PASSWORD }}
-        src: windows-target/RenX-Launcher.zip
+        src: RenX-Launcher.zip
         dest: RenX-Launcher-${{ steps.minor_version.outputs.version }}.zip
+
 
     - name: Update version file
       uses: garygrossgarten/github-action-ssh@release
