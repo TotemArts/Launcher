@@ -42,3 +42,10 @@ Download Sciter from `https://github.com/c-smile/sciter-sdk/` and add the path t
 export PATH=$PATH:$SCITER_PATH/bin.gtk/x64
 cargo run --release
 ```
+
+# Front-end development tools
+[sciter-js](https://github.com/c-smile/sciter-js-sdk/tree/main/bin/windows/x32) contains a few integral files for the development of sciter-related products (e.g. the launcher)
+The important ones are: 
+ - `sciter.dll` this file is used by the launcher to run the front-end.
+ - `inspector.exe` this file can act like a dom-inspector (like `F12` in Chrome/Firefox), to use it, place `inspector.exe` inside of the pre-compiled launcher folder, and open `inspector.exe` along with `RenegadeX Launcher.exe`, press `ctrl+shift+i` or `ctrl+shift+left-click` to select an element.
+ - `usciter.exe` this can open a htm(l) file and thus render things like sciter does, useful for development.
