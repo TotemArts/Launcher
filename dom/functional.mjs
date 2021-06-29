@@ -1,3 +1,4 @@
+'use strict';
 import * as sciter from "@sciter";
 import * as sys from "@sys";
 
@@ -6,7 +7,7 @@ Element.prototype.load = function(file) {
   return true;
 }
 
-var output_variables = {
+var output_variables_proxied = {
   "username":"Not Set",
   "launcher_version":"0",
   "game_version":"Not Installed",
@@ -21,34 +22,41 @@ var output_variables = {
   "update_available": false,
 };
 
-var server_list = [];
+var server_list_proxied = [];
 var filtered_server_list = [];
 
-function server_observer(changeDefinition) {
-  console.log("changeDefinition[0]: " + changeDefinition[0]);
-  if (changeDefinition[0] == "update-range" || changeDefinition[0] == "add-range") {
-    for (var value in changeDefinition[1]) {
-      Object.addObserver(value, server_observer);
-    }
-    for(var i = filtered_server_list.length; i >= 0; i--) filtered_server_list.remove(i);
-    var list = server_list.filter(server => server.display);
-    for(var i = 0; i < list.length; i++) filtered_server_list.push(list[i]);
-    console.log("Jsonified filtered_server_list: " + JSON.stringify(filtered_server_list));
-  }
-  if (changeDefinition[0] == "update" && changeDefinition[2] == "display") {
-    if(changeDefinition[3]) filtered_server_list.push(changeDefinition[1]);
-    if(!changeDefinition[3]) filtered_server_list.removeByValue(changeDefinition[1]);
-  }
+const server_observer = { 
+  set: function(target, prop, receiver) {
+    console.log("server_observer");
+    console.log("target: " + target);
+    console.log("prop: " + prop);
+    console.log("receiver: " + receiver);
 
+    if (changeDefinition[0] == "update-range" || changeDefinition[0] == "add-range") {
+      for (var value in receiver) {
+        //Object.addObserver(value, server_observer);
+      }
+      for(var i = filtered_server_list.length; i >= 0; i--) filtered_server_list.remove(i);
+      var list = server_list.filter(server => server.display);
+      for(var i = 0; i < list.length; i++) filtered_server_list.push(list[i]);
+      console.log("Jsonified filtered_server_list: " + JSON.stringify(filtered_server_list));
+    }
+    if (changeDefinition[0] == "update" && prop == "display") {
+      if(changeDefinition[3]) filtered_server_list.push(receiver);
+      if(!changeDefinition[3]) filtered_server_list.removeByValue(receiver);
+    }
+    return Reflect.set(...arguments);
+  }
 }
-//Object.addObserver(server_list, server_observer);
+
+const server_list = new Proxy(server_list_proxied, server_observer);
 
 
 var news_items = [];
 var footer;
 var frame_id = 0;
 
-function footer_progress() {
+export function footer_progress() {
   footer = this;
   set_footer();
 }
@@ -86,7 +94,7 @@ function news_feed_callback(text) {
   }
 }
 
-function load_news_feed() {
+export function load_news_feed() {
   Window.this.xcall("fetch_resource", "https://renegade-x.com/rss/1-recent-news.xml/", {"Referer": "https://renegade-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache"}, news_feed_callback, this);
 }
 
@@ -140,23 +148,24 @@ function load_news_item(text) {
   if (img && img[1]) Window.this.xcall("fetch_image", img[1], {}, image_callback, {id:id,url:img[1],frame: this.frame});
 }
 
-function variable_observer(changeDefinition) {
-  if(changeDefinition[0] == "update" || changeDefinition[0] == "add") {
-    for(var element in $$("output[{changeDefinition[2]}]") ) {
-      element.value = changeDefinition[3]==0?"0":changeDefinition[3];
+const variable_observer = { 
+  set: function(target, prop, receiver) {
+    for(const element of document.$$("output["+prop+"]") ) {
+      element.setAttribute("value", Number(receiver)==0?"0":receiver);
     }
-    for(var element in $$("progressbar[{changeDefinition[2]}]") ) {
-      element.style["width"] = changeDefinition[3]==0?"0%":changeDefinition[3]+"%";
+    for(const element of document.$$("progressbar["+prop+"]") ) {
+      element.setAttribute("width", receiver==0?"0%":receiver+"%");
     }
-    if(changeDefinition[2] == "current_action" || changeDefinition[2] == "update_available") {
+    if(prop == "current_action" || prop == "update_available") {
       set_footer();
     }
+    return Reflect.set(...arguments);
   }
 }
 
-//Object.addObserver(output_variables, variable_observer);
+const output_variables = new Proxy(output_variables_proxied, variable_observer);
 
-function set_username(username) {
+export function set_username(username) {
   output_variables["username"] = username;
   Window.this.xcall("set_playername", username);
 }
@@ -171,7 +180,7 @@ function show_overlay(page) {
   document.$("div.menuEntries").state.disabled = true;
 }
 
-function initialize_variables() {
+export function initialize_variables() {
   output_variables["username"] = Window.this.xcall("get_playername");
   output_variables["launcher_version"] = Window.this.xcall("get_launcher_version");
   output_variables["game_version"] = Window.this.xcall("get_game_version");
@@ -234,7 +243,7 @@ function launchGame(server, password = undefined) {
   }
 }
 
-function getServersCallback(results) {
+export function getServersCallback(results) {
 /* Example entry of results
   {
     "Name": "blabla",
@@ -334,7 +343,7 @@ function update_launcher() {
   show_overlay("launcher-update.htm");
 }
 
-function check_launcher_result(new_version = undefined) {
+export function check_launcher_result(new_version = undefined) {
   if(new_version != null) {
     console.log("New launcher version available: " + new_version);
     output_variables["popup_title"] = "A new launcher update is available";
@@ -370,7 +379,7 @@ function onProgress(progress) {
   output_variables["update_progress"] = String.printf("%.1f",(output_variables["hash_progress"]/3.0 + download_progress/3.0 + output_variables["patch_progress"]/3.0));
 }
 
-function onUpdateCallback(reason) {
+export function onUpdateCallback(reason) {
   switch (reason) {
     case "up_to_date":
       break;

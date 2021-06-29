@@ -9,10 +9,16 @@
   @import url(chat.css);
 </style>
 <script type="module">
-  import * as functional from "functional";
-  import * as events from "events";
+  'use strict';
+  import * as functional from "./functional.mjs";
+  import * as events from "./events.mjs";
 
   document.$("#content").load(document.$("div.current").getAttribute("page"));
+  events.set_current_page(document.$("div.current"));
+  Window.this.xcall("check_launcher_update", functional.check_launcher_result);
+  functional.initialize_variables();
+  Window.this.xcall("get_servers", functional.getServersCallback);
+  functional.load_news_feed();
 </script>
 </head>
 <body model="Data">
