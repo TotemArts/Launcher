@@ -1,3 +1,11 @@
+import * as sciter from "@sciter";
+import * as sys from "@sys";
+
+Element.prototype.load = function(file) {
+  this.innerHTML = sciter.decode(sys.fs.$readfile("dom/" + file));
+  return true;
+}
+
 var output_variables = {
   "username":"Not Set",
   "launcher_version":"0",
@@ -17,7 +25,7 @@ var server_list = [];
 var filtered_server_list = [];
 
 function server_observer(changeDefinition) {
-  stdout.println("changeDefinition[0]: " + changeDefinition[0]);
+  console.log("changeDefinition[0]: " + changeDefinition[0]);
   if (changeDefinition[0] == "update-range" || changeDefinition[0] == "add-range") {
     for (var value in changeDefinition[1]) {
       Object.addObserver(value, server_observer);
@@ -25,7 +33,7 @@ function server_observer(changeDefinition) {
     for(var i = filtered_server_list.length; i >= 0; i--) filtered_server_list.remove(i);
     var list = server_list.filter(server => server.display);
     for(var i = 0; i < list.length; i++) filtered_server_list.push(list[i]);
-    stdout.println("Jsonified filtered_server_list: " + JSON.stringify(filtered_server_list));
+    console.log("Jsonified filtered_server_list: " + JSON.stringify(filtered_server_list));
   }
   if (changeDefinition[0] == "update" && changeDefinition[2] == "display") {
     if(changeDefinition[3]) filtered_server_list.push(changeDefinition[1]);
@@ -58,7 +66,7 @@ function set_footer() {
       break;
     default:
       footer.html = "<div.downloadBar><progressbar.indicator update_progress/></div><p.nowrap style=\"float:left;\"><output current_action/>: <span.green><output update_progress/>%</span></p><p overlay=\"verify.htm\" style=\"float:right;\">more details</p>";
-      stdout.println("set_footer: Unhandled case for: " + output_variables["current_action"]);
+      console.log("set_footer: Unhandled case for: " + output_variables["current_action"]);
   }
 }
 
@@ -74,12 +82,12 @@ function news_feed_callback(text) {
       pubDate: text.match(/<pubDate>(?:<!\[CDATA\[)?((?:.|\n)+?)(?:\]\]>)?<\/pubDate>/m)[1],
     };
     news_items.push(item);
-    if (i==0) view.fetch_resource(news_items[i].link+"?preview=1", {"Referer": "https://renegade-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache"}, load_news_item, {"id": i, "frame": undefined});
+    if (i==0) Window.this.xcall("fetch_resource", news_items[i].link+"?preview=1", {"Referer": "https://renegade-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache"}, load_news_item, {"id": i, "frame": undefined});
   }
 }
 
 function load_news_feed() {
-  view.fetch_resource("https://renegade-x.com/rss/1-recent-news.xml/", {"Referer": "https://renegade-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache"}, news_feed_callback, this);
+  Window.this.xcall("fetch_resource", "https://renegade-x.com/rss/1-recent-news.xml/", {"Referer": "https://renegade-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache"}, news_feed_callback, this);
 }
 
 function image_callback(bytes) {
@@ -91,20 +99,20 @@ function image_callback(bytes) {
       var filetype = escaped_url.split('.').pop();
       news_items[id].html = news_items[id].html.replace(url_regex, "data:image/webp;base64,"+image.toBytes("#webp", 100).toString("base64"));
     } else {
-      stdout.println("Image at url \""+escaped_url+"\" appears to be damaged.");
+      console.log("Image at url \""+escaped_url+"\" appears to be damaged.");
       var escaped_tag = "<img[^>]+?src=\""+escaped_url+"\"[^>]*?\/>";
       var image_regex = new RegExp(escaped_tag, "g");
       news_items[id].html = news_items[id].html.replace(image_regex, "");
     }
   } else {
-    stdout.println("Image at url \""+escaped_url+"\" appears to be missing.");
+    console.log("Image at url \""+escaped_url+"\" appears to be missing.");
     var escaped_tag = "<img[^>]+?src=\""+escaped_url+"\"[^>]*?\/>";
     var image_regex = new RegExp(escaped_tag, "g");
     news_items[id].html = news_items[id].html.replace(image_regex, "");
   }
   var regex = /<img[^>]+?src="(http[^"]+?\.(?!gif)[^"]{3,4}(?:\?[^"]+?)?)"[^>]*?>/;
   var img = news_items[id].html.match(regex);
-  if (img && img[1]) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1],frame:this.frame});
+  if (img && img[1]) Window.this.xcall("fetch_image", img[1], {}, image_callback, {id:id,url:img[1],frame:this.frame});
   else if (id==frame_id) {
     var news_frame = document.$("#news");
     if (this.frame) {
@@ -129,7 +137,7 @@ function load_news_item(text) {
   if (this.frame) this.frame.load(text,"");
   var regex = /<img[^>]+?src="(http[^"]+?\.(?!gif)[^"]{3,4}(?:\?[^"]+?)?)"[^>]*?>/;
   var img = text.match(regex);
-  if (img && img[1]) view.fetch_image(img[1], {}, image_callback, {id:id,url:img[1],frame: this.frame});
+  if (img && img[1]) Window.this.xcall("fetch_image", img[1], {}, image_callback, {id:id,url:img[1],frame: this.frame});
 }
 
 function variable_observer(changeDefinition) {
@@ -150,12 +158,12 @@ function variable_observer(changeDefinition) {
 
 function set_username(username) {
   output_variables["username"] = username;
-  view.set_playername(username);
+  Window.this.xcall("set_playername", username);
 }
 
 function show_overlay(page) {
   if (document.$("div.menuEntries > .current")) {
-    document.$("div.menuEntries > .current").attributes.removeClass("current");
+    document.$("div.menuEntries > .current").classList.remove("current");
   }
   var overlay = document.$("#overlay");
   overlay.load(page);
@@ -163,21 +171,10 @@ function show_overlay(page) {
   document.$("div.menuEntries").state.disabled = true;
 }
 
-function close_overlay() {
-  if (document.$("div.menuEntries > .current")) {
-    document.$("div.menuEntries > .current").attributes.removeClass("current");
-  }
-  current_page.attributes.addClass("current");
-  var overlay = document.$("#overlay");
-  overlay.text = "";
-  overlay.style["visibility"] = "collapse";
-  document.$("div.menuEntries").state.disabled = false;
-}
-
 function initialize_variables() {
-  output_variables["username"] = view.get_playername();
-  output_variables["launcher_version"] = view.get_launcher_version();
-  output_variables["game_version"] = view.get_game_version();
+  output_variables["username"] = Window.this.xcall("get_playername");
+  output_variables["launcher_version"] = Window.this.xcall("get_launcher_version");
+  output_variables["game_version"] = Window.this.xcall("get_game_version");
 }
 
 function onPingResult(server, time_response) {
@@ -190,10 +187,10 @@ function onPingResult(server, time_response) {
 }
 
 function tick_checkmark(element, boolean) {
-  if(boolean && !element.attributes.hasClass("checked") && !element.attributes.hasClass("ticked")) {
-    element.attributes.addClass("checked");
-  } else if (!boolean && element.attributes.hasClass("checked")) {
-    element.attributes.removeClass("checked");
+  if(boolean && !element.classList.contains("checked") && !element.classList.contains("ticked")) {
+    element.classList.add("checked");
+  } else if (!boolean && element.classList.contains("checked")) {
+    element.classList.remove("checked");
   }
 }
 
@@ -203,7 +200,7 @@ function onGameExit() {
   if(video != undefined) {
     video.videoPlay();
   }
-  stdout.println("Game exited succesfully!");
+  console.log("Game exited succesfully!");
 }
 
 function onGameError(ErrorMessage) {
@@ -221,7 +218,7 @@ function joinServer(password = undefined) {
   if (entry["Variables"]["bPassworded"] && !password) {
     show_overlay("password.htm");
   } else {
-    view.launch_game( entry["IP"]+":"+entry["Port"] + ( password? "?Password="+password : "" ), onGameExit, onGameError);
+    Window.this.xcall("launch_game",  entry["IP"]+":"+entry["Port"] + ( password? "?Password="+password : "" ), onGameExit, onGameError);
     var video = document.$("#map_video");
     if(video != undefined) {
       video.videoStop();
@@ -230,7 +227,7 @@ function joinServer(password = undefined) {
 }
 
 function launchGame(server, password = undefined) {
-  view.launch_game(server + ( password? "?Password="+password : "" ), onGameExit, onGameError);
+  Window.this.xcall("launch_game", server + ( password? "?Password="+password : "" ), onGameExit, onGameError);
   var video = document.$("#map_video");
   if(video != undefined) {
     video.videoStop();
@@ -285,7 +282,7 @@ function getServersCallback(results) {
       data: changed,
     }
     output_variables["players_online"] += changed["Players"].toInteger();
-    view.get_ping(result.data["IP"]+":"+result.data["Port"], onPingResult);
+    Window.this.xcall("get_ping", result.data["IP"]+":"+result.data["Port"], onPingResult);
     var exists = false;
     for (var i = 0; i < old_length; i++) {
       if (result.data.IP == server_list[i].data.IP && result.data.Port == server_list[i].data.Port) {
@@ -300,7 +297,7 @@ function getServersCallback(results) {
     }
   }
   for (var i = old_length-1; i > 0; i--) if( !updated[i] ) server_list.remove(i);
-  stdout.println("refreshed servers");
+  console.log("refreshed servers");
 }
 
 function updateFilter(arg1, arg2 = undefined) {
@@ -310,9 +307,9 @@ function updateFilter(arg1, arg2 = undefined) {
     for(var i = 0; i < server_list.length; i++) {
       if(server_list[i].data["Players"] >= min && server_list[i].data["Players"] <= max) {
         server_list[i].in_player_range = true;
-        stdout.println(server_list[i].data["Game Version"]);
-        stdout.println(output_variables["game_version"]);
-        server_list[i].display = document.$("div.filterbar > checkmark").attributes.hasClass("checked")?(server_list[i].data["Game Version"] == output_variables["game_version"]):true;
+        console.log(server_list[i].data["Game Version"]);
+        console.log(output_variables["game_version"]);
+        server_list[i].display = document.$("div.filterbar > checkmark").classList.contains("checked")?(server_list[i].data["Game Version"] == output_variables["game_version"]):true;
       } else {
         server_list[i].in_player_range = false;
         server_list[i].display = false;
@@ -332,23 +329,23 @@ function launcher_progress(progress) {
 }
 
 function update_launcher() {
-  view.update_launcher(launcher_progress);
+  Window.this.xcall("update_launcher", launcher_progress);
   output_variables["current_action"] = "Installing launcher update";
   show_overlay("launcher-update.htm");
 }
 
 function check_launcher_result(new_version = undefined) {
   if(new_version != null) {
-    stdout.println("New launcher version available: " + new_version);
+    console.log("New launcher version available: " + new_version);
     output_variables["popup_title"] = "A new launcher update is available";
     output_variables["popup_message"] = "Version " + new_version + " of the launcher is now available!";
     output_variables["popup_green"] = "UPDATE";
     show_overlay("popup_ok.htm");
     document.$("#overlay button.green").setAttribute("onclick", "update_launcher();")
-    document.$("#overlay .close").setAttribute("onclick", "view.check_update(onUpdateCallback, onUpdateErr);")
+    document.$("#overlay .close").setAttribute("onclick", "Window.this.xcall('check_update', onUpdateCallback, onUpdateErr);")
   } else {
-    stdout.println("No new launcher version available.");
-    view.check_update(onUpdateCallback, onUpdateErr);
+    console.log("No new launcher version available.");
+    Window.this.xcall("check_update", onUpdateCallback, onUpdateErr);
   }
 }
 
@@ -383,14 +380,14 @@ function onUpdateCallback(reason) {
       output_variables["popup_message"] = "Would you like to install?";
       output_variables["popup_green"] = "INSTALL";
       output_variables["popup_gray"] = "NOT NOW";
-      output_variables["button_onclick"] = "view.install_redists(onRedistDone, onUpdateErr); output_variables[\"current_action\"] = \"Installing game dependencies\"; show_overlay(\"launcher-update.htm\");";
+      output_variables["button_onclick"] = "Window.this.xcall(\"install_redists\", onRedistDone, onUpdateErr); output_variables[\"current_action\"] = \"Installing game dependencies\"; show_overlay(\"launcher-update.htm\");";
       show_overlay("popup_choice.htm");
       document.$("#overlay button.green").setAttribute("onclick", output_variables["button_onclick"]);
       break;
     case "resume":
       output_variables["current_action"] = "Resuming game installation";
       show_overlay("verify.htm");
-      view.start_download(onProgress, onUpdateDone, onUpdateErr);
+      Window.this.xcall("start_download", onProgress, onUpdateDone, onUpdateErr);
       break;
     case "patch":
       output_variables["update_available"] = true;
@@ -398,14 +395,14 @@ function onUpdateCallback(reason) {
       output_variables["popup_message"] = "Would you like to update?";
       output_variables["popup_green"] = "UPDATE";
       output_variables["popup_gray"] = "DELAY";
-      output_variables["button_onclick"] = "view.start_download(onProgress, onUpdateDone, onUpdateErr); output_variables[\"current_action\"] = \"Updating game\"; show_overlay(\"verify.htm\");";
+      output_variables["button_onclick"] = "Window.this.xcall(\"start_download\", onProgress, onUpdateDone, onUpdateErr); output_variables[\"current_action\"] = \"Updating game\"; show_overlay(\"verify.htm\");";
       show_overlay("popup_choice.htm");
       document.$("#overlay button.green").setAttribute("onclick", output_variables["button_onclick"]);
       break;
     case "validate":
       output_variables["current_action"] = "Validating game installation";
       show_overlay("verify.htm");
-      view.start_download(onProgress, onUpdateDone, onUpdateErr);
+      Window.this.xcall("start_download", onProgress, onUpdateDone, onUpdateErr);
       break;
   }
 }
@@ -420,7 +417,7 @@ function onUpdateErr(err) {
 }
 
 function onRedistDone() {
-  view.start_download(onProgress, onUpdateDone, onUpdateErr);
+  Window.this.xcall("start_download", onProgress, onUpdateDone, onUpdateErr);
   output_variables["current_action"] = "Installing game";
   if(document.$("#overlay") && document.$("#overlay").style["visibility"] == "visible") show_overlay("verify.htm");
 }
@@ -429,8 +426,8 @@ function onUpdateDone() {
   var current_action = output_variables["current_action"];
   output_variables["current_action"] = "None";
   output_variables["update_available"] = false;
-  output_variables["game_version"] = view.get_game_version();
-  view.get_servers(getServersCallback);
+  output_variables["game_version"] = Window.this.xcall("get_game_version");
+  Window.this.xcall("get_servers", getServersCallback);
   output_variables["popup_title"] = "Finished!";
   output_variables["popup_message"] = "The action \""+current_action+"\" was completed succesfully!";
   output_variables["popup_green"] = "OK";
@@ -452,5 +449,5 @@ function resetGameUI() {
   output_variables["popup_green"] = "I AM SURE";
   output_variables["popup_gray"] = "CANCEL";
   show_overlay("popup_choice.htm");
-  document.$("#overlay button.green").setAttribute("onclick", "view.remove_unversioned(onUpdateCallback, onError); output_variables[\"current_action\"] = \"Removing unversioned files\"; show_overlay(\"verify.htm\"); ")
+  document.$("#overlay button.green").setAttribute("onclick", "Window.this.xcall(\"remove_unversioned\", onUpdateCallback, onError); output_variables[\"current_action\"] = \"Removing unversioned files\"; show_overlay(\"verify.htm\"); ")
 }

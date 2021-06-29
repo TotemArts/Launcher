@@ -21,24 +21,24 @@
       function self.ready() {
         var (sx,sy,sw,sh) = View.screenBox(0,"#workarea","#rectw");
         var (w,h) = document.$("div.username-window").box("#dimension", #margin);
-        view.move( sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
+        Window.this.xcall("move",  sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
       }
 
       function setPlayername() {
         if (document.$("input|text.username").value != "") {
-          view.set_playername(document.$("input|text.username").value);
-          view.close();
+          Window.this.xcall("set_playername", document.$("input|text.username").value);
+          Window.this.xcall("close");
         }
       }
 
       self.on("click","[onclick]",function(evt) {
-        stdout.println("onclick");
-        return eval.call(this, this.attributes["onclick"] );
+        console.log("onclick");
+        return eval.call(evt.target, evt.target.getAttribute("onclick") );
       });
 
       self.on("keypress","[enter]",function(evt) {
         if ( evt.keyCode != 13 && evt.keyCode != Event.VK_RETURN ) return;
-        eval.call(this, this.attributes["enter"]);
+        eval.call(evt.target, evt.target.getAttribute("enter"));
       });
     </script>
   </head>
