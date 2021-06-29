@@ -8,9 +8,9 @@
       <button.bool.uppercase setting="64-bit-version">64 bit mode</button>
       <button.setting.uppercase onclick="onUpdateCallback('validate');">Verify game integrity</button>
       <button.setting.uppercase onclick="resetGameUI();">Reset game settings</button>
-      <button.setting.uppercase onclick="view.open_launcher_logs_folder()">Launcher Log Folder</button>
+      <button.setting.uppercase onclick="Window.this.xcall("open_launcher_logs_folder")">Launcher Log Folder</button>
       <button.setting.uppercase >Game Log Folder</button>
     </div>
-  <div.center.uppercase.padding style="font-size: 5pt;">This Application (or Component) uses Sciter Engine (<a external="https://sciter.com">https://sciter.com/</a>), copyright Terra Informatica Software, Inc.</div>
+  <div.center.uppercase.padding style="font-size: 5pt;">This Application (or Component) uses Sciter Engine (<a href="https://sciter.com" target="@system">https://sciter.com/</a>), copyright Terra Informatica Software, Inc.</div>
   <div.center.uppercase.padding style="font-size: 8pt;">Launcher version <output launcher_version/></div>
 </div>

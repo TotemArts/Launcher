@@ -24,7 +24,7 @@
         filter
         <div.filter.down></div>
         <!--<input|text.searchbar>!-->
-        <div.refresh onclick="view.get_servers(getServersCallback);"></div>
+        <div.refresh onclick="Window.this.xcall('get_servers', getServersCallback);"></div>
       </div>
       <div.filterbar>
         <p.nowrap>Players: <output server_filter_players_min /> - <output server_filter_players_max /></p>
@@ -60,7 +60,7 @@
       <div.titlebar>
         <h3.title><output title_menu/></h3>
         <div.spacer></div>
-        <div.dropdown_menu.closed onclick="this.attributes.toggleClass('open');this.attributes.toggleClass('closed'); document.$('div.body > div.menu').style['visibility'] = this.attributes.hasClass('closed')?'collapse':'visible';">PLAY ONLINE</div>
+        <div.dropdown_menu.closed onclick="this.classList.toggle('open');this.classList.toggle('closed'); document.$('div.body > div.menu').style['visibility'] = this.classList.contains('closed')?'collapse':'visible';">PLAY ONLINE</div>
       </div>
       <div.body.hflow>
         <div.menu.child-padding style="visibility: hidden;">

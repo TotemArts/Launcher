@@ -14,12 +14,12 @@
     <script type="text/tiscript">
       function self.ready() {
         var result = document.$("p.result");
-        var return_code = view.get_return_code();
+        var return_code = Window.this.xcall("get_return_code");
         switch(return_code) {
           case "Success":
             result.text = "Launcher updated succesfully!";
-            document.$("button").attributes.addClass("green");
-            document.$("button").attributes.removeClass("orange");
+            document.$("button").classList.add("green");
+            document.$("button").classList.remove("orange");
             document.$("button").text = "Affirmative!";
             break;
           case "InvalidArguments":
@@ -46,16 +46,16 @@
           default:
             result.text = "Launcher update result unknown: " + return_code + ".";
         }
-        view.update();
+        Window.this.xcall("update");
 
         var (sx,sy,sw,sh) = View.screenBox(0,"#workarea","#rectw");
         var (w,h) = document.$("div.username-window").box("#dimension", #margin);
-        view.move( sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
+        Window.this.xcall("move",  sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
       }
 
       self.on("click","[onclick]",function(evt) {
-        stdout.println("onclick");
-        return eval.call(this, this.attributes["onclick"] );
+        console.log("onclick");
+        return eval.call(evt.target, evt.target.getAttribute("onclick") );
       });
     </script>
   </head>
@@ -66,7 +66,7 @@
       </div>
       <div.child-margin.vflow>
         <p.result></p>
-        <button.orange onclick="view.close();">Negative!</button>
+        <button.orange onclick="Window.this.xcall('close');">Negative!</button>
       </div>
     </div>
   </body>

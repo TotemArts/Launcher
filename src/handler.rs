@@ -528,6 +528,9 @@ impl Handler {
 }
 
 impl sciter::EventHandler for Handler {
+  fn get_subscription(&mut self) -> Option<sciter::dom::event::EVENT_GROUPS> {
+    Some(sciter::dom::event::default_events() | sciter::dom::event::EVENT_GROUPS::HANDLE_METHOD_CALL)
+  }
 	dispatch_script_call! {
     fn check_update(Value, Value);
     fn install_redists(Value, Value);

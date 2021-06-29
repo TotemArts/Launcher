@@ -15,12 +15,12 @@
       function self.ready() {
         var (sx,sy,sw,sh) = View.screenBox(0,"#workarea","#rectw");
         var (w,h) = document.$("div.username-window").box("#dimension", #margin);
-        view.move( sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
+        Window.this.xcall("move",  sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
       }
 
       self.on("click","[onclick]",function(evt) {
-        stdout.println("onclick");
-        return eval.call(this, this.attributes["onclick"] );
+        console.log("onclick");
+        return eval.call(evt.target, evt.target.getAttribute("onclick") );
       });
     </script>
   </head>
@@ -31,7 +31,7 @@
       </div>
       <div.child-margin.vflow>
         <p.result>Another Instance of the launcher is still running, use that instance, of close all instances and try again!</p>
-        <button.orange onclick="view.close();">Negative!</button>
+        <button.orange onclick="Window.this.xcall('close');">Negative!</button>
       </div>
     </div>
   </body>

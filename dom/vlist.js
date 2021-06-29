@@ -594,9 +594,9 @@ class VGrid : Behavior
     var setupItemView = function(i,r,el) 
     {
       if ( r.locked ) {
-        el[0].attributes.addClass("locked");
+        el[0].classList.add("locked");
       } else {
-        el[0].attributes.removeClass("locked");
+        el[0].classList.remove("locked");
       }
       if (r.data["NamePrefix"]) {
         el[1].html = "<span.green>" + r.data["NamePrefix"] + "</span>&nbsp;" + el[1].html;
@@ -622,8 +622,8 @@ class VTh : Behavior
 {
   function sortVlist() {
     var vlist = this.parent.parent.parent;
-    var name = this.attributes["name"];
-    var order = this.attributes["order"];
+    var name = this.getAttribute("name");
+    var order = this.getAttribute("order");
     function cmpascend(a,b) {
       if(a[name].toInteger()  != undefined || b[name].toInteger() != undefined) {
         if(a[name].toInteger() == undefined) return 1;
@@ -651,18 +651,18 @@ class VTh : Behavior
       }
     }
     if ( order == "ascend" ) {
-       this.attributes["order"] = "descend" ;
+       this.setAttribute("order", "descend" );
        vlist.value.sort(cmpdescend);
     } else if ( order == "descend" ){
-       this.attributes["order"] = "ascend" ;
+       this.setAttribute("order", "ascend" );
        vlist.value.sort(cmpascend);
     } else {
       // the column was not ordered before, remove @order from other columns
       if(var psort = this.parent.$("th[order]") ) {
-        psort.attributes["order"] = undefined; // remove the attribute from previously ordered sibling
+        psort.setAttribute("order", undefined); // remove the attribute from previously ordered sibling
       }
       // set this column as ascend order:
-      this.attributes["order"] = "ascend";
+      this.setAttribute("order", "ascend");
       vlist.value.sort(cmpascend);
     }
   }

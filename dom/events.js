@@ -1,5 +1,15 @@
-  function loadOutput() {
-    for(var name in this.attributes) {
+import * as functional from "functional";
+import * as sciter from "@sciter";
+import * as sys from "@sys";
+
+Element.prototype.load = function(file) {
+  this.innerHTML = sciter.decode(sys.fs.$readfile("dom/" + file));
+  return true;
+}
+
+class Emu {
+  loadOutput() {
+    for(var name in this.getAttributeNames()) {
       var attribute = output_variables[name];
       if(attribute==0) attribute = "0";
       if(attribute) {
@@ -15,7 +25,7 @@
     }
   }
 
-  function videoHandler() {
+  videoHandler() {
     var video = this;
     video.shouldPlay = true;
 
@@ -33,25 +43,25 @@
     }  
   }
 
-  function news_image() {
-    if (this.attributes.exists("width")) {
-      this.attributes["width"] = (this.attributes["width"].toNumber()/10) + "%";
+  news_image() {
+    if (this.classList.getAttribute("width")) {
+      this.setAttribute("width", (this.getAttribute("width").toNumber()/10) + "%");
     } else {
-      this.attributes["width"] = "100%";
+      this.setAttribute("width", "100%");
     }
   }
 
-  function chat_menu() {
+  chat_menu() {
     var chat = document.$("div.chat");
-    stdout.println("Context menu enabled!");
+    console.log("Context menu enabled!");
     if (chat.selection.html != "") {
-      stdout.println("Text selected: " + chat.selection.html);
+      console.log("Text selected: " + chat.selection.html);
     } else {
       this.$("#copy").state.disabled = true;
     }
   }
 
-  function render_news_items() {
+  render_news_items() {
     var frame = document.$("#news")
     for (var i=0; i<news_items.length;i++) {
       var date = new Date(news_items[i].pubDate);
@@ -60,55 +70,55 @@
       if (news_items[i].title.match(/\sPATCH\s/i)) type_string = "Patch";
       this.append("<div.news_item.hflow id="+i+"><pubDate>"+date_string+"</pubDate><div.vflow><p.news_type>"+type_string+"</p><p.news_title>"+news_items[i].title+"</p></div></div>");
       var element = this.lastNode;
-      element.on("click", function() {
-        var id = this.attributes["id"].toNumber();
+      element.on("click", function(evt) {
+        var id = evt.target.getAttribute("id").toNumber();
         frame_id = id;
         output_variables["current_news_title"] = news_items[id].title;
-        var current = this.parent.$(".current");
-        if (current) current.attributes.removeClass("current");
-        this.attributes.addClass("current");
+        var current = evt.target.parent.$(".current");
+        if (current) current.classList.remove("current");
+        evt.target.classList.add("current");
         if (news_items[id].html) {
           frame.load(news_items[id].html, "");
         } else {
           frame.load("", "");
-          view.fetch_resource(news_items[id].link+"?preview=1", { "Referer": "https://renegade-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache"}, load_news_item, {id: id, frame: frame});
+          Window.this.xcall("fetch_resource", news_items[id].link+"?preview=1", { "Referer": "https://renegade-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache"}, load_news_item, {id: id, frame: frame});
         }
       });
     }
     if (news_items.length > 0) {
       var id = 0;
       frame_id = 0;
-      this.first.attributes.addClass("current");
+      this.first.classList.add("current");
       output_variables["current_news_title"] = news_items[0].title;
       if (news_items[0].html) {
         frame.load(news_items[0].html, "");
       } else {
         frame.load("", "");
-        view.fetch_resource(news_items[id].link+"?preview=1", {Referer: "https://renegade-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", TE: "Trailers", Pragma: "no-cache"}, load_news_item, {id: id, frame: frame});
+        Window.this.xcall("fetch_resource", news_items[id].link+"?preview=1", {Referer: "https://renegade-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", TE: "Trailers", Pragma: "no-cache"}, load_news_item, {id: id, frame: frame});
       }
     }
   }
 
-  function spoiler() {
+  spoiler() {
     var spoiler = this.next;
-    this.on("click", function() {
+    this.on("click", function(evt) {
       if (spoiler.style["visibility"] == "collapse") {
         spoiler.style["visibility"] = "visible";
       } else if (spoiler.style["visibility"] == "visible") {
         spoiler.style["visibility"] = "collapse";
       } else {
-        stdout.println("Weird");
+        console.log("Weird");
       }
     });
   }
 
-  function server_table() {
+  server_table() {
     this.value = filtered_server_list;
 
     this.tbody.currentIndex = 0;
     // The following event happens when the user changes the entry in the list, and will update the currently selected entry on the rest of the page
-    this.on("change", function() {
-        var entry = this.value[this.tbody.currentIndex].data;
+    this.on("change", function(evt) {
+        var entry = evt.target.value[evt.target.tbody.currentIndex].data;
         output_variables["title_menu"] = entry["Name"];
         document.$("#mine-limit").html = entry["Variables"]["Mine Limit"].toString();
         document.$("#player-limit").html = entry["Variables"]["Player Limit"].toString();
@@ -121,27 +131,27 @@
         tick_checkmark(document.$("checkmark#infantry"), false);
         var currentMap = entry["Current Map"];
         var video = document.$("#map_video");
-        video.videoLoad(view.get_video_location(entry["Current Map"]).replace("file:///", ""));
+        video.videoLoad(Window.this.xcall("get_video_location", entry["Current Map"]).replace("file:///", ""));
         video.videoPlay(0.0);
         var mapName = currentMap.split("-",1);
         document.$("#game-mode").html = mapName[0];
         document.$("#map-name").html = mapName[1].replace("_", " ");
       });
-    this.on("click", "th.sortable", function() {
-      this.sortVlist();
+    this.on("click", "th.sortable", function(evt) {
+      evt.target.sortVlist();
     });
     this.on("dblclick", "tr", function() {
       joinServer();
     });
   }
 
-  function moveSliders() {
+  moveSliders() {
     var mousepressed = false;
     var element = this.$(".start");
-    var min = this.attributes["minValue"].toInteger();
-    var max = this.attributes["maxValue"].toInteger();
-    var minPercentage = 100.0*this.attributes["min"].toFloat()/(max-min).toFloat();
-    var maxPercentage = 100.0*this.attributes["max"].toFloat()/(max-min).toFloat();
+    var min = this.getAttribute("minValue").toInteger();
+    var max = this.getAttribute("maxValue").toInteger();
+    var minPercentage = 100.0*this.getAttribute("min").toFloat()/(max-min).toFloat();
+    var maxPercentage = 100.0*this.getAttribute("max").toFloat()/(max-min).toFloat();
     function updateRange() {
       this.$("div.slider > div.range").style["width"] = maxPercentage - minPercentage + "%";
       this.$("div.slider > div.range").style["left"] = minPercentage + "%";
@@ -155,15 +165,15 @@
         element.style["left"] = integerValue.toFloat()*snapToEvery-percentage_offset+"%";
         element.style["right"] = "auto";
         if(element == this.$(".start")) {
-          if(element.parent.attributes["min"] != min + integerValue) {
-            element.parent.attributes["min"] = min + integerValue;
+          if(element.parent.getAttribute("min") != min + integerValue) {
+            element.parent.setAttribute("min", min + integerValue);
             minPercentage = integerValue.toFloat()*snapToEvery-percentage_offset;
             updateRange();
             element.parent.sendEvent(Event.CHANGE);
           }
         } else {
-          if(element.parent.attributes["max"] != min + integerValue) {
-            element.parent.attributes["max"] = min + integerValue;
+          if(element.parent.getAttribute("max") != min + integerValue) {
+            element.parent.setAttribute("max", min + integerValue);
             maxPercentage = integerValue.toFloat()*snapToEvery-percentage_offset;
             updateRange();
             element.parent.sendEvent(Event.CHANGE);
@@ -180,9 +190,9 @@
         if(percentage < 0) percentage = 0.0;
         var integerValue = (percentage/snapToEvery).toInteger();
         if(element == element.parent.$(".start")) {
-          if(integerValue + 1 >= element.parent.attributes["max"].toInteger()) integerValue = element.parent.attributes["max"].toInteger() - 1;
+          if(integerValue + 1 >= element.parent.getAttribute("max").toInteger()) integerValue = element.parent.getAttribute("max").toInteger() - 1;
         } else {
-          if(integerValue - 1 <= element.parent.attributes["min"].toInteger()) integerValue = element.parent.attributes["min"].toInteger() + 1;
+          if(integerValue - 1 <= element.parent.getAttribute("min").toInteger()) integerValue = element.parent.getAttribute("min").toInteger() + 1;
         }
         updateElementByValue(integerValue);
       }
@@ -192,30 +202,30 @@
     });
     this.$(".end").on("mousedown", function(evt) {
       mousepressed = true;
-      element = this;
+      element = evt.target;
     });
     this.$(".start").on("mousedown", function(evt) {
       mousepressed = true;
-      element = this;
+      element = evt.target;
     });
     this.on("change", function(evt) {
-      updateFilter(element.parent.attributes["min"].toInteger(), element.parent.attributes["max"].toInteger());
+      updateFilter(element.parent.getAttribute("min").toInteger(), element.parent.getAttribute("max").toInteger());
     });
   }
-
+}
 
 function bool_setting() {
-  this.post(this.attributes.addClass(view.get_setting(this.getAttribute("setting"))));
+  this.post(this.classList.add(Window.this.xcall("get_setting", this.getAttribute("setting"))));
 
   this.on("click", function(evt) {
-    if(this.attributes.hasClass("true")) {
-      this.attributes.removeClass("true");
-      this.attributes.addClass("false");
-      view.set_setting(this.getAttribute("setting"), "false");
-    } else if (this.attributes.hasClass("false")) {
-      this.attributes.removeClass("false");
-      this.attributes.addClass("true");
-      view.set_setting(this.getAttribute("setting"), "true");
+    if(evt.target.classList.contains("true")) {
+      evt.target.classList.remove("true");
+      evt.target.classList.add("false");
+      Window.this.xcall("set_setting", evt.target.getAttribute("setting"), "false");
+    } else if (evt.target.classList.contains("false")) {
+      evt.target.classList.remove("false");
+      evt.target.classList.add("true");
+      Window.this.xcall("set_setting", evt.target.getAttribute("setting"), "true");
     }
   });
 }
@@ -224,13 +234,13 @@ function filter() {
   var filterbar = document.$(".filterbar");
 
   this.on("click", function(evt) {
-    if(this.attributes.hasClass("down")) {
-      this.attributes.removeClass("down");
-      this.attributes.addClass("up");
+    if(evt.target.classList.contains("down")) {
+      evt.target.classList.remove("down");
+      evt.target.classList.add("up");
       filterbar.style["visibility"] = "visible";
-    } else if (this.attributes.hasClass("up")) {
-      this.attributes.removeClass("up");
-      this.attributes.addClass("down");
+    } else if (evt.target.classList.contains("up")) {
+      evt.target.classList.remove("up");
+      evt.target.classList.add("down");
       filterbar.style["visibility"] = "collapse";
     }
   });
@@ -243,17 +253,17 @@ document.on("keydown", function(evt) {
 });
 
 document.on("~click", "a[href^=http]", function(evt) {
-  var url = evt.target.attributes["href"];
+  var url = evt.target.getAttribute("href");
   Sciter.launch(url);
   return true;
 });
 
 document.on("~click", "checkmark[toggle]", function(evt) {
-  if (!evt.target.attributes.hasClass("checked")) {
-    evt.target.attributes.addClass("checked");
+  if (!evt.target.classList.contains("checked")) {
+    evt.target.classList.add("checked");
     updateFilter(true);
   } else {
-    evt.target.attributes.removeClass("checked");
+    evt.target.classList.remove("checked");
     updateFilter(false);
   }
   return true;
@@ -261,7 +271,7 @@ document.on("~click", "checkmark[toggle]", function(evt) {
 
 function reload() {
   if( this.parent ) this.parent.load( this.url() );
-  else view.load(this.url());
+  else Window.this.xcall("load", this.url());
 }
 
 function fillHeight() {
@@ -286,47 +296,52 @@ function fillHeight() {
   this.onSize();
 }
 
-self.on("click","[onclick]",function() {
-  eval.call(this, this.attributes["onclick"] );
+document.on("click","[onclick]",function(evt) {
+  eval.call(evt.target, evt.target.getAttribute("onclick") );
   return false;
 });
 
 var current_page;
 
-self.on("click","[page]",function() {
-  document.$("div.menuEntries > .current").attributes.removeClass("current");
-  this.attributes.addClass("current");
-  current_page = this;
-  document.$("#content").load(this.attributes["page"]);
+function close_overlay() {
+  if (document.$("div.menuEntries > .current")) {
+    document.$("div.menuEntries > .current").classList.remove("current");
+  }
+  current_page.classList.add("current");
+  var overlay = document.$("#overlay");
+  overlay.text = "";
+  overlay.style["visibility"] = "collapse";
+  document.$("div.menuEntries").state.disabled = false;
+}
+
+document.on("click","[page]",function(evt) {
+  document.$("div.menuEntries > .current").classList.remove("current");
+  evt.target.classList.add("current");
+  current_page = evt.target;
+  document.$("#content").load(evt.target.getAttribute("page"));
   return false;
 });
 
-self.on("click","[overlay]",function() {
-  document.$("div.menuEntries > .current").attributes.removeClass("current");
-  this.attributes.addClass("current");
+document.on("click","[overlay]",function(evt) {
+  document.$("div.menuEntries > .current").classList.remove("current");
+  evt.target.classList.add("current");
   var overlay = document.$("#overlay");
-  overlay.load(this.attributes["overlay"]);
+  overlay.load(evt.target.getAttribute("overlay"));
   overlay.style["visibility"] = "visible";
   document.$("div.menuEntries").state.disabled = true;
   return false;
 });
 
-self.on("click","[close]",function() {
+document.on("click","[close]",function() {
   close_overlay();
   return false;
 });
 
-self.on("click","[external]",function() {
-  stdout.println(this.attributes["external"]);
-  Sciter.launch(this.attributes["external"]);
-  return false;
+document.on("keyup","[onkey]",function(evt) {
+  eval.call(evt.target, evt.target.getAttribute("onkey"));
 });
 
-self.on("keyup","[onkey]",function(evt) {
-  eval.call(this, this.attributes["onkey"]);
-});
-
-self.on("keypress","[enter]",function(evt) {
+document.on("keypress","[enter]",function(evt) {
   if ( evt.keyCode != 13 && evt.keyCode != Event.VK_RETURN ) return;
-  eval.call(this, this.attributes["enter"]);
+  eval.call(evt.target, evt.target.getAttribute("enter"));
 });

@@ -5,10 +5,10 @@
   </div>
   <div.child-margin.vflow>
     <p.uppercase>Server address:</p>
-    <input|text.ip enter="launchGame(document.$('input.ip').value, document.$('input.password').value); close_overlay();"/>
+    <input|text.ip enter="launchGame(document.$('input.ip').value, document.$('input.password').value); events.close_overlay();"/>
     <p.uppercase>Password:</p>
-    <input|text.password enter="launchGame(document.$('input.ip').value, document.$('input.password').value); close_overlay();"/>
-    <button.green.uppercase onclick="launchGame(document.$('input.ip').value, document.$('input.password').value); close_overlay();">Join Server</button>
+    <input|text.password enter="launchGame(document.$('input.ip').value, document.$('input.password').value); events.close_overlay();"/>
+    <button.green.uppercase onclick="launchGame(document.$('input.ip').value, document.$('input.password').value); events.close_overlay();">Join Server</button>
     <button.gray.uppercase close>Cancel</button>
   </div>
 </div>

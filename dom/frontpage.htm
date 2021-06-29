@@ -8,17 +8,20 @@
   @import url(news.css);
   @import url(chat.css);
 </style>
-<script type="text/javascript">
+<script type="module">
+  import * as functional from "functional";
+  import * as events from "events";
 
+  document.$("#content").load(document.$("div.current").getAttribute("page"));
 </script>
 </head>
 <body model="Data">
   <div#header style="background-color: #0D1721; margin-top: 2px;">
     <div.headerSpacer.left>
-      <button.facebook external="https://www.facebook.com/RenXFirestorm/"></button>
-      <button.twitter external="https://twitter.com/renxgame"></button>
-      <button.discord external="https://renegade-x.com/discord"></button>
-      <button.youtube external="https://www.youtube.com/channel/UCaiic-yEcwEv8VG6wRaHcDQ"></button>
+      <a.facebook href="https://www.facebook.com/RenXFirestorm/" target="@system"></a>
+      <a.twitter href="https://twitter.com/renxgame" target="@system"></a>
+      <a.discord href="https://renegade-x.com/discord" target="@system"></a>
+      <a.youtube href="https://www.youtube.com/channel/UCaiic-yEcwEv8VG6wRaHcDQ" target="@system"></a>
     </div>
     <div.spacer role="window-caption"></div>
     <div.menuEntries>
