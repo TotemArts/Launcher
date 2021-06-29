@@ -13,28 +13,27 @@ body {
 }
 
 </style>
-<script type="text/tiscript">
-  include "events.tis";
-  function self.ready() {
-    var records = new Array(6);
-    var maps = ["Fun Map!","Silly me...","There are no","Fun Maps","Only serious", "games allowed"];
-    var i;
-    for (i = 0; i < 6; i++) {
-      records[i] = {
-        index: i,
-        locked: i==2,
-        name: "Renegade X Server",
-        map: maps[i],
-        players: "0/40",
-        latency: "-",
-        display: true,
-        in_player_range: true,
-        same_version: true,
-        data: 1,
-      };
-    }
-    document.$("table").value = records;
+<script type="module">
+  import "events.mjs";
+
+  var records = new Array(6);
+  var maps = ["Fun Map!","Silly me...","There are no","Fun Maps","Only serious", "games allowed"];
+  var i;
+  for (i = 0; i < 6; i++) {
+    records[i] = {
+      index: i,
+      locked: i==2,
+      name: "Renegade X Server",
+      map: maps[i],
+      players: "0/40",
+      latency: "-",
+      display: true,
+      in_player_range: true,
+      same_version: true,
+      data: 1,
+    };
   }
+  document.$("table").value = records;
 </script>
 </head>
 <body>

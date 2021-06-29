@@ -17,12 +17,10 @@
         margin-right: 10dip;
       }
     </style>
-    <script type="text/tiscript">
-      function self.ready() {
-        var (sx,sy,sw,sh) = View.screenBox(0,"#workarea","#rectw");
-        var (w,h) = document.$("div.username-window").box("#dimension", #margin);
-        Window.this.xcall("move",  sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
-      }
+    <script type="module">
+      let (sx,sy,sw,sh) = Window.thisscreenBox(0,"#workarea","#rectw");
+      let (w,h) = document.$("div.username-window").box("#dimension", "#margin");
+      Window.this.xcall("move",  sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
 
       function setPlayername() {
         if (document.$("input|text.username").value != "") {
@@ -31,12 +29,12 @@
         }
       }
 
-      self.on("click","[onclick]",function(evt) {
+      document.on("click","[onclick]",function(evt) {
         console.log("onclick");
         return eval.call(evt.target, evt.target.getAttribute("onclick") );
       });
 
-      self.on("keypress","[enter]",function(evt) {
+      document.on("keypress","[enter]",function(evt) {
         if ( evt.keyCode != 13 && evt.keyCode != Event.VK_RETURN ) return;
         eval.call(evt.target, evt.target.getAttribute("enter"));
       });

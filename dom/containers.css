@@ -167,7 +167,7 @@ div.titlebar > .title {
 }
 
 .footer-margin {
-  aspect: footer_progress;
+  aspect: "footer_progress";
 }
 
 .join_server {

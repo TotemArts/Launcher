@@ -11,49 +11,47 @@
         padding: 0 0 !important;
       }
     </style>
-    <script type="text/tiscript">
-      function self.ready() {
-        var result = document.$("p.result");
-        var return_code = Window.this.xcall("get_return_code");
-        switch(return_code) {
-          case "Success":
-            result.text = "Launcher updated succesfully!";
-            document.$("button").classList.add("green");
-            document.$("button").classList.remove("orange");
-            document.$("button").text = "Affirmative!";
-            break;
-          case "InvalidArguments":
-            result.text = "Launcher update failed: Invalid Arguments!";
-            break;
-          case "KillFailure":
-            result.text = "Launcher update failed: Failed to terminate previous launcher!";
-            break;
-          case "DeletePermissionFailure":
-            result.text = "Launcher update failed: Not enough permissions to delete!";
-            break;
-          case "MovePermissionFailure":
-            result.text = "Launcher update failed: Not enough permissions to move!";
-            break;
-          case "DirectoryMissingFailure":
-            result.text = "Launcher update failed: Missing directory!";
-            break;
-          case "UnhandledException":
-            result.text = "Launcher update failed: Unhandled Exception!";
-            break;
-          case "UnknownError":
-            result.text = "Launcher update failed: Unknown Error!";
-            break;
-          default:
-            result.text = "Launcher update result unknown: " + return_code + ".";
-        }
-        Window.this.xcall("update");
-
-        var (sx,sy,sw,sh) = View.screenBox(0,"#workarea","#rectw");
-        var (w,h) = document.$("div.username-window").box("#dimension", #margin);
-        Window.this.xcall("move",  sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
+    <script type="text/javascript">
+      var result = document.$("p.result");
+      var return_code = Window.this.xcall("get_return_code");
+      switch(return_code) {
+        case "Success":
+          result.text = "Launcher updated succesfully!";
+          document.$("button").classList.add("green");
+          document.$("button").classList.remove("orange");
+          document.$("button").text = "Affirmative!";
+          break;
+        case "InvalidArguments":
+          result.text = "Launcher update failed: Invalid Arguments!";
+          break;
+        case "KillFailure":
+          result.text = "Launcher update failed: Failed to terminate previous launcher!";
+          break;
+        case "DeletePermissionFailure":
+          result.text = "Launcher update failed: Not enough permissions to delete!";
+          break;
+        case "MovePermissionFailure":
+          result.text = "Launcher update failed: Not enough permissions to move!";
+          break;
+        case "DirectoryMissingFailure":
+          result.text = "Launcher update failed: Missing directory!";
+          break;
+        case "UnhandledException":
+          result.text = "Launcher update failed: Unhandled Exception!";
+          break;
+        case "UnknownError":
+          result.text = "Launcher update failed: Unknown Error!";
+          break;
+        default:
+          result.text = "Launcher update result unknown: " + return_code + ".";
       }
+      Window.this.xcall("update");
 
-      self.on("click","[onclick]",function(evt) {
+      let (sx,sy,sw,sh) = Window.this.screenBox(0,"#workarea","#rectw");
+      let (w,h) = document.$("div.username-window").box("#dimension", "#margin");
+      Window.this.xcall("move",  sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
+
+      document.on("click","[onclick]",function(evt) {
         console.log("onclick");
         return eval.call(evt.target, evt.target.getAttribute("onclick") );
       });

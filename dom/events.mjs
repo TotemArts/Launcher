@@ -1,4 +1,4 @@
-import * as functional from "functional";
+'use strict';
 import * as sciter from "@sciter";
 import * as sys from "@sys";
 
@@ -7,7 +7,7 @@ Element.prototype.load = function(file) {
   return true;
 }
 
-class Emu {
+export class Emu {
   loadOutput() {
     for(var name in this.getAttributeNames()) {
       var attribute = output_variables[name];
@@ -214,7 +214,7 @@ class Emu {
   }
 }
 
-function bool_setting() {
+export function bool_setting() {
   this.post(this.classList.add(Window.this.xcall("get_setting", this.getAttribute("setting"))));
 
   this.on("click", function(evt) {
@@ -230,7 +230,7 @@ function bool_setting() {
   });
 }
 
-function filter() {
+export function filter() {
   var filterbar = document.$(".filterbar");
 
   this.on("click", function(evt) {
@@ -248,7 +248,7 @@ function filter() {
 
 document.on("keydown", function(evt) {
   if ( evt.keyCode == Event.VK_F5 ) {
-    self.reload();
+    document.reload();
   }
 });
 
@@ -269,12 +269,12 @@ document.on("~click", "checkmark[toggle]", function(evt) {
   return true;
 });
 
-function reload() {
+export function reload() {
   if( this.parent ) this.parent.load( this.url() );
   else Window.this.xcall("load", this.url());
 }
 
-function fillHeight() {
+export function fillHeight() {
   this.onSize = function() {
     var min_width = 0;
     for (var child in this) {
@@ -297,13 +297,18 @@ function fillHeight() {
 }
 
 document.on("click","[onclick]",function(evt) {
+  console.log("Executing eval of: \""+evt.target.getAttribute("onclick")+"\"");
   eval.call(evt.target, evt.target.getAttribute("onclick") );
   return false;
 });
 
-var current_page;
+export var current_page;
 
-function close_overlay() {
+export function set_current_page(page) {
+  current_page = page;
+}
+
+export function close_overlay() {
   if (document.$("div.menuEntries > .current")) {
     document.$("div.menuEntries > .current").classList.remove("current");
   }
