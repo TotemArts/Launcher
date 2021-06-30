@@ -1,7 +1,7 @@
 var messages = {};
 
 function newMessages(id, message) {
-  var shouldScroll = (document.$("div.chat").scroll("#bottom") > 0);
+  var shouldScroll = (document.$("div.chat").scroll("bottom") > 0);
 
   document.$("div.chat").append("<message id=\""+id+"\">"+message+"</message>");
 
@@ -12,7 +12,7 @@ function newMessages(id, message) {
 
 function scrollToBottom() {
   var chat = document.$("div.chat");
-  chat.scrollTo(0, chat.scroll("#bottom") + chat.scroll("#height") + chat.scroll("#top"), true);
+  chat.scrollTo(0, chat.scroll("bottom") + chat.scroll("#height") + chat.scroll("top"), true);
 }
 
 

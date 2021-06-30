@@ -210,7 +210,7 @@ function VirtualList(params) {
     
     function resetView() { 
     
-      var sy = list.scroll("#top");
+      var sy = list.scroll("top");
       
       if(list.first) {
         list.first.style#margin-top = undefined;
@@ -320,7 +320,7 @@ function VirtualList(params) {
         var extra = (end - start) * item_height; 
         var topm = buffer_start * item_height;
         
-        var sy = list.scroll("#top");
+        var sy = list.scroll("top");
         
         buffer_start += (end - start);
 
@@ -353,7 +353,7 @@ function VirtualList(params) {
         buffer_start -= end - start;
         assert(buffer_start >= 0);
         var extra = (end - start) * item_height;
-        var sy = list.scroll("#top");
+        var sy = list.scroll("top");
         list.scrollTo(0, sy - extra);
         if(list.first)
           list.first.style#margin-top = ppx(Integer.max(0,oldtop-extra));
@@ -484,7 +484,7 @@ function VirtualList(params) {
       else {
         var el = list[index - buffer_start];
         el.state.current = true;
-        var sy = list.scroll("#top");
+        var sy = list.scroll("top");
         if( y < sy )
           list.scrollTo(0, y,true); 
         else if( y + item_height > sy + list.scroll("#height") )
@@ -537,7 +537,7 @@ function VirtualList(params) {
 
     list.firstIndex = property(v) {
       get { 
-        var sy = list.scroll("#top");
+        var sy = list.scroll("top");
         return sy / item_height;
       }
       set {
@@ -599,7 +599,7 @@ class VGrid : Behavior
         el[0].classList.remove("locked");
       }
       if (r.data["NamePrefix"]) {
-        el[1].html = "<span.green>" + r.data["NamePrefix"] + "</span>&nbsp;" + el[1].html;
+        el[1].patch("<span.green>" + r.data["NamePrefix"] + "</span>&nbsp;" + el[1].html);
       }
     };
 

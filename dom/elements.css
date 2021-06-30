@@ -384,7 +384,7 @@ table.servers {
 
 @set serverTable {
   table:root {
-    //prototype: VGrid url(vlist.mjs);  
+    //prototype: VGrid url(vlist.js);  
     flow:table-fixed;
     border-spacing:0;
     padding:0;
@@ -408,7 +408,7 @@ table.servers {
     behavior:clickable;
   }
   th.sortable {
-    //prototype: VTh url(vlist.mjs);
+    //prototype: VTh url(vlist.js);
   }
   
   table:root[resizeable] > thead {

@@ -19,7 +19,7 @@
     </style>
     <script type="module">
       let (sx,sy,sw,sh) = Window.thisscreenBox(0,"#workarea","#rectw");
-      let (w,h) = document.$("div.username-window").box("#dimension", "#margin");
+      let (w,h) = document.$("div.username-window").box("dimension", "margin");
       Window.this.xcall("move",  sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
 
       function setPlayername() {

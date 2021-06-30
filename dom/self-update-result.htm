@@ -45,16 +45,26 @@
         default:
           result.text = "Launcher update result unknown: " + return_code + ".";
       }
-      Window.this.xcall("update");
+      Window.this.update();
 
-      let (sx,sy,sw,sh) = Window.this.screenBox(0,"#workarea","#rectw");
-      let (w,h) = document.$("div.username-window").box("#dimension", "#margin");
-      Window.this.xcall("move",  sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
+      Element.prototype.box = function(boxPart, boxOf) {
+        if (boxPart == "dimension" && boxOf == "margin") {
+          let style = getComputedStyle(this);
+          let width = this.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight);
+          let height = this.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
+          return [width, height];
+        }
+      }
 
-      document.on("click","[onclick]",function(evt) {
-        console.log("onclick");
-        return eval.call(evt.target, evt.target.getAttribute("onclick") );
+      let [sx,sy,sw,sh] = Window.this.screenBox("workarea","rectw");
+      let [w,h] = document.$("div.username-window").box("dimension", "margin");
+      Window.this.move(sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
+
+
+      document.on("click","[close]",function(evt) {
+        Window.this.close();
       });
+
     </script>
   </head>
   <body>
@@ -64,7 +74,7 @@
       </div>
       <div.child-margin.vflow>
         <p.result></p>
-        <button.orange onclick="Window.this.xcall('close');">Negative!</button>
+        <button.orange close>Negative!</button>
       </div>
     </div>
   </body>
