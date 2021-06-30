@@ -12,13 +12,21 @@
       }
     </style>
     <script type="text/javascript">
-      let (sx,sy,sw,sh) = Window.this.screenBox(0,"#workarea","#rectw");
-      let (w,h) = document.$("div.username-window").box("#dimension", "#margin");
-      Window.this.xcall("move",  sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
+      Element.prototype.box = function(boxPart, boxOf) {
+        if (boxPart == "dimension" && boxOf == "margin") {
+          let style = getComputedStyle(this);
+          let width = this.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight);
+          let height = this.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
+          return [width, height];
+        }
+      }
+      let [sx,sy,sw,sh] = Window.this.screenBox("workarea","rectw");
+      let [w,h] = document.$("div.username-window").box("dimension", "margin");
 
-      document.on("click","[onclick]",function(evt) {
-        console.log("onclick");
-        return eval.call(evt.target, evt.target.getAttribute("onclick") );
+      Window.this.move(sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
+
+      document.on("click","[close]",function(evt) {
+        Window.this.close();
       });
     </script>
   </head>
@@ -29,7 +37,7 @@
       </div>
       <div.child-margin.vflow>
         <p.result>Another Instance of the launcher is still running, use that instance, of close all instances and try again!</p>
-        <button.orange onclick="Window.this.xcall('close');">Negative!</button>
+        <button.orange close>Negative!</button>
       </div>
     </div>
   </body>

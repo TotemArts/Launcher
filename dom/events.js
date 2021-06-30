@@ -1,13 +1,17 @@
-'use strict';
-import * as sciter from "@sciter";
-import * as sys from "@sys";
+var sciter;
+var sys;
+
+(async () => {
+sciter = await import("@sciter");
+sys = await import("@sys");
 
 Element.prototype.load = function(file) {
   this.innerHTML = sciter.decode(sys.fs.$readfile("dom/" + file));
   return true;
 }
+})();
 
-export class Emu {
+class Emu {
   loadOutput() {
     for(var name in this.getAttributeNames()) {
       var attribute = output_variables[name];
@@ -120,10 +124,10 @@ export class Emu {
     this.on("change", function(evt) {
         var entry = evt.target.value[evt.target.tbody.currentIndex].data;
         output_variables["title_menu"] = entry["Name"];
-        document.$("#mine-limit").html = entry["Variables"]["Mine Limit"].toString();
-        document.$("#player-limit").html = entry["Variables"]["Player Limit"].toString();
-        document.$("#vehicle-limit").html = entry["Variables"]["Vehicle Limit"].toString();
-        document.$("#time-limit").html = entry["Variables"]["Time Limit"].toString();
+        document.$("#mine-limit").patch(entry["Variables"]["Mine Limit"].toString());
+        document.$("#player-limit").patch(entry["Variables"]["Player Limit"].toString());
+        document.$("#vehicle-limit").patch(entry["Variables"]["Vehicle Limit"].toString());
+        document.$("#time-limit").patch(entry["Variables"]["Time Limit"].toString());
         tick_checkmark(document.$("checkmark#crates"), entry["Variables"]["bSpawnCrates"]);
         tick_checkmark(document.$("checkmark#steam"), entry["Variables"]["bSteamRequired"]);
         tick_checkmark(document.$("checkmark#ranked"), true);
@@ -134,8 +138,8 @@ export class Emu {
         video.videoLoad(Window.this.xcall("get_video_location", entry["Current Map"]).replace("file:///", ""));
         video.videoPlay(0.0);
         var mapName = currentMap.split("-",1);
-        document.$("#game-mode").html = mapName[0];
-        document.$("#map-name").html = mapName[1].replace("_", " ");
+        document.$("#game-mode").patch(mapName[0]);
+        document.$("#map-name").patch(mapName[1].replace("_", " "));
       });
     this.on("click", "th.sortable", function(evt) {
       evt.target.sortVlist();
@@ -214,7 +218,7 @@ export class Emu {
   }
 }
 
-export function bool_setting() {
+function bool_setting() {
   this.post(this.classList.add(Window.this.xcall("get_setting", this.getAttribute("setting"))));
 
   this.on("click", function(evt) {
@@ -230,7 +234,7 @@ export function bool_setting() {
   });
 }
 
-export function filter() {
+function filter() {
   var filterbar = document.$(".filterbar");
 
   this.on("click", function(evt) {
@@ -269,12 +273,12 @@ document.on("~click", "checkmark[toggle]", function(evt) {
   return true;
 });
 
-export function reload() {
+function reload() {
   if( this.parent ) this.parent.load( this.url() );
   else Window.this.xcall("load", this.url());
 }
 
-export function fillHeight() {
+function fillHeight() {
   this.onSize = function() {
     var min_width = 0;
     for (var child in this) {
@@ -302,13 +306,13 @@ document.on("click","[onclick]",function(evt) {
   return false;
 });
 
-export var current_page;
+var current_page;
 
-export function set_current_page(page) {
+function set_current_page(page) {
   current_page = page;
 }
 
-export function close_overlay() {
+function close_overlay() {
   if (document.$("div.menuEntries > .current")) {
     document.$("div.menuEntries > .current").classList.remove("current");
   }
