@@ -2,13 +2,13 @@ var sciter;
 var sys;
 
 (async () => {
-sciter = await import("@sciter");
-sys = await import("@sys");
+  sciter = await import("@sciter");
+  sys = await import("@sys");
 
-Element.prototype.load = function(file) {
-  this.content(sciter.decode(sys.fs.$readfile("dom/" + file)));
-  return true;
-}
+  Element.prototype.load = function(file) {
+    this.content(sciter.decode(sys.fs.$readfile("dom/" + file)));
+    return true;
+  }
 })();
 
 class Emu {
@@ -219,7 +219,7 @@ class Emu {
 }
 
 function bool_setting() {
-  this.post(this.classList.add(Window.this.xcall("get_setting", this.getAttribute("setting"))));
+  this.classList.add(Window.this.xcall("get_setting", this.getAttribute("setting")));
 
   this.on("click", function(evt) {
     if(evt.target.classList.contains("true")) {
@@ -279,30 +279,33 @@ function reload() {
 }
 
 function fillHeight() {
-  this.onSize = function() {
+  this.onSize = function(evt) {
     var min_width = 0;
-    for (var child in this) {
+    for (var child in evt.target) {
+      console.log(child);
       min_width += child.toPixels(child.style["-min"]);
     }
-    var parent_width = this.box("#width", "#border", "#parent");
-    for (var child in this) {
+    var parent_width = evt.target.box("#width", "#border", "#parent");
+    for (var child in evt.target) {
       if( parent_width >= min_width ) {
-        if(this.style["flow"] != "horizontal") {
-          this.style["flow"] = "horizontal";
+        if(evt.target.style["flow"] != "horizontal") {
+          evt.target.style["flow"] = "horizontal";
         }
       } else {
-        if(this.style["flow"] != "vertical") {
-          this.style["flow"] = "vertical";
+        if(evt.target.style["flow"] != "vertical") {
+          evt.target.style["flow"] = "vertical";
         }
       }
     }
   };
-  this.onSize();
+
 }
 
 document.on("click","[onclick]",function(evt) {
   console.log("Executing eval of: \""+evt.target.getAttribute("onclick")+"\"");
-  eval.call(evt.target, evt.target.getAttribute("onclick") );
+  console.log(this);
+  console.log(evt.target);
+  eval.call(this, evt.target.getAttribute("onclick") );
   return false;
 });
 
