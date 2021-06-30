@@ -599,7 +599,7 @@ class VGrid : Behavior
         el[0].classList.remove("locked");
       }
       if (r.data["NamePrefix"]) {
-        el[1].patch("<span.green>" + r.data["NamePrefix"] + "</span>&nbsp;" + el[1].html);
+        el[1].content("<span.green>" + r.data["NamePrefix"] + "</span>&nbsp;" + el[1].html);
       }
     };
 

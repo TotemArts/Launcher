@@ -6,7 +6,7 @@ sciter = await import("@sciter");
 sys = await import("@sys");
 
 Element.prototype.load = function(file) {
-  this.innerHTML = sciter.decode(sys.fs.$readfile("dom/" + file));
+  this.content(sciter.decode(sys.fs.$readfile("dom/" + file)));
   return true;
 }
 })();
@@ -124,10 +124,10 @@ class Emu {
     this.on("change", function(evt) {
         var entry = evt.target.value[evt.target.tbody.currentIndex].data;
         output_variables["title_menu"] = entry["Name"];
-        document.$("#mine-limit").patch(entry["Variables"]["Mine Limit"].toString());
-        document.$("#player-limit").patch(entry["Variables"]["Player Limit"].toString());
-        document.$("#vehicle-limit").patch(entry["Variables"]["Vehicle Limit"].toString());
-        document.$("#time-limit").patch(entry["Variables"]["Time Limit"].toString());
+        document.$("#mine-limit").content(entry["Variables"]["Mine Limit"].toString());
+        document.$("#player-limit").content(entry["Variables"]["Player Limit"].toString());
+        document.$("#vehicle-limit").content(entry["Variables"]["Vehicle Limit"].toString());
+        document.$("#time-limit").content(entry["Variables"]["Time Limit"].toString());
         tick_checkmark(document.$("checkmark#crates"), entry["Variables"]["bSpawnCrates"]);
         tick_checkmark(document.$("checkmark#steam"), entry["Variables"]["bSteamRequired"]);
         tick_checkmark(document.$("checkmark#ranked"), true);
@@ -138,8 +138,8 @@ class Emu {
         video.videoLoad(Window.this.xcall("get_video_location", entry["Current Map"]).replace("file:///", ""));
         video.videoPlay(0.0);
         var mapName = currentMap.split("-",1);
-        document.$("#game-mode").patch(mapName[0]);
-        document.$("#map-name").patch(mapName[1].replace("_", " "));
+        document.$("#game-mode").content(mapName[0]);
+        document.$("#map-name").content(mapName[1].replace("_", " "));
       });
     this.on("click", "th.sortable", function(evt) {
       evt.target.sortVlist();

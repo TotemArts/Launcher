@@ -3,7 +3,7 @@ import * as sciter from "@sciter";
 import * as sys from "@sys";
 
 Element.prototype.load = function(file) {
-  this.innerHTML = sciter.decode(sys.fs.$readfile("dom/" + file));
+  this.content(sciter.decode(sys.fs.$readfile("dom/" + file)));
   return true;
 }
 
@@ -65,15 +65,15 @@ function set_footer() {
   switch(output_variables["current_action"]) {
     case "None":
       if(!output_variables["update_available"]) {
-        footer.patch("<div.hexpand.hflow.vcenter><p.uppercase.green.hexpand.vcenter>&#10003; Your game is up-to-date!</p><button.green #launch>Launch to Menu</button></div>");
+        footer.content("<div.hexpand.hflow.vcenter><p.uppercase.green.hexpand.vcenter>&#10003; Your game is up-to-date!</p><button.green #launch>Launch to Menu</button></div>");
         document.$("button.green#launch").setAttribute("onclick", "launchGame(\"\");")
       } else {
-        footer.patch("<div.hexpand.hflow.vcenter><p.uppercase.red.hexpand.vcenter>&#10005; "+output_variables["popup_title"]+"</p><button.green #update>"+output_variables["popup_green"]+" Game</button></div>");
+        footer.content("<div.hexpand.hflow.vcenter><p.uppercase.red.hexpand.vcenter>&#10005; "+output_variables["popup_title"]+"</p><button.green #update>"+output_variables["popup_green"]+" Game</button></div>");
         document.$("button.green#update").setAttribute("onclick", output_variables["button_onclick"]);
       }
       break;
     default:
-      footer.patch("<div.downloadBar><progressbar.indicator update_progress/></div><p.nowrap style=\"float:left;\"><output current_action/>: <span.green><output update_progress/>%</span></p><p overlay=\"verify.htm\" style=\"float:right;\">more details</p>");
+      footer.content("<div.downloadBar><progressbar.indicator update_progress/></div><p.nowrap style=\"float:left;\"><output current_action/>: <span.green><output update_progress/>%</span></p><p overlay=\"verify.htm\" style=\"float:right;\">more details</p>");
       console.log("set_footer: Unhandled case for: " + output_variables["current_action"]);
   }
 }
@@ -105,18 +105,18 @@ function image_callback(bytes) {
     if(image && url) {
       var url_regex = new RegExp(escaped_url, "g");
       var filetype = escaped_url.split('.').pop();
-      news_items[id].patch(news_items[id].html.replace(url_regex, "data:image/webp;base64,"+image.toBytes("#webp", 100).toString("base64")));
+      news_items[id].content(news_items[id].html.replace(url_regex, "data:image/webp;base64,"+image.toBytes("#webp", 100).toString("base64")));
     } else {
       console.log("Image at url \""+escaped_url+"\" appears to be damaged.");
       var escaped_tag = "<img[^>]+?src=\""+escaped_url+"\"[^>]*?\/>";
       var image_regex = new RegExp(escaped_tag, "g");
-      news_items[id].patch(news_items[id].html.replace(image_regex, ""));
+      news_items[id].content(news_items[id].html.replace(image_regex, ""));
     }
   } else {
     console.log("Image at url \""+escaped_url+"\" appears to be missing.");
     var escaped_tag = "<img[^>]+?src=\""+escaped_url+"\"[^>]*?\/>";
     var image_regex = new RegExp(escaped_tag, "g");
-    news_items[id].patch(news_items[id].html.replace(image_regex, ""));
+    news_items[id].content(news_items[id].html.replace(image_regex, ""));
   }
   var regex = /<img[^>]+?src="(http[^"]+?\.(?!gif)[^"]{3,4}(?:\?[^"]+?)?)"[^>]*?>/;
   var img = news_items[id].html.match(regex);
@@ -141,7 +141,7 @@ function load_news_item(text) {
   var iframe_regex = /<i?frame[^>]*?(?:\/>|>[^<>]*?<\/i?frame>)/g;
   text = text.replace(iframe_regex, "");
 
-  news_items[id].patch(text);
+  news_items[id].content(text);
   if (this.frame) this.frame.load(text,"");
   var regex = /<img[^>]+?src="(http[^"]+?\.(?!gif)[^"]{3,4}(?:\?[^"]+?)?)"[^>]*?>/;
   var img = text.match(regex);
@@ -464,7 +464,7 @@ function resetGameUI() {
 
 
 Element.prototype.load = function(file) {
-  this.innerHTML = sciter.decode(sys.fs.$readfile("dom/" + file));
+  this.content(sciter.decode(sys.fs.$readfile("dom/" + file)));
   return true;
 }
 
@@ -581,10 +581,10 @@ class Emu {
     this.on("change", function(evt) {
         var entry = evt.target.value[evt.target.tbody.currentIndex].data;
         output_variables["title_menu"] = entry["Name"];
-        document.$("#mine-limit").patch(entry["Variables"]["Mine Limit"].toString());
-        document.$("#player-limit").patch(entry["Variables"]["Player Limit"].toString());
-        document.$("#vehicle-limit").patch(entry["Variables"]["Vehicle Limit"].toString());
-        document.$("#time-limit").patch(entry["Variables"]["Time Limit"].toString());
+        document.$("#mine-limit").content(entry["Variables"]["Mine Limit"].toString());
+        document.$("#player-limit").content(entry["Variables"]["Player Limit"].toString());
+        document.$("#vehicle-limit").content(entry["Variables"]["Vehicle Limit"].toString());
+        document.$("#time-limit").content(entry["Variables"]["Time Limit"].toString());
         tick_checkmark(document.$("checkmark#crates"), entry["Variables"]["bSpawnCrates"]);
         tick_checkmark(document.$("checkmark#steam"), entry["Variables"]["bSteamRequired"]);
         tick_checkmark(document.$("checkmark#ranked"), true);
@@ -595,8 +595,8 @@ class Emu {
         video.videoLoad(Window.this.xcall("get_video_location", entry["Current Map"]).replace("file:///", ""));
         video.videoPlay(0.0);
         var mapName = currentMap.split("-",1);
-        document.$("#game-mode").patch(mapName[0]);
-        document.$("#map-name").patch(mapName[1].replace("_", " "));
+        document.$("#game-mode").content(mapName[0]);
+        document.$("#map-name").content(mapName[1].replace("_", " "));
       });
     this.on("click", "th.sortable", function(evt) {
       evt.target.sortVlist();
