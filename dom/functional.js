@@ -37,7 +37,7 @@ const server_observer = {
     console.log("receiver: " + receiver);
 
     if (changeDefinition[0] == "update-range" || changeDefinition[0] == "add-range") {
-      for (var value in receiver) {
+      for (var value of receiver) {
         console.log("Should observe: " + value);
         //Object.addObserver(value, server_observer);
       }
@@ -54,7 +54,7 @@ const server_observer = {
   }
 }
 
-const server_list = new Proxy(server_list_proxied, server_observer);
+const server_list = new Proxy(filtered_server_list, server_observer);
 
 
 var news_items = [];
@@ -153,6 +153,7 @@ function load_news_item(text) {
 
 const variable_observer = { 
   set: function(target, prop, receiver) {
+    console.log("observed variable: " + prop);
     for(const element of document.$$("output["+prop+"]") ) {
       element.setAttribute("value", Number(receiver)==0?"0":receiver);
     }
@@ -278,7 +279,7 @@ function getServersCallback(results) {
   var old_length = server_list.length;
   output_variables["players_online"] = 0;
   for (var i = 0; i < old_length; i++) updated[i] = false;
-  for(var changed in results) {
+  for(var changed of results) {
     if(!changed) continue;
     var in_range = changed["Players"] >= output_variables["server_filter_players_min"] &&  changed["Players"] <= output_variables["server_filter_players_max"];
     var result = {
@@ -293,7 +294,7 @@ function getServersCallback(results) {
       same_version: changed["Game Version"] == output_variables["game_version"],
       data: changed,
     }
-    output_variables["players_online"] += changed["Players"].toInteger();
+    output_variables["players_online"] += Number(changed["Players"]);
     Window.this.xcall("get_ping", result.data["IP"]+":"+result.data["Port"], onPingResult);
     var exists = false;
     for (var i = 0; i < old_length; i++) {
@@ -316,21 +317,21 @@ function updateFilter(arg1, arg2 = undefined) {
   if (arg2) {
     var min = arg1;
     var max = arg2;
-    for(var i = 0; i < server_list.length; i++) {
-      if(server_list[i].data["Players"] >= min && server_list[i].data["Players"] <= max) {
-        server_list[i].in_player_range = true;
-        console.log(server_list[i].data["Game Version"]);
+    for(const server of server_list) {
+      if(server.data["Players"] >= min && server.data["Players"] <= max) {
+        server.in_player_range = true;
+        console.log(server.data["Game Version"]);
         console.log(output_variables["game_version"]);
-        server_list[i].display = document.$("div.filterbar > checkmark").classList.contains("checked")?(server_list[i].data["Game Version"] == output_variables["game_version"]):true;
+        server.display = document.$("div.filterbar > checkmark").classList.contains("checked")?(server.data["Game Version"] == output_variables["game_version"]):true;
       } else {
-        server_list[i].in_player_range = false;
-        server_list[i].display = false;
+        server.in_player_range = false;
+        server.display = false;
       }
     }
   } else {
     var same_version = arg1;
-    for(var i = 0; i < server_list.length; i++) {
-      server_list[i].display = server_list[i].in_player_range && same_version?(server_list[i].data["Game Version"] == output_variables["game_version"]):true;
+    for(const server of server_list) {
+      server.display = server.in_player_range && same_version?(server.data["Game Version"] == output_variables["game_version"]):true;
     }
   }
 }

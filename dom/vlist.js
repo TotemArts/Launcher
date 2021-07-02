@@ -18,7 +18,7 @@
 
 function VirtualList(params) {
 
-    const list = params.container; assert list;
+    const list = params.container;
     
     var   buffer_size = 50;   // sliding buffer size, number of DOM elements in the view, will be recalulated in onSize
     var   records = null; 
@@ -95,9 +95,9 @@ function VirtualList(params) {
 
     function calcMetrics() // calcs item_height, returns true if buffer_size was increased; 
     {
-      if(list.first)
-        item_height = list.first.box("#height","#border"); // adjust real item height
-      var ch = isContentDependent(list) ? list.parent.box("#height","#inner") : list.box("#height","#client");
+      if(list.firstElementChild)
+        item_height = list.firstElementChild.box("#height","border"); // adjust real item height
+      var ch = isContentDependent(list) ? list.parentElement.box("#height","inner") : list.box("#height","#client");
       var vi = ch / (item_height || 10);
       visible_items = vi;
       const old_buffer_size = buffer_size;
@@ -117,29 +117,29 @@ function VirtualList(params) {
       
       if(list.last) {
         list.last.style#margin-bottom = undefined;
-        list.first.style#margin-top = undefined;
+        list.firstElementChild.style#margin-top = undefined;
       }
       
       for( var i = bso; i < bsn; ++i)
-        if(!list.first) 
+        if(!list.firstElementChild) 
           break;
         else {
           assert list.first;
-          removeRecViewer(list.first);
+          removeRecViewer(list.firstElementChild);
         }
      
       var ni = bsn + list.length;
       var niend = Integer.min(ni + buffer_size - list.length, records.length);
     
       var items = [];
-      for( var i in (niend - ni))
+      for( var i of (niend - ni))
       {
         var rec = recordAt(i + ni);
         var t = createRecViewer(rec);
         items.push(t);
       }
       list.append(items);
-      for(var (i,t) in items )
+      for(var (i,t) of items )
       {
         var t = items[i];
         var rec = t.data;
@@ -147,7 +147,7 @@ function VirtualList(params) {
         showRecord(i + ni,rec,t);
       }      
     
-      if(list.first) {
+      if(list.firstElementChild) {
         if(item_height == 10)
         {
           const old_buffer_size = buffer_size;
@@ -155,13 +155,13 @@ function VirtualList(params) {
           if(item_height != 10 || old_buffer_size != buffer_size)
           {
             var niend_new = Integer.min(bsn + buffer_size, records.length);
-            for(var i in (niend - niend_new))
+            for(var i of (niend - niend_new))
               removeRecViewer(list.last);
             niend = niend_new;
           }
         }
 
-        list.first.style#margin-top = ppx( bsn * item_height );
+        list.firstElementChild.style#margin-top = ppx( bsn * item_height );
         if(niend < records.length) {
           var extra = (records.length - niend) * item_height;
           list.last.style#margin-bottom = ppx(extra);
@@ -175,7 +175,7 @@ function VirtualList(params) {
 
       if(list.last) {
         list.last.style#margin-bottom = undefined;
-        list.first.style#margin-top = undefined;
+        list.firstElementChild.style#margin-top = undefined;
       }
       
       while( list.length )
@@ -198,8 +198,8 @@ function VirtualList(params) {
           break;
       }
             
-      if(list.first) {
-        list.first.style#margin-top = ppx( buffer_start * item_height );
+      if(list.firstElementChild) {
+        list.firstElementChild.style#margin-top = ppx( buffer_start * item_height );
         if(buffer_start + list.length < records.length) {
           var extra = (records.length - buffer_start - list.length) * item_height;
           if(extra > 0)
@@ -212,13 +212,13 @@ function VirtualList(params) {
     
       var sy = list.scroll("top");
       
-      if(list.first) {
-        list.first.style#margin-top = undefined;
+      if(list.firstElementChild) {
+        list.firstElementChild.style#margin-top = undefined;
         list.last.style#margin-bottom = undefined;
       }
       
       function findElementFor(rec) { 
-        for(var el in list) { 
+        for(var el of list) { 
           if( el.data === rec )
             return (el, false);
         }
@@ -255,9 +255,9 @@ function VirtualList(params) {
         showRecord(i,rec,t);
       }
       
-      if(list.first) {
+      if(list.firstElementChild) {
         var before = buffer_start * item_height;
-        list.first.style#margin-top = ppx( before );
+        list.firstElementChild.style#margin-top = ppx( before );
         var rest = records.length - (buffer_start + list.length);
         var after = rest >= 0? rest * item_height : 0;
         list.last.style#margin-bottom = ppx(after);
@@ -324,7 +324,7 @@ function VirtualList(params) {
         
         buffer_start += (end - start);
 
-        list.first.style#margin-top = ppx(topm + extra);
+        list.firstElementChild.style#margin-top = ppx(topm + extra);
         list.update();
         list.scrollTo(0, sy + extra);
       } 
@@ -355,8 +355,8 @@ function VirtualList(params) {
         var extra = (end - start) * item_height;
         var sy = list.scroll("top");
         list.scrollTo(0, sy - extra);
-        if(list.first)
-          list.first.style#margin-top = ppx(Integer.max(0,oldtop-extra));
+        if(list.firstElementChild)
+          list.firstElementChild.style#margin-top = ppx(Integer.max(0,oldtop-extra));
       }
       else if( start > buffer_start + buffer_size ) {
         var extra = (records.length - buffer_start - list.length) * item_height;
@@ -441,7 +441,7 @@ function VirtualList(params) {
         }
         if(list.last) {
           list.last.style#margin-bottom = undefined;
-          list.first.style#margin-top = undefined;
+          list.firstElementChild.style#margin-top = undefined;
         }
         list.clear(); 
         if( records )
@@ -621,7 +621,7 @@ class VGrid : Behavior
 class VTh : Behavior 
 {
   function sortVlist() {
-    var vlist = this.parent.parent.parent;
+    var vlist = this.parentElement.parent.parent;
     var name = this.getAttribute("name");
     var order = this.getAttribute("order");
     function cmpascend(a,b) {
@@ -658,7 +658,7 @@ class VTh : Behavior
        vlist.value.sort(cmpascend);
     } else {
       // the column was not ordered before, remove @order from other columns
-      if(var psort = this.parent.$("th[order]") ) {
+      if(var psort = this.parentElement.$("th[order]") ) {
         psort.setAttribute("order", undefined); // remove the attribute from previously ordered sibling
       }
       // set this column as ascend order:

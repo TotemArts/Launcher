@@ -1,15 +1,29 @@
 var sciter;
 var sys;
 
-Element.prototype.box = function(boxPart, boxOf) {
-  if (boxPart == "dimension" && boxOf == "margin") {
+Element.prototype.box = function(part, edge = undefined, relativeTo = undefined) {
+  if (part == "dimension" && edge == "margin" && relativeTo == undefined) {
     let style = getComputedStyle(this);
     let width = this.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight);
     let height = this.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
     return [width, height];
-  } else {
-    console.log("Tried to box with boxPart: \"" + boxPart + "\" and boxOf: \""+ boxOf +"\"");
+  } else if (part == "left" && edge == "outer" && relativeTo == "parent") {
+    let style = getComputedStyle(this);
+    return this.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight);
+  } else if (part && edge && relativeTo) {
+    console.log("Tried to box with part: \"" + part + "\" and edge: \""+ edge +"\" and relativeTo: \""+ relativeTo +"\"");
+    return 0;
+  } else if (part && edge) {
+    console.log("Tried to box with part: \"" + part + "\" and edge: \""+ edge +"\"");
+    return 0;
+  } else if (part) {
+    console.log("Tried to box with part: \"" + part + "\"");
+    return 0;
   }
+};
+
+Date.prototype.monthName = function(longFormat) {
+  return this.toUTCString().split(' ')[2]
 };
 
 (async () => {
@@ -22,12 +36,16 @@ Element.prototype.box = function(boxPart, boxOf) {
   };
 })();
 
-class Emu {
-  loadOutput() {
-    for(var name in this.getAttributeNames()) {
+var Emu = {
+  loadOutput: function() {
+    console.log("loadOutput " + this);
+    for(var name of this.getAttributeNames()) {
+      console.log("Checking value for " + name);
+
       var attribute = output_variables[name];
       if(attribute==0) attribute = "0";
       if(attribute) {
+        console.log("setting value for " + name);
         switch (this.tag) {
           case "output":
             this.value = attribute;
@@ -38,9 +56,9 @@ class Emu {
         }
       }
     }
-  }
+  },
 
-  videoHandler() {
+  videoHandler: function() {
     var video = this;
     video.shouldPlay = true;
 
@@ -56,17 +74,17 @@ class Emu {
           return false; 
       }
     }  
-  }
+  },
 
-  news_image() {
+  news_image: function() {
     if (this.classList.getAttribute("width")) {
-      this.setAttribute("width", (this.getAttribute("width").toNumber()/10) + "%");
+      this.setAttribute("width", (Number(this.getAttribute("width"))/10) + "%");
     } else {
       this.setAttribute("width", "100%");
     }
-  }
+  },
 
-  chat_menu() {
+  chat_menu: function() {
     var chat = document.$("div.chat");
     console.log("Context menu enabled!");
     if (chat.selection.html != "") {
@@ -74,22 +92,22 @@ class Emu {
     } else {
       this.$("#copy").state.disabled = true;
     }
-  }
+  },
 
-  render_news_items() {
+  render_news_items: function() {
     var frame = document.$("#news")
     for (var i=0; i<news_items.length;i++) {
       var date = new Date(news_items[i].pubDate);
-      var date_string = "<day>" + (date.day<10?'0':'') + date.day + "</day><month>" + date.monthName(false) + "</month>";
+      var date_string = "<day>" + (date.getDay() <10?'0':'') + date.getDay() + "</day><month>" + date.monthName(false) + "</month>";
       var type_string = "General";
       if (news_items[i].title.match(/\sPATCH\s/i)) type_string = "Patch";
       this.append("<div.news_item.hflow id="+i+"><pubDate>"+date_string+"</pubDate><div.vflow><p.news_type>"+type_string+"</p><p.news_title>"+news_items[i].title+"</p></div></div>");
-      var element = this.lastNode;
+      var element = this.lastChild;
       element.on("click", function(evt) {
-        var id = evt.target.getAttribute("id").toNumber();
+        var id = Number(evt.target.getAttribute("id"));
         frame_id = id;
         output_variables["current_news_title"] = news_items[id].title;
-        var current = evt.target.parent.$(".current");
+        var current = evt.target.parentElement.$(".current");
         if (current) current.classList.remove("current");
         evt.target.classList.add("current");
         if (news_items[id].html) {
@@ -103,7 +121,7 @@ class Emu {
     if (news_items.length > 0) {
       var id = 0;
       frame_id = 0;
-      this.first.classList.add("current");
+      this.firstElementChild.classList.add("current");
       output_variables["current_news_title"] = news_items[0].title;
       if (news_items[0].html) {
         frame.load(news_items[0].html, "");
@@ -112,9 +130,9 @@ class Emu {
         Window.this.xcall("fetch_resource", news_items[id].link+"?preview=1", {Referer: "https://renegade-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", TE: "Trailers", Pragma: "no-cache"}, load_news_item, {id: id, frame: frame});
       }
     }
-  }
+  },
 
-  spoiler() {
+  spoiler: function() {
     var spoiler = this.next;
     this.on("click", function(evt) {
       if (spoiler.style["visibility"] == "collapse") {
@@ -125,12 +143,12 @@ class Emu {
         console.log("Weird");
       }
     });
-  }
+  },
 
-  server_table() {
+  server_table: function() {
     this.value = filtered_server_list;
 
-    this.tbody.currentIndex = 0;
+    this.$("tbody").currentIndex = 0;
     // The following event happens when the user changes the entry in the list, and will update the currently selected entry on the rest of the page
     this.on("change", function(evt) {
         var entry = evt.target.value[evt.target.tbody.currentIndex].data;
@@ -158,15 +176,15 @@ class Emu {
     this.on("dblclick", "tr", function() {
       joinServer();
     });
-  }
+  },
 
-  moveSliders() {
+  moveSliders: function() {
     var mousepressed = false;
     var element = this.$(".start");
-    var min = this.getAttribute("minValue").toInteger();
-    var max = this.getAttribute("maxValue").toInteger();
-    var minPercentage = 100.0*this.getAttribute("min").toFloat()/(max-min).toFloat();
-    var maxPercentage = 100.0*this.getAttribute("max").toFloat()/(max-min).toFloat();
+    var min = Number(this.getAttribute("minValue"));
+    var max = Number(this.getAttribute("maxValue"));
+    var minPercentage = 100.0*this.getAttribute("min")/(max-min);
+    var maxPercentage = 100.0*this.getAttribute("max")/(max-min);
     function updateRange() {
       this.$("div.slider > div.range").style["width"] = maxPercentage - minPercentage + "%";
       this.$("div.slider > div.range").style["left"] = minPercentage + "%";
@@ -174,40 +192,40 @@ class Emu {
     }
 
     function updateElementByValue(integerValue) {
-        var width_element = element.box("#width","#outer");
-        var percentage_offset = 100.0*(width_element/2).toFloat()/element.parent.box("#width","#inner","#parent").toFloat();
-        var snapToEvery = 100.0/(max - min).toFloat();
-        element.style["left"] = integerValue.toFloat()*snapToEvery-percentage_offset+"%";
+        var width_element = element.box("width","outer");
+        var percentage_offset = 100.0*(width_element/2)/element.parentElement.box("width","inner","parent");
+        var snapToEvery = 100.0/(max - min);
+        element.style["left"] = integerValue*snapToEvery-percentage_offset+"%";
         element.style["right"] = "auto";
         if(element == this.$(".start")) {
-          if(element.parent.getAttribute("min") != min + integerValue) {
-            element.parent.setAttribute("min", min + integerValue);
-            minPercentage = integerValue.toFloat()*snapToEvery-percentage_offset;
+          if(element.parentElement.getAttribute("min") != min + integerValue) {
+            element.parentElement.setAttribute("min", min + integerValue);
+            minPercentage = integerValue*snapToEvery-percentage_offset;
             updateRange();
-            element.parent.sendEvent(Event.CHANGE);
+            element.parentElement.post(Event.CHANGE);
           }
         } else {
-          if(element.parent.getAttribute("max") != min + integerValue) {
-            element.parent.setAttribute("max", min + integerValue);
-            maxPercentage = integerValue.toFloat()*snapToEvery-percentage_offset;
+          if(element.parentElement.getAttribute("max") != min + integerValue) {
+            element.parentElement.setAttribute("max", min + integerValue);
+            maxPercentage = integerValue*snapToEvery-percentage_offset;
             updateRange();
-            element.parent.sendEvent(Event.CHANGE);
+            element.parentElement.post(Event.CHANGE);
           }
         }
     }
 
     document.$("body").on("mousemove", function(evt) {
       if(mousepressed) {
-        var left = element.parent.box("#left","#outer","#parent");
-        var percentage = 100.0*(evt.x - left).toFloat()/element.parent.box("#width","#inner","#body").toFloat();
-        var snapToEvery = 100.0/(max - min).toFloat();
+        var left = element.parentElement.box("left","outer","parent");
+        var percentage = 100.0*(evt.x - left)/element.parentElement.box("width","inner","#body");
+        var snapToEvery = 100.0/(max - min);
         if(percentage > 100) percentage = 100.0;
         if(percentage < 0) percentage = 0.0;
-        var integerValue = (percentage/snapToEvery).toInteger();
-        if(element == element.parent.$(".start")) {
-          if(integerValue + 1 >= element.parent.getAttribute("max").toInteger()) integerValue = element.parent.getAttribute("max").toInteger() - 1;
+        var integerValue = (percentage/snapToEvery);
+        if(element == element.parentElement.$(".start")) {
+          if(integerValue + 1 >= Number(element.parentElement.getAttribute("max"))) integerValue = Number(element.parentElement.getAttribute("max")) - 1;
         } else {
-          if(integerValue - 1 <= element.parent.getAttribute("min").toInteger()) integerValue = element.parent.getAttribute("min").toInteger() + 1;
+          if(integerValue - 1 <= Number(element.parentElement.getAttribute("min"))) integerValue = Number(element.parentElement.getAttribute("min")) + 1;
         }
         updateElementByValue(integerValue);
       }
@@ -224,7 +242,7 @@ class Emu {
       element = evt.target;
     });
     this.on("change", function(evt) {
-      updateFilter(element.parent.getAttribute("min").toInteger(), element.parent.getAttribute("max").toInteger());
+      updateFilter(Number(element.parentElement.getAttribute("min")), Number(element.parentElement.getAttribute("max")));
     });
   }
 }
@@ -285,19 +303,19 @@ document.on("~click", "checkmark[toggle]", function(evt) {
 });
 
 function reload() {
-  if( this.parent ) this.parent.load( this.url() );
+  if( this.parent ) this.parentElement.load( this.url() );
   else Window.this.xcall("load", this.url());
 }
 
 function fillHeight() {
   this.onSize = function(evt) {
     var min_width = 0;
-    for (var child in evt.target) {
+    for (var child of evt.target) {
       console.log(child);
       min_width += child.toPixels(child.style["-min"]);
     }
-    var parent_width = evt.target.box("#width", "#border", "#parent");
-    for (var child in evt.target) {
+    var parent_width = evt.target.box("width", "border", "parent");
+    for (var child of evt.target) {
       if( parent_width >= min_width ) {
         if(evt.target.style["flow"] != "horizontal") {
           evt.target.style["flow"] = "horizontal";
@@ -314,9 +332,7 @@ function fillHeight() {
 
 document.on("click","[onclick]",function(evt) {
   console.log("Executing eval of: \""+evt.target.getAttribute("onclick")+"\"");
-  console.log(this);
-  console.log(evt.target);
-  eval.call(this, evt.target.getAttribute("onclick") );
+  eval.call(evt.target, evt.target.getAttribute("onclick") );
   return false;
 });
 
