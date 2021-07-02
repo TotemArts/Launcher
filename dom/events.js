@@ -1,6 +1,17 @@
 var sciter;
 var sys;
 
+Element.prototype.box = function(boxPart, boxOf) {
+  if (boxPart == "dimension" && boxOf == "margin") {
+    let style = getComputedStyle(this);
+    let width = this.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight);
+    let height = this.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
+    return [width, height];
+  } else {
+    console.log("Tried to box with boxPart: \"" + boxPart + "\" and boxOf: \""+ boxOf +"\"");
+  }
+};
+
 (async () => {
   sciter = await import("@sciter");
   sys = await import("@sys");
@@ -8,7 +19,7 @@ var sys;
   Element.prototype.load = function(file) {
     this.content(sciter.decode(sys.fs.$readfile("dom/" + file)));
     return true;
-  }
+  };
 })();
 
 class Emu {

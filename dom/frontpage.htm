@@ -21,7 +21,7 @@ var sys;
   Element.prototype.load = function(file) {
     this.content(sciter.decode(sys.fs.$readfile("dom/" + file)));
     return true;
-  }
+  };
 
   document.$("#content").load(document.$("div.current").getAttribute("page"));
   set_current_page(document.$("div.current"));
