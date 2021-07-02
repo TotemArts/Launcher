@@ -17,15 +17,23 @@
         margin-right: 10dip;
       }
     </style>
-    <script type="module">
-      let (sx,sy,sw,sh) = Window.thisscreenBox(0,"#workarea","#rectw");
-      let (w,h) = document.$("div.username-window").box("dimension", "margin");
-      Window.this.xcall("move",  sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
+    <script type="text/javascript">
+      Element.prototype.box = function(boxPart, boxOf) {
+        if (boxPart == "dimension" && boxOf == "margin") {
+          let style = getComputedStyle(this);
+          let width = this.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight);
+          let height = this.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
+          return [width, height];
+        }
+      };
+      let [sx,sy,sw,sh] = Window.this.screenBox("workarea","rectw");
+      let [w,h] = document.$("div.username-window").box("dimension", "margin");
+      Window.this.move(sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
 
       function setPlayername() {
         if (document.$("input|text.username").value != "") {
           Window.this.xcall("set_playername", document.$("input|text.username").value);
-          Window.this.xcall("close");
+          Window.this.close();
         }
       }
 

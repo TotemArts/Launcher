@@ -8,7 +8,7 @@ var sys;
   Element.prototype.load = function(file) {
     this.content(sciter.decode(sys.fs.$readfile("dom/" + file)));
     return true;
-  }
+  };
 })();
 
 var output_variables_proxied = {
@@ -38,6 +38,7 @@ const server_observer = {
 
     if (changeDefinition[0] == "update-range" || changeDefinition[0] == "add-range") {
       for (var value in receiver) {
+        console.log("Should observe: " + value);
         //Object.addObserver(value, server_observer);
       }
       for(var i = filtered_server_list.length; i >= 0; i--) filtered_server_list.remove(i);

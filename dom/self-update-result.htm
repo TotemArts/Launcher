@@ -54,7 +54,7 @@
           let height = this.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
           return [width, height];
         }
-      }
+      };
 
       let [sx,sy,sw,sh] = Window.this.screenBox("workarea","rectw");
       let [w,h] = document.$("div.username-window").box("dimension", "margin");
