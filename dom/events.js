@@ -1,27 +1,6 @@
 var sciter;
 var sys;
 
-Element.prototype.box = function(part, edge = undefined, relativeTo = undefined) {
-  if (part == "dimension" && edge == "margin" && relativeTo == undefined) {
-    let style = getComputedStyle(this);
-    let width = this.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight);
-    let height = this.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
-    return [width, height];
-  } else if (part == "left" && edge == "outer" && relativeTo == "parent") {
-    let style = getComputedStyle(this);
-    return this.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight);
-  } else if (part && edge && relativeTo) {
-    console.log("Tried to box with part: \"" + part + "\" and edge: \""+ edge +"\" and relativeTo: \""+ relativeTo +"\"");
-    return 0;
-  } else if (part && edge) {
-    console.log("Tried to box with part: \"" + part + "\" and edge: \""+ edge +"\"");
-    return 0;
-  } else if (part) {
-    console.log("Tried to box with part: \"" + part + "\"");
-    return 0;
-  }
-};
-
 Date.prototype.monthName = function(longFormat) {
   return this.toUTCString().split(' ')[2]
 };
@@ -192,8 +171,8 @@ var Emu = {
     }
 
     function updateElementByValue(integerValue) {
-        var width_element = element.box("width","outer");
-        var percentage_offset = 100.0*(width_element/2)/element.parentElement.box("width","inner","parent");
+        var width_element = element.state.box("width","outer");
+        var percentage_offset = 100.0*(width_element/2)/element.parentElement.state.box("width","inner","parent");
         var snapToEvery = 100.0/(max - min);
         element.style["left"] = integerValue*snapToEvery-percentage_offset+"%";
         element.style["right"] = "auto";
@@ -216,8 +195,8 @@ var Emu = {
 
     document.$("body").on("mousemove", function(evt) {
       if(mousepressed) {
-        var left = element.parentElement.box("left","outer","parent");
-        var percentage = 100.0*(evt.x - left)/element.parentElement.box("width","inner","#body");
+        var left = element.parentElement.state.box("left","outer","parent");
+        var percentage = 100.0*(evt.x - left)/element.parentElement.state.box("width","inner","#body");
         var snapToEvery = 100.0/(max - min);
         if(percentage > 100) percentage = 100.0;
         if(percentage < 0) percentage = 0.0;
@@ -314,7 +293,7 @@ function fillHeight() {
       console.log(child);
       min_width += child.toPixels(child.style["-min"]);
     }
-    var parent_width = evt.target.box("width", "border", "parent");
+    var parent_width = evt.target.state.box("width", "border", "parent");
     for (var child of evt.target) {
       if( parent_width >= min_width ) {
         if(evt.target.style["flow"] != "horizontal") {

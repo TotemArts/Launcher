@@ -96,8 +96,8 @@ function VirtualList(params) {
     function calcMetrics() // calcs item_height, returns true if buffer_size was increased; 
     {
       if(list.firstElementChild)
-        item_height = list.firstElementChild.box("#height","border"); // adjust real item height
-      var ch = isContentDependent(list) ? list.parentElement.box("#height","inner") : list.box("#height","#client");
+        item_height = list.firstElementChild.state.box("height","border"); // adjust real item height
+      var ch = isContentDependent(list) ? list.parentElement.state.box("height","inner") : list.state.box("height","client");
       var vi = ch / (item_height || 10);
       visible_items = vi;
       const old_buffer_size = buffer_size;

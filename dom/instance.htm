@@ -12,16 +12,8 @@
       }
     </style>
     <script type="text/javascript">
-      Element.prototype.box = function(boxPart, boxOf) {
-        if (boxPart == "dimension" && boxOf == "margin") {
-          let style = getComputedStyle(this);
-          let width = this.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight);
-          let height = this.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
-          return [width, height];
-        }
-      };
       let [sx,sy,sw,sh] = Window.this.screenBox("workarea","rectw");
-      let [w,h] = document.$("div.username-window").box("dimension", "margin");
+      let [w,h] = document.$("div.username-window").state.box("dimension", "margin");
 
       Window.this.move(sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
 
