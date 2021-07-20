@@ -29,9 +29,6 @@ pub(crate) struct Handler {
 impl Handler {
   /// Check if there are game updates available, makes use of caching.
   fn check_update(&self, done: sciter::Value, error: sciter::Value) -> Result<(), Error> {
-    
-    info!("Checking for an update!");
-
     let progress = self.patcher.clone().lock().or_else(|_| Err(Error::MutexPoisoned(format!(""))))?.get_progress();
     let update = &progress.lock().or_else(|_| Err(Error::MutexPoisoned(format!(""))))?.update.clone();
     match update {
@@ -95,8 +92,6 @@ impl Handler {
 
   /// Starts the downloading of the update/game
   fn start_download(&self, callback: sciter::Value, callback_done: sciter::Value, error: sciter::Value) -> Result<(), Error> {
-    info!("Starting game download!");
-
     let progress = self.patcher.clone().lock().or_else(|_| Err(Error::MutexPoisoned(format!(""))))?.get_progress();
 		crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
       let mut not_finished = true;
@@ -156,8 +151,6 @@ impl Handler {
 
   /// Removes files inside of the subdirectories that are not part of the instructions.json
   fn remove_unversioned(&self, callback_done: sciter::Value, error: sciter::Value) {
-    info!("Removing unused!");
-
     let patcher = self.patcher.clone();
     crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
       let result : Result<(), renegadex_patcher::traits::Error>;
@@ -186,19 +179,16 @@ impl Handler {
 
   /// Retrieve the playername
   fn get_playername(&self) -> String {
-    info!("Requested playername!");
     self.configuration.get_playername()
   }
 
   /// Set the playername
   fn set_playername(&self, username: sciter::Value) {
-    info!("Setting playername!");
     self.configuration.set_playername(&username.as_string().expect(""))
   }
 
   /// Get Server List as plain text
   fn get_servers(&self, callback: sciter::Value) {
-    info!("Getting Servers!");
     crate::spawn_wrapper::spawn_async(&self.runtime, async move {
       let uri = "https://serverlist.renegade-x.com/servers.jsp?id=launcher".parse::<download_async::http::Uri>()?;
       let mut downloader = download_async::Downloader::new();
@@ -257,13 +247,11 @@ impl Handler {
 
   /// Get the installed game's version
   fn get_game_version(&self) -> String {
-    info!("Getting game version!");
     self.configuration.get_game_version()
   }
 
   /// Launch the game, if server variable it's value is "", then the game will be launched to the menu.
   fn launch_game(&self, server: Value, done: Value, error: Value) {
-    info!("Launching game!");
     let game_location = self.configuration.get_game_location();
     let launch_info =  self.configuration.get_launch_info();
 
@@ -306,13 +294,11 @@ impl Handler {
 
   /// Gets the setting from the launchers configuration file.
   fn get_setting(&self, setting: sciter::Value) -> String {
-    info!("Getting settings!");
     self.configuration.get_global_setting(&setting.as_string().expect(""))
   }
 
   /// Sets the setting in the launchers configuration file.
   fn set_setting(&self, setting: sciter::Value, value: sciter::Value) {
-    info!("Setting settings!");
     self.configuration.set_global_setting(&setting.as_string().expect(""), &value.as_string().expect(""))
   }
 
@@ -323,8 +309,6 @@ impl Handler {
 
   /// Checks if the launcher is up to date
   fn check_launcher_update(&self, callback: Value) -> Result<(), Error> {
-    info!("Checking for launcher update!");
-
     let launcher_info_option = self.patcher.lock().or_else(|e| Err(Error::MutexPoisoned(format!("A mutex got poisoned: {}", e))))?.get_launcher_info();
     if let Some(launcher_info) = launcher_info_option {
       if VERSION != launcher_info.version_name && !launcher_info.prompted {
@@ -353,8 +337,6 @@ impl Handler {
   }
 
   fn install_redists(&self, done: Value, error_callback: Value) -> Result<(), Error> {
-    info!("Installing redistributables!");
-
     let mut cache_dir = dirs::cache_dir().ok_or_else(|| Error::None(format!("")))?;
     let patcher = self.patcher.clone();
     // Spawn thread, to not block the main process.
@@ -403,8 +385,6 @@ impl Handler {
 
   /// Launcher updater
   fn update_launcher(&self, progress: Value) -> Result<(), Error> {
-    info!("Updating launcher!");
-
     let launcher_info = self.patcher.lock().or_else(|e| Err(Error::MutexPoisoned(format!("A mutex got poisoned: {}", e))))?.get_launcher_info().ok_or_else(|| Error::None(format!("Couldn't fetch launcher info")))?;
     if VERSION != launcher_info.version_name {
       let socket_addrs = launcher_info.patch_url.parse::<url::Url>()?.socket_addrs(|| None)?;
@@ -467,8 +447,6 @@ impl Handler {
 
   /// Fetch the text-resource at url with the specified headers.
   fn fetch_resource(&self, url: Value, mut headers_value: Value, callback: Value, context: Value) -> Result<(), Error> {
-    info!("Fetching resource!");
-
     headers_value.isolate();
     let mut downloader = download_async::Downloader::new();
     let headers = downloader.headers().expect("Couldn't get the headers of the request");
@@ -496,7 +474,6 @@ impl Handler {
 
   /// Fetch the image at url with specified headers
   fn fetch_image(&self, url: Value, mut headers_value: Value, callback: Value, context: Value) -> Result<(), Error> {
-
     headers_value.isolate();
     let mut downloader = download_async::Downloader::new();
     let headers = downloader.headers().expect("Couldn't get the headers of the request");
@@ -522,7 +499,6 @@ impl Handler {
   }
 
   fn open_launcher_logs_folder(&self) {
-    log::info!("Opening launcher logs folder!");
     let spawned_process = std::process::Command::new("explorer.exe").arg(self.configuration.get_log_directory()).spawn();
   }
 }
@@ -531,6 +507,7 @@ impl sciter::EventHandler for Handler {
   fn get_subscription(&mut self) -> Option<sciter::dom::event::EVENT_GROUPS> {
     Some(sciter::dom::event::default_events() | sciter::dom::event::EVENT_GROUPS::HANDLE_METHOD_CALL)
   }
+
 	dispatch_script_call! {
     fn check_update(Value, Value);
     fn install_redists(Value, Value);
@@ -556,5 +533,18 @@ impl sciter::EventHandler for Handler {
     fn fetch_resource(Value,Value,Value,Value);
     fn fetch_image(Value,Value,Value,Value);
     fn get_video_location(Value);
+  }
+
+  fn on_script_call(&mut self, root: sciter::HELEMENT, name: &str, argv: &[Value]) -> Option<Value> {
+      let args = argv.iter().map(|x| format!("{:?}", &x)).collect::<Vec<String>>().join(", ");
+      
+      info!("Called {}({}) from element: {:?}", name, args, sciter::Element::from(root));
+      let handled = self.dispatch_script_call(root, name, argv);
+      if handled.is_some() {
+        info!("End {}({}): {:?}", name, args, handled);
+        return handled;
+      }
+      error!("{}({}) does not exist!", name, args);
+      None
   }
 }
