@@ -98,7 +98,7 @@ impl Configuration {
           absolute_path.pop();
           absolute_path.push("Default.avi");
         }
-        url::Url::from_file_path(absolute_path).expect("Cannot convert path to a url.").into_string()
+        url::Url::from_file_path(absolute_path).expect("Cannot convert path to a url.").into()
     }
 
     pub fn get_playername(&self) -> String {

@@ -66,6 +66,11 @@ impl sciter::HostHandler for DebugHandler {
     .module_path(None)
     .build());
   }
+
+  fn on_engine_destroyed(&mut self) {
+    info!("Sciter Engine shutting down!");
+    log::logger().flush();
+  }
 }
 
 #[tokio::main]
