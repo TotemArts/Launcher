@@ -47,7 +47,7 @@ impl<T> From<std::sync::PoisonError<std::sync::MutexGuard<'_, T>>> for Error {
     log_error(&error);
     use std::error::Error;
     let error = error.source().unwrap();
-    log_error(&error);
+    log_error(error);
     Self::MutexPoisoned(error.to_string())
   }
 }
@@ -56,7 +56,7 @@ impl From<Box<dyn std::error::Error + Sync + std::marker::Send>> for Error {
   #[track_caller]
   #[inline(always)]
   fn from(error: Box<dyn std::error::Error + Sync + std::marker::Send>) -> Self {
-    log_error(&error.source().unwrap());
+    log_error(error.source().unwrap());
     Self::DownloadError(error)
   }
 }
@@ -134,7 +134,7 @@ impl From<std::str::Utf8Error> for Error {
 }
 
 #[track_caller]
-fn log_error(error: &impl std::error::Error) {
+fn log_error(error: &(impl std::error::Error + ?Sized)) {
   let location = Some(std::panic::Location::caller());
   log::logger().log(&Record::builder()
   .args(format_args!("{:?}", error))
