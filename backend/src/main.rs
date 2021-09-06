@@ -73,12 +73,9 @@ impl sciter::HostHandler for DebugHandler {
   }
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
-  let mut current_dir = std::env::current_exe()?;
-  current_dir.pop();
+fn main() -> Result<(), Error> {
+  let current_dir = std::env::current_dir()?;
   info!("Working in directory: {}", &current_dir.to_string_lossy());
-  std::env::set_current_dir(&current_dir)?;
   const WEBIFY: &percent_encoding::AsciiSet = &percent_encoding::NON_ALPHANUMERIC.remove(b'/').remove(b'\\').remove(b':');
   let current_dir = percent_encoding::utf8_percent_encode(current_dir.to_str().expect(concat!(file!(),":",line!())), WEBIFY).to_string();
 
@@ -127,47 +124,57 @@ async fn main() -> Result<(), Error> {
     .build());
   }));
 
-  info!("Starting RenegadeX Launcher version {}", &VERSION);
+  launch_ui(current_dir).join();
 
-  for argument in std::env::args() {
-    if argument.starts_with("--patch-result=") {
-      info!("Update result: {}", &argument[15..].to_string());
-      let mut frame = sciter::Window::new();
-      frame.event_handler(UpdateResultHandler{update_result: argument[15..].to_string()});
-      frame.load_file(&format!("file://{}/dom/self-update-result.htm", &current_dir));
-      frame.run_app();
-    }
-  }
-
-  let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(Downloader::new()));
-  if configuration.get_playername().eq("UnknownPlayer") {
-    let mut frame = sciter::Window::new();
-    frame.event_handler(Handler{patcher: patcher.clone(), configuration: configuration.clone(), runtime: tokio::runtime::Handle::current()});
-    frame.load_file(&format!("file://{}/dom/first-startup.htm", &current_dir));
-    frame.run_app();
-  }
-
-  let game_location = configuration.get_game_location();
-  let version_url = configuration.get_version_url();
-  let launcher_theme = configuration.get_launcher_theme();
-  
-  info!("Launching sciter!");
-
-  let mut frame = sciter::Window::new();
-  frame.sciter_handler(DebugHandler {});
-  let mut locked_patcher = patcher.lock().or_else(|e| Err(Error::MutexPoisoned(format!("A Mutex was poisoned: {}", e))))?;
-  locked_patcher.set_location(game_location);
-  locked_patcher.set_version_url(version_url);
-  drop(locked_patcher);
-  info!("Set patcher information!");
-
-  frame.event_handler(Handler{patcher: patcher.clone(), configuration, runtime: tokio::runtime::Handle::current()});
-  frame.load_file(&format!("file://{}/{}/frontpage.htm", current_dir, &launcher_theme));
-  info!("Launching app!");
-
-  frame.run_app();
-
-  info!("Gracefully shutting down app!");
   log::logger().flush();
   Ok(())
+}
+
+fn launch_ui(current_dir: String) -> std::thread::JoinHandle<Result<(),Error>> {
+  std::thread::spawn(move || -> Result<(), Error> {
+    let configuration = configuration::Configuration::load_or_default();
+
+    info!("Starting RenegadeX Launcher version {}", &VERSION);
+
+    for argument in std::env::args() {
+      if argument.starts_with("--patch-result=") {
+        info!("Update result: {}", &argument[15..].to_string());
+        let mut frame = sciter::Window::new();
+        frame.event_handler(UpdateResultHandler{update_result: argument[15..].to_string()});
+        frame.load_file(&format!("file://{}/dom/self-update-result.htm", &current_dir));
+        frame.run_app();
+      }
+    }
+    let runtime : tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build().expect("");
+    let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(Downloader::new()));
+    if configuration.get_playername().eq("UnknownPlayer") {
+      let mut frame = sciter::Window::new();
+      frame.event_handler(Handler{patcher: patcher.clone(), configuration: configuration.clone(), runtime: runtime.handle().clone()});
+      frame.load_file(&format!("file://{}/dom/first-startup.htm", &current_dir));
+      frame.run_app();
+    }
+  
+    let game_location = configuration.get_game_location();
+    let version_url = configuration.get_version_url();
+    let launcher_theme = configuration.get_launcher_theme();
+    
+    info!("Launching sciter!");
+  
+    let mut frame = sciter::Window::new();
+    frame.sciter_handler(DebugHandler {});
+    let mut locked_patcher = patcher.lock().or_else(|e| Err(Error::MutexPoisoned(format!("A Mutex was poisoned: {}", e))))?;
+    locked_patcher.set_location(game_location);
+    locked_patcher.set_version_url(version_url);
+    drop(locked_patcher);
+    info!("Set patcher information!");
+  
+    frame.event_handler(Handler{patcher: patcher.clone(), configuration, runtime: runtime.handle().clone()});
+    frame.load_file(&format!("file://{}/{}/frontpage.htm", current_dir, &launcher_theme));
+    info!("Launching app!");
+  
+    frame.run_app();
+  
+    info!("Gracefully shutting down app!");
+    Ok(())
+  })
 }
