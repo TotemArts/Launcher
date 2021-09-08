@@ -9,9 +9,19 @@ Date.prototype.monthName = function(longFormat) {
   sciter = await import("@sciter");
   sys = await import("@sys");
 
-  Element.prototype.load = function(file) {
-    this.content(sciter.decode(sys.fs.$readfile("dom/" + file)));
-    return true;
+  Element.prototype.load = function(file, base_url = undefined) {
+    console.log("Called prototype load!");
+    if(base_url != undefined) {
+      console.log("Loading HTML into element:");
+      console.log(this);
+      this.content(file);
+      return true;
+    } else {
+      console.log("Loading file \"" + file + "\" into element:");
+      console.log(this);
+      this.content(sciter.decode(sys.fs.$readfile("dom/" + file)));
+      return true;
+    }
   };
 })();
 
@@ -56,11 +66,16 @@ var Emu = {
   },
 
   news_image: function() {
+    try {
+      console.log(this);
     if (this.classList.getAttribute("width")) {
       this.setAttribute("width", (Number(this.getAttribute("width"))/10) + "%");
     } else {
       this.setAttribute("width", "100%");
     }
+  } catch (e) {
+    console.log(e, e.stacktrace);
+  }
   },
 
   chat_menu: function() {
@@ -74,6 +89,7 @@ var Emu = {
   },
 
   render_news_items: function() {
+    try {
     var frame = document.$("#news")
     for (var i=0; i<news_items.length;i++) {
       var date = new Date(news_items[i].pubDate);
@@ -90,8 +106,12 @@ var Emu = {
         if (current) current.classList.remove("current");
         evt.target.classList.add("current");
         if (news_items[id].html) {
+          console.log("Setting the html to news_items["+id+"]");
+          console.log(frame);
+          console.log(frame.load);
           frame.load(news_items[id].html, "");
         } else {
+          console.log("Clearing the frame and fetching resource");
           frame.load("", "");
           Window.this.xcall("fetch_resource", news_items[id].link+"?preview=1", { "Referer": "https://renegade-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache"}, load_news_item, {id: id, frame: frame});
         }
@@ -109,6 +129,9 @@ var Emu = {
         Window.this.xcall("fetch_resource", news_items[id].link+"?preview=1", {Referer: "https://renegade-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", TE: "Trailers", Pragma: "no-cache"}, load_news_item, {id: id, frame: frame});
       }
     }
+  } catch(e) {
+    console.error(e, e.stacktrace);
+  }
   },
 
   spoiler: function() {
