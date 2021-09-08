@@ -18,18 +18,27 @@ var sys;
   sciter = await import("@sciter");
   sys = await import("@sys");
 
-  Element.prototype.load = function(file) {
-    this.content(sciter.decode(sys.fs.$readfile("dom/" + file)));
-    return true;
+  Element.prototype.load = function(file, base_url = undefined) {
+    console.log("Called prototype load!");
+    if(base_url != undefined) {
+      console.log("Loading HTML into element:");
+      console.log(this);
+      this.content(file);
+      return true;
+    } else {
+      console.log("Loading file \"" + file + "\" into element:");
+      console.log(this);
+      this.content(sciter.decode(sys.fs.$readfile("dom/" + file)));
+      return true;
+    }
   };
-
+  
   document.$("#content").load(document.$("div.current").getAttribute("page"));
   set_current_page(document.$("div.current"));
   Window.this.xcall("check_launcher_update", check_launcher_result);
   initialize_variables();
   Window.this.xcall("get_servers", getServersCallback);
   load_news_feed();
-
 })();
 
 </script>

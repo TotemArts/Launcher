@@ -5,9 +5,19 @@ var sys;
   sciter = await import("@sciter");
   sys = await import("@sys");
 
-  Element.prototype.load = function(file) {
-    this.content(sciter.decode(sys.fs.$readfile("dom/" + file)));
-    return true;
+  Element.prototype.load = function(file, base_url = undefined) {
+    console.log("Called prototype load!");
+    if(base_url != undefined) {
+      console.log("Loading HTML into element:");
+      console.log(this);
+      this.content(file);
+      return true;
+    } else {
+      console.log("Loading file \"" + file + "\" into element:");
+      console.log(this);
+      this.content(sciter.decode(sys.fs.$readfile("dom/" + file)));
+      return true;
+    }
   };
 })();
 
@@ -93,48 +103,51 @@ function news_feed_callback(text) {
       pubDate: text.match(/<pubDate>(?:<!\[CDATA\[)?((?:.|\n)+?)(?:\]\]>)?<\/pubDate>/m)[1],
     };
     news_items.push(item);
-    if (i==0) Window.this.xcall("fetch_resource", news_items[i].link+"?preview=1", {"Referer": "https://renegade-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache"}, load_news_item, {"id": i, "frame": undefined});
+    if (i==0) Window.this.xcall("fetch_resource", news_items[i].link+"?preview=1", {"Referer": "https://ren-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache"}, load_news_item, {"id": i, "frame": frame});
   }
 }
 
 function load_news_feed() {
-  Window.this.xcall("fetch_resource", "https://renegade-x.com/rss/1-recent-news.xml/", {"Referer": "https://renegade-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache"}, news_feed_callback, this);
+  Window.this.xcall("fetch_resource", "https://ren-x.com/rss/1-recent-news.xml/", {"Referer": "https://ren-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache"}, news_feed_callback, {});
 }
 
-function image_callback(bytes) {
-  var escaped_url = url.replace(/([\?\.\|\/\?\(\)])/g, "\\$1").trim();
-  if(bytes) {
-    var image = Image.fromBytes(bytes);
-    if(image && url) {
+function image_callback(image) {
+  var escaped_url = this.url.replace(/([\?\.\|\/\?\(\)])/g, "\\$1").trim();
+  if(image) {
+    if(image && this.url) {
       var url_regex = new RegExp(escaped_url, "g");
-      var filetype = escaped_url.split('.').pop();
-      news_items[id].content(news_items[id].html.replace(url_regex, "data:image/webp;base64,"+image.toBytes("#webp", 100).toString("base64")));
+      news_items[this.id].html = news_items[this.id].html.replace(url_regex, "data:image/webp;base64,"+image.toBytes("webp", 100).toString("base64"));
     } else {
       console.log("Image at url \""+escaped_url+"\" appears to be damaged.");
       var escaped_tag = "<img[^>]+?src=\""+escaped_url+"\"[^>]*?\/>";
       var image_regex = new RegExp(escaped_tag, "g");
-      news_items[id].content(news_items[id].html.replace(image_regex, ""));
+      news_items[this.id].html = news_items[this.id].html.replace(image_regex, "");
     }
   } else {
     console.log("Image at url \""+escaped_url+"\" appears to be missing.");
     var escaped_tag = "<img[^>]+?src=\""+escaped_url+"\"[^>]*?\/>";
     var image_regex = new RegExp(escaped_tag, "g");
-    news_items[id].content(news_items[id].html.replace(image_regex, ""));
+    news_items[this.id].html = news_items[this.id].html.replace(image_regex, "");
   }
   var regex = /<img[^>]+?src="(http[^"]+?\.(?!gif)[^"]{3,4}(?:\?[^"]+?)?)"[^>]*?>/;
-  var img = news_items[id].html.match(regex);
-  if (img && img[1]) Window.this.xcall("fetch_image", img[1], {}, image_callback, {id:id,url:img[1],frame:this.frame});
-  else if (id==frame_id) {
-    var news_frame = document.$("#news");
+  var img = news_items[this.id].html.match(regex);
+  console.log(frame_id);
+  if (img && img[1]) Window.this.xcall("fetch_image", img[1], {}, image_callback, {id:this.id,url:img[1],frame:this.frame});
+  else if (this.id==frame_id) {
+    console.log("Loading news item: ");
     if (this.frame) {
-      this.frame.load(news_items[id].html, "");
-    } else if (news_frame) {
-      news_frame.load(news_items[id].html, "");
+      this.frame.load(news_items[this.id].html, "");
+    } else if ((news_frame = document.$("#news"))) {
+      this.frame = news_frame;
+      news_frame.load(news_items[this.id].html, "");
     }
   }
 }
 
 function load_news_item(text) {
+  console.log("Load_news_item(text)");
+  console.log(this.frame);
+
   text = text.replace(/\s<\/span/g, "&nbsp;</span").replace(/[\r\n\s\t]+/g, " ").replace(/>\s</, ">&nbsp;<");
   var topicID = text.match(/data-topicID='(.+?)'/)[1];
   text = text.replace(new RegExp("_"+topicID,"g"), "_topicID");
@@ -143,12 +156,14 @@ function load_news_item(text) {
 
   var iframe_regex = /<i?frame[^>]*?(?:\/>|>[^<>]*?<\/i?frame>)/g;
   text = text.replace(iframe_regex, "");
-
-  news_items[id].content(text);
-  if (this.frame) this.frame.load(text,"");
+  news_items[this.id].html = text;
+  if (this.frame) {
+    this.frame.load(text,"");
+  }
+  console.log("ladidadida");
   var regex = /<img[^>]+?src="(http[^"]+?\.(?!gif)[^"]{3,4}(?:\?[^"]+?)?)"[^>]*?>/;
   var img = text.match(regex);
-  if (img && img[1]) Window.this.xcall("fetch_image", img[1], {}, image_callback, {id:id,url:img[1],frame: this.frame});
+  if (img && img[1]) Window.this.xcall("fetch_image", img[1], {}, image_callback, {id:this.id,url:img[1],frame: this.frame});
 }
 
 const variable_observer = { 

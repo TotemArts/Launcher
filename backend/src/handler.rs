@@ -490,7 +490,14 @@ impl Handler {
 
       downloader.download(download_async::Body::empty(), &mut buffer).await?;
       crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
-        callback.call(Some(context), &make_args!(buffer.as_slice()), None)?;
+        let image = sciter::graphics::Image::load(&buffer).ok();
+        if let Some(image) = image {
+          info!("Sending back image as it was succesfull");
+          callback.call(Some(context), &make_args!(image), None)?;
+        } else {
+          info!("Failed to load bytes as an image");
+          callback.call(Some(context), &make_args!(), None)?;
+        }
         Ok(())
       });
       Ok::<(), Error>(())
