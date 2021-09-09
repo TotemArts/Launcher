@@ -13,10 +13,16 @@
 <script type="text/javascript">
 var sciter;
 var sys;
+var debug;
 
 (async () => {
   sciter = await import("@sciter");
   sys = await import("@sys");
+  debug = await import("@debug");
+
+  debug.setUnhandledExeceptionHandler(function(err) {
+    console.error(err.toString() + "\r\n" + err.stacktrace);
+  });
 
   Element.prototype.load = function(file, base_url = undefined) {
     console.log("Called prototype load!");
@@ -32,7 +38,7 @@ var sys;
       return true;
     }
   };
-  
+
   document.$("#content").load(document.$("div.current").getAttribute("page"));
   set_current_page(document.$("div.current"));
   Window.this.xcall("check_launcher_update", check_launcher_result);
@@ -48,7 +54,7 @@ var sys;
     <div.headerSpacer.left>
       <a.facebook href="https://www.facebook.com/RenXFirestorm/" target="@system"></a>
       <a.twitter href="https://twitter.com/renxgame" target="@system"></a>
-      <a.discord href="https://renegade-x.com/discord" target="@system"></a>
+      <a.discord href="https://ren-x.com/discord" target="@system"></a>
       <a.youtube href="https://www.youtube.com/channel/UCaiic-yEcwEv8VG6wRaHcDQ" target="@system"></a>
     </div>
     <div.spacer role="window-caption"></div>
