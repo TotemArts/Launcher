@@ -1,28 +1,13 @@
-var sciter;
-var sys;
-
 Date.prototype.monthName = function(longFormat) {
   return this.toUTCString().split(' ')[2]
 };
 
+var sciter;
+var sys;
+
 (async () => {
   sciter = await import("@sciter");
   sys = await import("@sys");
-
-  Element.prototype.load = function(file, base_url = undefined) {
-    console.log("Called prototype load!");
-    if(base_url != undefined) {
-      console.log("Loading HTML into element:");
-      console.log(this);
-      this.content(file);
-      return true;
-    } else {
-      console.log("Loading file \"" + file + "\" into element:");
-      console.log(this);
-      this.content(sciter.decode(sys.fs.$readfile("dom/" + file)));
-      return true;
-    }
-  };
 })();
 
 var Emu = {
@@ -30,7 +15,6 @@ var Emu = {
     console.log("loadOutput " + this);
     for(var name of this.getAttributeNames()) {
       console.log("Checking value for " + name);
-
       var attribute = output_variables[name];
       if(attribute==0) attribute = "0";
       if(attribute) {
@@ -66,16 +50,13 @@ var Emu = {
   },
 
   news_image: function() {
-    try {
-      console.log(this);
-    if (this.classList.getAttribute("width")) {
-      this.setAttribute("width", (Number(this.getAttribute("width"))/10) + "%");
-    } else {
-      this.setAttribute("width", "100%");
+    if (this.getAttribute("width")) {
+      console.log(this.state.contentWidths());
+      var minMax = this.state.contentWidths();
+      if( minMax[1] > 750 ) {
+        this.setAttribute("width", "750dip");
+      }
     }
-  } catch (e) {
-    console.log(e, e.stacktrace);
-  }
   },
 
   chat_menu: function() {
@@ -89,7 +70,6 @@ var Emu = {
   },
 
   render_news_items: function() {
-    try {
     var frame = document.$("#news")
     for (var i=0; i<news_items.length;i++) {
       var date = new Date(news_items[i].pubDate);
@@ -113,7 +93,7 @@ var Emu = {
         } else {
           console.log("Clearing the frame and fetching resource");
           frame.load("", "");
-          Window.this.xcall("fetch_resource", news_items[id].link+"?preview=1", { "Referer": "https://renegade-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache"}, load_news_item, {id: id, frame: frame});
+          Window.this.xcall("fetch_resource", news_items[id].link+"?preview=1", { "Referer": "https://ren-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache"}, load_news_item, {id: id, frame: frame});
         }
       });
     }
@@ -126,16 +106,14 @@ var Emu = {
         frame.load(news_items[0].html, "");
       } else {
         frame.load("", "");
-        Window.this.xcall("fetch_resource", news_items[id].link+"?preview=1", {Referer: "https://renegade-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", TE: "Trailers", Pragma: "no-cache"}, load_news_item, {id: id, frame: frame});
+        Window.this.xcall("fetch_resource", news_items[id].link+"?preview=1", {Referer: "https://ren-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", TE: "Trailers", Pragma: "no-cache"}, load_news_item, {id: id, frame: frame});
       }
     }
-  } catch(e) {
-    console.error(e, e.stacktrace);
-  }
   },
 
   spoiler: function() {
-    var spoiler = this.next;
+
+    var spoiler = this.nextElementSibling;
     this.on("click", function(evt) {
       if (spoiler.style["visibility"] == "collapse") {
         spoiler.style["visibility"] = "visible";
@@ -289,7 +267,7 @@ document.on("keydown", function(evt) {
 
 document.on("~click", "a[href^=http]", function(evt) {
   var url = evt.target.getAttribute("href");
-  Sciter.launch(url);
+  sciter.launch(url);
   return true;
 });
 

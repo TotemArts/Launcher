@@ -4,21 +4,6 @@ var sys;
 (async () => {
   sciter = await import("@sciter");
   sys = await import("@sys");
-
-  Element.prototype.load = function(file, base_url = undefined) {
-    console.log("Called prototype load!");
-    if(base_url != undefined) {
-      console.log("Loading HTML into element:");
-      console.log(this);
-      this.content(file);
-      return true;
-    } else {
-      console.log("Loading file \"" + file + "\" into element:");
-      console.log(this);
-      this.content(sciter.decode(sys.fs.$readfile("dom/" + file)));
-      return true;
-    }
-  };
 })();
 
 var output_variables_proxied = {
@@ -36,36 +21,43 @@ var output_variables_proxied = {
   "update_available": false,
 };
 
-var server_list_proxied = [];
-var filtered_server_list = [];
+var filtered_server_list = {};
+
+function filter_by_display(server) {
+  console.log(printf("server: %v", server));
+  return server.display;
+}
 
 const server_observer = { 
-  set: function(target, prop, receiver) {
-    console.log("server_observer");
-    console.log("target: " + target);
-    console.log("prop: " + prop);
-    console.log("receiver: " + receiver);
+  set: function(target, prop, value, receiver) {
+    try {
+      console.log("set server_observer");
+      console.log(printf("target: %v",target));
+      console.log(printf("prop: %v", prop));
+      console.log(printf("value: %v", value));
+      console.log(printf("receiver: %v", receiver));
 
-    if (changeDefinition[0] == "update-range" || changeDefinition[0] == "add-range") {
-      for (var value of receiver) {
-        console.log("Should observe: " + value);
-        //Object.addObserver(value, server_observer);
+      if(prop != "length") {
+        console.log("Adding to list");
+        filtered_server_list[value["data"]["IP"]+":"+value["data"]["Port"]] = value;
+      } else {
+        //filtered_server_list.remove();
       }
-      for(var i = filtered_server_list.length; i >= 0; i--) filtered_server_list.remove(i);
-      var list = server_list.filter(server => server.display);
-      for(var i = 0; i < list.length; i++) filtered_server_list.push(list[i]);
-      console.log("Jsonified filtered_server_list: " + JSON.stringify(filtered_server_list));
+      console.log(printf("lsit: %v", filtered_server_list));
+      return Reflect.set(target, prop, value, receiver);
+    } catch(e) {
+      console.error(printf("Caught exception: %s\n%V", e, e.stacktrace));
     }
-    if (changeDefinition[0] == "update" && prop == "display") {
-      if(changeDefinition[3]) filtered_server_list.push(receiver);
-      if(!changeDefinition[3]) filtered_server_list.removeByValue(receiver);
-    }
-    return Reflect.set(...arguments);
+  },
+  deleteProperty: function(target, propertyKey) {
+    console.log("deleteProperty server_observer");
+    console.log(printf("target: %v",target));
+    console.log(printf("propertyKey: %v",propertyKey));
   }
 }
 
-const server_list = new Proxy(filtered_server_list, server_observer);
-
+const server_list = new Proxy([], server_observer);
+//var server_list = [];
 
 var news_items = [];
 var footer;
@@ -116,7 +108,11 @@ function image_callback(image) {
   if(image) {
     if(image && this.url) {
       var url_regex = new RegExp(escaped_url, "g");
-      news_items[this.id].html = news_items[this.id].html.replace(url_regex, "data:image/webp;base64,"+image.toBytes("webp", 100).toString("base64"));
+      try {
+      news_items[this.id].html = news_items[this.id].html.replace(url_regex, "data:image/webp;base64,"+sciter.toBase64(image.toBytes("webp", 100)));
+      } catch(e) {
+        console.error(e, e.stacktrace);
+      }
     } else {
       console.log("Image at url \""+escaped_url+"\" appears to be damaged.");
       var escaped_tag = "<img[^>]+?src=\""+escaped_url+"\"[^>]*?\/>";
@@ -170,7 +166,11 @@ const variable_observer = {
   set: function(target, prop, receiver) {
     console.log("observed variable: " + prop);
     for(const element of document.$$("output["+prop+"]") ) {
-      element.setAttribute("value", Number(receiver)==0?"0":receiver);
+      console.log(typeof receiver);
+      if(typeof receiver == Number)
+        element.setAttribute("value", Number(receiver)==0?"0":receiver);
+      else 
+        element.content(receiver);
     }
     for(const element of document.$$("progressbar["+prop+"]") ) {
       element.setAttribute("width", receiver==0?"0%":receiver+"%");

@@ -21,7 +21,7 @@ impl Configuration {
               let mut conf = Ini::new();
               conf.with_section(Some("RenX_Launcher"))
                 .set("GameLocation", "../")
-                .set("VersionUrl", "https://static.renegade-x.com/launcher_data/version/launcher.json")
+                .set("VersionUrl", "https://static.ren-x.com/launcher_data/version/launcher.json")
                 .set("LauncherTheme", "dom");
                 conf.write_to_file("RenegadeX-Launcher.ini").expect("");
                 conf
