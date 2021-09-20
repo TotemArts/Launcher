@@ -23,21 +23,36 @@
       Window.this.move(sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
 
       function setPlayername() {
-        if (document.$("input|text.username").value != "") {
-          Window.this.xcall("set_playername", document.$("input|text.username").value);
-          Window.this.close();
+        try {
+          if (document.$("input|text.username").value != "") {
+            Window.this.xcall("set_playername", document.$("input|text.username").value);
+            Window.this.close();
+          }
+        } catch(e) {
+          console.error("event onclick  in first-startup.htm");
+          console.error(printf("Caught exception: %s\n%V", e, e.stacktrace));;
         }
       }
 
       document.on("click","[onclick]",function(evt) {
-        console.log("onclick");
-        return eval.call(evt.target, evt.target.getAttribute("onclick") );
+        try {
+          console.log("onclick");
+          return eval.call(evt.target, evt.target.getAttribute("onclick") );
+        } catch(e) {
+          console.error("event onclick  in first-startup.htm");
+          console.error(printf("Caught exception: %s\n%V", e, e.stacktrace));;
+        }
       });
 
       document.on("keypress","[enter]",function(evt) {
-        if ( evt.keyCode != 13 && evt.keyCode != Event.VK_RETURN ) return;
-        eval.call(evt.target, evt.target.getAttribute("enter"));
-      });
+        try {
+          if ( evt.keyCode != 13 && evt.keyCode != Event.VK_RETURN ) return;
+          eval.call(evt.target, evt.target.getAttribute("enter"));
+          } catch(e) {
+            console.error("event keypress in first-startup.htm");
+            console.error(printf("Caught exception: %s\n%V", e, e.stacktrace));;
+          }
+        });
     </script>
   </head>
   <body>
