@@ -3,27 +3,16 @@ class ServerCaption extends Element
   channel = null;
 
   constructor(props) {
+    console.log("ServerCaption for: ");
+    console.log(props);
     super();
     this.channel = props.channel;
   }
 
-  componentDidMount() {
-    // install receiver of snapshotBytes
-    this.channel.onSnapshotBytes = (imageBytes) => {
-      this.state.value = Graphics.Image.fromBytes(imageBytes);
-    };
-  }
-
   render(props) {
-    const cls = this.channel.connected ? "active" : "gone";
     let isCurrent = props.current;
-    return <picture title={this.key} class={cls} current={isCurrent} />;
+    return <div title={props.key} current={isCurrent}>{props.server.name}</div>;
   }
-
-  ["on click"](evt) {
-    this.dispatchEvent(new Event("channel-activate", {bubbles:true,detail:this.channel.key}), true);
-  }
-
 }
 
 export class ServerList extends Element 
@@ -37,7 +26,7 @@ export class ServerList extends Element
   render(props) 
   {
     let currentServer = props.current; // ChannelDriver
-    var list = Object.values(this.servers).map( (server) => <ServerCaption key={server.key} server={server} current={ server === currentServer } /> );
+    var list = Object.values(this.servers).map( (server) => <ServerCaption key={server.data.IP + ":" + server.data.Port} server={server} current={ server === currentServer } /> );
     //       <section id="channel-list" styleset="servers.css#servers" >{ list }</section>
 
     return <div id="not_chat" class="join_server">
@@ -60,6 +49,7 @@ export class ServerList extends Element
     </div>
     <div class="body mheight">
       <div class="servers">
+        {list}
       </div>
     </div>
     <div class="titlebar">
