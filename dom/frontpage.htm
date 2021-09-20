@@ -11,14 +11,13 @@
 <script src="events.js" type="text/javascript"></script>
 <script src="functional.js" type="text/javascript"></script>
 <script type="text/javascript">
-var sciter;
-var sys;
-var debug;
+var sciter, sys, debug, servers;
 
 (async () => {
   sciter = await import("@sciter");
   sys = await import("@sys");
   debug = await import("@debug");
+  servers = await import("servers");
 
   debug.setUnhandledExeceptionHandler(function(err) {
     try {
@@ -41,6 +40,10 @@ var debug;
         console.log("Loading file \"" + file + "\" into element:");
         console.log(this);
         this.content(sciter.decode(sys.fs.$readfile("dom/" + file)));
+        if(this.$("div.servers.placeholder")) {
+          let ServerList = servers.ServerList;
+          this.$("div.servers.placeholder").patch(<ServerList servers={server_list} />);
+        }
         return true;
       }
     } catch(e) {
