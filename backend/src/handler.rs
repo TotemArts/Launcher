@@ -13,6 +13,7 @@ use sha2::{Sha256, Digest};
 use crate::configuration;
 use crate::error::Error;
 use crate::progress::ValueProgress;
+use std::io::Read;
 
 /// The current launcher's version
 static VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -212,7 +213,7 @@ impl Handler {
   /// Get ping of server
   fn get_ping(&self, server: sciter::Value, callback: sciter::Value) {
     crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
-      let socket = Socket::new(Domain::ipv4(), Type::raw(), Some(Protocol::icmpv4())).expect(concat!(file!(),":",line!(),": New socket"));
+      let mut socket = Socket::new(Domain::IPV4, Type::RAW, Some(Protocol::ICMPV4)).expect(concat!(file!(),":",line!(),": New socket"));
       let server_string = server.as_string().ok_or_else(|| Error::None(format!("Couldn't cast server \"{:?}\" to string", &server)))?;
       let mut server_socket = server_string.to_socket_addrs().expect(&format!("Couldn't unwrap socket address of server \"{}\"", &server_string));
       let sock_addr = server_socket.next().expect(&format!("No Sockets found for DNS name \"{}\"", &server_string)).into();
@@ -236,7 +237,7 @@ impl Handler {
       socket.send(&code)?;
       let mut buf : [u8; 100] = [0; 100];
       socket.set_read_timeout(Some(std::time::Duration::from_millis(500)))?;
-      let result = socket.recv(&mut buf);
+      let result = socket.read(&mut buf);
       let elapsed = start_time.elapsed().as_millis() as i32;
       if result.is_ok() && buf[36..36+48] == code[16..] {
         crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback.call(None, &make_args!(server, elapsed), None)?; Ok(()) });

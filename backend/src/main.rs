@@ -105,12 +105,11 @@ fn main() -> Result<(), Error> {
   let configuration = configuration::Configuration::load_or_default();
   let log_directory = configuration.get_log_directory();
 
-  Logger::with_env_or_str("info")
+  Logger::try_with_env_or_str("info").unwrap()
     .format(flexi_logger::opt_format)
-    .directory(&log_directory)
+    .log_to_file(flexi_logger::FileSpec::default().directory(&log_directory))
     .rotate(Criterion::Age(Age::Day), Naming::Numbers, Cleanup::KeepLogFiles(5))
     .print_message()
-    .log_to_file()
     .start()
     .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
 
