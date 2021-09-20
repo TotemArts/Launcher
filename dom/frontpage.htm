@@ -21,30 +21,44 @@ var debug;
   debug = await import("@debug");
 
   debug.setUnhandledExeceptionHandler(function(err) {
-    console.error(err.toString() + "\r\n" + err.stacktrace);
+    try {
+      console.error(err.toString() + "\r\n" + err.stacktrace);
+    } catch(e) {
+      console.error("setUnhandledExceptionHandler:");
+      console.error(printf("Caught exception: %s\n%V", e, e.stacktrace));;
+    }
   });
 
   Element.prototype.load = function(file, base_url = undefined) {
-    console.log("Called prototype load!");
-    if(base_url != undefined) {
-      console.log("Loading HTML into element:");
-      console.log(this);
-      this.content(file);
-      return true;
-    } else {
-      console.log("Loading file \"" + file + "\" into element:");
-      console.log(this);
-      this.content(sciter.decode(sys.fs.$readfile("dom/" + file)));
-      return true;
+    try {
+      console.log("Called prototype load!");
+      if(base_url != undefined) {
+        console.log("Loading HTML into element:");
+        console.log(this);
+        this.content(file);
+        return true;
+      } else {
+        console.log("Loading file \"" + file + "\" into element:");
+        console.log(this);
+        this.content(sciter.decode(sys.fs.$readfile("dom/" + file)));
+        return true;
+      }
+    } catch(e) {
+      console.error("Element.load:");
+      console.error(printf("Caught exception: %s\n%V", e, e.stacktrace));;
     }
   };
-
-  document.$("#content").load(document.$("div.current").getAttribute("page"));
-  set_current_page(document.$("div.current"));
-  Window.this.xcall("check_launcher_update", check_launcher_result);
-  initialize_variables();
-  Window.this.xcall("get_servers", getServersCallback);
-  load_news_feed();
+  try {
+    document.$("#content").load(document.$("div.current").getAttribute("page"));
+    set_current_page(document.$("div.current"));
+    Window.this.xcall("check_launcher_update", check_launcher_result);
+    initialize_variables();
+    Window.this.xcall("get_servers", getServersCallback);
+    load_news_feed();
+  } catch(e) {
+    console.error("frontpage.htm");
+    console.error(printf("Caught exception: %s\n%V", e, e.stacktrace));;
+  }
 })();
 
 </script>

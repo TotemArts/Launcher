@@ -6,7 +6,9 @@
       @import url(containers.css);
       @import url(fonts.css);
 
-      html, body, div {
+      html,
+      body,
+      div {
         margin: 0 0 !important;
         padding: 0 0 !important;
       }
@@ -14,7 +16,7 @@
     <script type="text/javascript">
       var result = document.$("p.result");
       var return_code = Window.this.xcall("get_return_code");
-      switch(return_code) {
+      switch (return_code) {
         case "Success":
           result.text = "Launcher updated succesfully!";
           document.$("button").classList.add("green");
@@ -47,17 +49,22 @@
       }
       Window.this.update();
 
-      let [sx,sy,sw,sh] = Window.this.screenBox("workarea","rectw");
-      let [w,h] = document.$("div.username-window").state.box("dimension", "margin");
-      Window.this.move(sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
+      let [sx, sy, sw, sh] = Window.this.screenBox("workarea", "rectw");
+      let [w, h] = document.$("div.username-window").state.box("dimension", "margin");
+      Window.this.move(sx + (sw - w) / 2, sy + (sh - h) / 2, w, h, false);
 
 
-      document.on("click","[close]",function(evt) {
-        Window.this.close();
+      document.on("click", "[close]", function (evt) {
+        try {
+          Window.this.close();
+        } catch (e) {
+          console.error(printf("Caught exception: %s\n%V", e, e.stacktrace));;
+        }
       });
 
     </script>
   </head>
+
   <body>
     <div.username-window role="window-caption">
       <div.titlebar>

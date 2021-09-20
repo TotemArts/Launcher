@@ -18,7 +18,11 @@
       Window.this.move(sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
 
       document.on("click","[close]",function(evt) {
-        Window.this.close();
+        try {
+          Window.this.close();
+        } catch(e) {
+          console.error(printf("Caught exception: %s\n%V", e, e.stacktrace));;
+        }
       });
     </script>
   </head>
