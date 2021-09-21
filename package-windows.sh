@@ -1,7 +1,7 @@
 #!/bin/sh
 cd backend && \
-cargo update && \
-cross build --target=i686-pc-windows-gnu --release && \
+cargo +nightly update && \
+cross +nightly build --target=i686-pc-windows-gnu --release && \
 cd ..
 cp ./backend/target/i686-pc-windows-gnu/release/RenegadeX-Launcher.exe "./Renegade X Launcher.exe" && \
 (rm RenX-Launcher.zip || true) && \

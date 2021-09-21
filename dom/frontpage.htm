@@ -21,7 +21,8 @@ var sciter, sys, debug, servers;
 
   debug.setUnhandledExeceptionHandler(function(err) {
     try {
-      console.error(err.toString() + "\r\n" + err.stacktrace);
+      console.error("setUnhandledExceptionHandler:");
+      console.error(printf("Caught exception: %s\n%V", err, err.stacktrace));;
     } catch(e) {
       console.error("setUnhandledExceptionHandler:");
       console.error(printf("Caught exception: %s\n%V", e, e.stacktrace));;
