@@ -478,10 +478,12 @@ function close_overlay() {
 
 document.on("click", "[page]", function (evt) {
   try {
+    /*
     document.$("div.menuEntries > .current").classList.remove("current");
     evt.target.classList.add("current");
     current_page = evt.target;
     document.$("#content").load(evt.target.getAttribute("page"));
+    */
     return false;
   } catch (e) {
     console.error(printf("Caught exception: %s\n%V", e, e.stacktrace));;

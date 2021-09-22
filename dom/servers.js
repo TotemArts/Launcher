@@ -227,13 +227,15 @@ export class Servers extends Element
   constructor(props) {
     super();
     this.servers = props.servers;
-    console.log(this.servers.length);
+    //console.log(this.servers.length);
   }
 
   render(props) 
   {
     let currentServer = props.current; // ChannelDriver
-    var list = Object.values(this.servers).map( (server) => <ServerCaption key={server.data.IP + ":" + server.data.Port} server={server} current={ server === currentServer } /> );
+    //var list = Object.values(this.servers).map( (server) => <ServerCaption key={server.data.IP + ":" + server.data.Port} server={server} current={ server === currentServer } /> );
+    //         {list}
+
     return <div id="not_chat" class="join_server">
     <div class="titlebar">
       <h3 class="title">Servers</h3>
@@ -254,7 +256,6 @@ export class Servers extends Element
     </div>
     <div class="body mheight">
       <div class="servers">
-        {list}
       </div>
     </div>
     <div class="titlebar">
