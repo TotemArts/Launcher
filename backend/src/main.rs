@@ -168,7 +168,7 @@ fn launch_ui(current_dir: String) -> std::thread::JoinHandle<Result<(),Error>> {
     info!("Set patcher information!");
   
     frame.event_handler(Handler{patcher: patcher.clone(), configuration, runtime: runtime.handle().clone()});
-    frame.load_file(&format!("file://{}/{}/frontpage.htm", current_dir, &launcher_theme));
+    frame.load_file(&format!("file://{}/{}/index.htm", current_dir, &launcher_theme));
     info!("Launching app!");
   
     frame.run_app();
