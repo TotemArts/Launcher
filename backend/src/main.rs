@@ -28,8 +28,8 @@ use crate::error::Error;
 use flexi_logger::{Age, Criterion, Cleanup, Logger, Naming};
 use log::*;
 use single_instance::SingleInstance;
-use std::sync::{Arc,Mutex};
-use renegadex_patcher::PatcherBuilder;
+use tokio::sync::Mutex;
+use std::sync::Arc;
 use handler::Handler;
 
 static VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -149,7 +149,7 @@ fn launch_ui(current_dir: String) -> std::thread::JoinHandle<Result<(),Error>> {
     let runtime : tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build().expect("");
     if configuration.get_playername().eq("UnknownPlayer") {
       let mut frame = sciter::Window::new();
-      frame.event_handler(Handler{patcher: None, version_information: None, configuration: configuration.clone(), runtime: runtime.handle().clone()});
+      frame.event_handler(Handler{patcher: Arc::new(Mutex::new(None)), version_information: Arc::new(Mutex::new(None)), configuration: configuration.clone(), runtime: runtime.handle().clone()});
       frame.load_file(&format!("file://{}/dom/first-startup.htm", &current_dir));
       frame.run_app();
     }
@@ -163,7 +163,7 @@ fn launch_ui(current_dir: String) -> std::thread::JoinHandle<Result<(),Error>> {
     let mut frame = sciter::Window::new();
     frame.sciter_handler(DebugHandler {});
 
-    frame.event_handler(Handler{patcher: None, version_information: None, configuration, runtime: runtime.handle().clone()});
+    frame.event_handler(Handler{patcher: Arc::new(Mutex::new(None)), version_information: Arc::new(Mutex::new(None)), configuration, runtime: runtime.handle().clone()});
     frame.load_file(&format!("file://{}/{}/index.htm", current_dir, &launcher_theme));
     info!("Launching app!");
   

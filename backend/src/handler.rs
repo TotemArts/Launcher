@@ -7,7 +7,8 @@ use tokio::sync::Mutex;
 use std::io::Write;
 use std::net::ToSocketAddrs;
 use std::sync::Arc;
-use renegadex_patcher::Patcher;
+use std::sync::atomic::Ordering;
+use renegadex_patcher::{Patcher, PatcherBuilder};
 use sciter::Value;
 use sha2::{Sha256, Digest};
 use crate::configuration;
@@ -23,7 +24,7 @@ static VERSION: &str = env!("CARGO_PKG_VERSION");
 /// Structure for Sciter event handling.
 pub(crate) struct Handler {
   /// The reference to the back-end library which is responsible for downloading and updating the game.
-  pub patcher: Option<Patcher>,
+  pub patcher: Arc<Mutex<Option<Patcher>>>,
   pub version_information: Arc<Mutex<Option<VersionInformation>>>,
   /// The configuration file for the launcher.
   pub configuration: configuration::Configuration,
@@ -35,21 +36,20 @@ impl Handler {
   fn check_update(&self, done: sciter::Value, error: sciter::Value) -> Result<(), Error> {
     let renegadex_location = self.configuration.get_game_location();
     let patch_dir_path = format!("{}/patcher/", renegadex_location).replace("//", "/");
-    match std::fs::read_dir(patch_dir_path) {
-      Ok(iter) => {
-        if iter.count() != 0 {
-          crate::spawn_wrapper::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("resume"), None)?; Ok(()) });
-          return Ok(());        }
-      },
-      Err(_e) => {}
-    };
+    if let Ok(iter) = std::fs::read_dir(patch_dir_path) {
+      if iter.count() != 0 {
+        crate::spawn_wrapper::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("resume"), None)?; Ok(()) });
+        return Ok(());
+      }
+    }
   
     let path = format!("{}/UDKGame/Config/DefaultRenegadeX.ini", renegadex_location);
     let conf = match Ini::load_from_file(&path) {
       Ok(file) => file,
       Err(_e) => {
         crate::spawn_wrapper::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("full"), None)?; Ok(()) });
-        return Ok(());      }
+        return Ok(());
+      }
     };
   
     let section = conf.section(Some("RenX_Game.Rx_Game".to_owned())).ok_or_else(|| Error::None(format!("No Configuration section named \"RenX_Game.Rx_Game\"")))?;
@@ -65,7 +65,7 @@ impl Handler {
       let software_version = version_information.clone().unwrap().software;
 
       if software_version.version_number != game_version_number.parse::<u64>()? {
-        crate::spawn_wrapper::spawn(move || -> Result<(), Error> { done.call(None, &make_args!("update"), None)?;; Ok(()) });
+        crate::spawn_wrapper::spawn(move || -> Result<(), Error> { done.call(None, &make_args!("update"), None)?; Ok(()) });
         return Ok(());
       }
       
@@ -76,9 +76,36 @@ impl Handler {
   }
 
   /// Starts the downloading of the update/game
-  fn start_download(&self, callback: sciter::Value, callback_done: sciter::Value, error: sciter::Value) -> Result<(), Error> {
-    let progress = self.patcher.clone().lock().or_else(|_| Err(Error::MutexPoisoned(format!(""))))?.get_progress();
-		crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
+  fn start_download(&self, progress_callback: sciter::Value, success_callback: sciter::Value, failure_callback: sciter::Value) {
+    let configuration = self.configuration.clone();
+    let version_information = self.version_information.clone();
+    let patcher_mutex = self.patcher.clone();
+//    let progress = self.patcher.clone().lock().or_else(|_| Err(Error::MutexPoisoned(format!(""))))?.get_progress();
+		crate::spawn_wrapper::spawn_async(&self.runtime, async move {
+      let patcher = patcher_mutex.lock().await;
+      if (*patcher).is_some() && (*patcher).as_ref().map(|patcher| patcher.in_progress).unwrap().load(Ordering::Relaxed) {
+
+        return Ok(());
+      }
+      drop(patcher);
+
+      let version_information = version_information.lock().await;
+      if version_information.is_none() {
+        // download version information
+        *version_information = Some(VersionInformation::retrieve(&configuration.get_version_url()).await?);
+      }
+      let software_version = version_information.clone().unwrap().software;
+
+      let mut patcher = PatcherBuilder::new();
+      patcher.set_software_information(software_version.mirrors, software_version.version, software_version.instructions_hash);
+      patcher.set_software_location(configuration.get_game_location());
+      let patcher = patcher.build()?;
+      patcher.start_patching().await;
+      
+      let patcher_option = patcher_mutex.lock().await;
+      (*patcher_option) = Some(patcher);
+
+/*
       let mut not_finished = true;
       let mut last_download_size : u64 = 0;
       while not_finished {
@@ -108,8 +135,10 @@ impl Handler {
         let callback_clone = callback.clone();
         crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback_clone.call(None, &make_args!(me), None)?; Ok(()) });
       }
+      */
       Ok(())
 		});
+    /*
     let patcher = self.patcher.clone();
     crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
       let result : Result<(), renegadex_patcher::Error>;
@@ -132,10 +161,12 @@ impl Handler {
       Ok(())
     });
     Ok(())
+    */
   }
 
   /// Removes files inside of the subdirectories that are not part of the instructions.json
   fn remove_unversioned(&self, callback_done: sciter::Value, error: sciter::Value) {
+    /*
     let patcher = self.patcher.remove_unversioned();
     crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
       let result : Result<(), renegadex_patcher::Error>;
@@ -156,6 +187,7 @@ impl Handler {
       };
       Ok(())
     });
+    */
   }
 
   fn get_video_location(&self, map_name: sciter::Value) -> String {
@@ -294,6 +326,7 @@ impl Handler {
 
   /// Checks if the launcher is up to date
   fn check_launcher_update(&self, callback: Value) -> Result<(), Error> {
+    /*
     let launcher_info_option = self.patcher.lock().or_else(|e| Err(Error::MutexPoisoned(format!("A mutex got poisoned: {}", e))))?.get_launcher_info();
     if let Some(launcher_info) = launcher_info_option {
       if VERSION != launcher_info.version_name && !launcher_info.prompted {
@@ -318,10 +351,12 @@ impl Handler {
         Ok(())
       });
     }
+    */
     Ok(())
   }
 
   fn install_redists(&self, done: Value, error_callback: Value) -> Result<(), Error> {
+    /*
     let mut cache_dir = dirs::cache_dir().ok_or_else(|| Error::None(format!("")))?;
     let patcher = self.patcher.clone();
     // Spawn thread, to not block the main process.
@@ -365,11 +400,13 @@ impl Handler {
 
       Ok::<(), Error>(())
     });
+    */
     Ok(())
   }
 
   /// Launcher updater
   fn update_launcher(&self, progress: Value) -> Result<(), Error> {
+    /*
     let launcher_info = self.patcher.lock().or_else(|e| Err(Error::MutexPoisoned(format!("A mutex got poisoned: {}", e))))?.get_launcher_info().ok_or_else(|| Error::None(format!("Couldn't fetch launcher info")))?;
     if VERSION != launcher_info.version_name {
       let socket_addrs = launcher_info.patch_url.parse::<url::Url>()?.socket_addrs(|| None)?;
@@ -427,6 +464,7 @@ impl Handler {
         Ok::<(),Error>(())
       });
     }
+    */
     Ok(())
   }
 
