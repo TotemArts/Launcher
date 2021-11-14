@@ -7,10 +7,10 @@ build = "build.rs"
 include = ["src/**/*", "Cargo.toml"]
 
 [dependencies]
-tokio = { version = "1.4", features = ["full"] }
+tokio = { version = "1.12", features = ["full"] }
 url = "2.2"
 sciter-rs = "0.5"
-renegadex_patcher = { git = "https://github.com/SonnyX/RenegadeX-patcher-lib", rev = "1b82927" }
+renegadex_patcher = { path = "../../RenegadeX-patcher-lib" }
 rust-ini = "0.17"
 single-instance = "0.3"
 socket2 = {version="0.4", features=["all"]}
@@ -25,6 +25,7 @@ log = "0.4"
 flexi_logger = "0.19"
 download-async = "0.10"
 async-trait = "0.1"
+json = "0.12"
 
 [build-dependencies]
 embed-resource = "1.6"
