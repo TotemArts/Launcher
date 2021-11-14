@@ -9,11 +9,12 @@ pub enum Error {
   IoError(std::io::Error),
 	DownloadError(Box<dyn std::error::Error + Sync + std::marker::Send>),
 	DownloadAsyncError(download_async::Error),
-  PatcherError(renegadex_patcher::traits::Error),
+  PatcherError(renegadex_patcher::Error),
   ValueError(VALUE_RESULT),
   NotUtf8(std::string::FromUtf8Error),
   Utf8Error(std::str::Utf8Error),
   ParseError(url::ParseError),
+  ParseIntError(std::num::ParseIntError),
   UnzipError(std::io::Error),
 }
 
@@ -35,6 +36,7 @@ impl std::fmt::Display for Error {
       Self::NotUtf8(e) => write!(f,"NotUtf8({:?})", e),
       Self::Utf8Error(e) => write!(f,"Utf8Error({:?})", e),
       Self::ParseError(e) => write!(f,"ParseError({:?})", e),
+      Self::ParseIntError(e) => write!(f,"ParseIntError({:?})", e),
       Self::UnzipError(e) => write!(f,"UnzipError({:?})", e),
     }
   }
@@ -70,10 +72,10 @@ impl From<download_async::Error> for Error {
   }
 }
 
-impl From<renegadex_patcher::traits::Error> for Error {
+impl From<renegadex_patcher::Error> for Error {
   #[track_caller]
   #[inline(always)]
-  fn from(error: renegadex_patcher::traits::Error) -> Self {
+  fn from(error: renegadex_patcher::Error) -> Self {
     log_error(&error);
     Self::PatcherError(error)
   }
@@ -121,6 +123,15 @@ impl From<url::ParseError> for Error {
   fn from(error: url::ParseError) -> Self {
     log_error(&error);
     Self::ParseError(error)
+  }
+}
+
+impl From<std::num::ParseIntError> for Error {
+  #[track_caller]
+  #[inline(always)]
+  fn from(error: std::num::ParseIntError) -> Self {
+    log_error(&error);
+    Self::ParseIntError(error)
   }
 }
 

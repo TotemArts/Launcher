@@ -2,18 +2,20 @@
 use socket2::*;
 
 use log::*;
-
-use std::sync::{Arc,Mutex};
+use tokio::sync::Mutex;
 
 use std::io::Write;
 use std::net::ToSocketAddrs;
-use renegadex_patcher::{Downloader,Update};
+use std::sync::Arc;
+use renegadex_patcher::Patcher;
 use sciter::Value;
 use sha2::{Sha256, Digest};
 use crate::configuration;
 use crate::error::Error;
 use crate::progress::ValueProgress;
+use crate::version_information::VersionInformation;
 use std::io::Read;
+use ini::Ini;
 
 /// The current launcher's version
 static VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -21,7 +23,8 @@ static VERSION: &str = env!("CARGO_PKG_VERSION");
 /// Structure for Sciter event handling.
 pub(crate) struct Handler {
   /// The reference to the back-end library which is responsible for downloading and updating the game.
-  pub patcher: Arc<Mutex<Downloader>>,
+  pub patcher: Option<Patcher>,
+  pub version_information: Arc<Mutex<Option<VersionInformation>>>,
   /// The configuration file for the launcher.
   pub configuration: configuration::Configuration,
   pub runtime: tokio::runtime::Handle
@@ -30,65 +33,46 @@ pub(crate) struct Handler {
 impl Handler {
   /// Check if there are game updates available, makes use of caching.
   fn check_update(&self, done: sciter::Value, error: sciter::Value) -> Result<(), Error> {
-    let progress = self.patcher.clone().lock().or_else(|_| Err(Error::MutexPoisoned(format!(""))))?.get_progress();
-    let update = &progress.lock().or_else(|_| Err(Error::MutexPoisoned(format!(""))))?.update.clone();
-    match update {
-      Update::UpToDate => {
-        crate::spawn_wrapper::spawn(move || -> Result<(), Error> { done.call(None, &make_args!("up_to_date"), None)?; Ok(()) });
-        return Ok(());
+    let renegadex_location = self.configuration.get_game_location();
+    let patch_dir_path = format!("{}/patcher/", renegadex_location).replace("//", "/");
+    match std::fs::read_dir(patch_dir_path) {
+      Ok(iter) => {
+        if iter.count() != 0 {
+          crate::spawn_wrapper::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("resume"), None)?; Ok(()) });
+          return Ok(());        }
       },
-      Update::Full => {
+      Err(_e) => {}
+    };
+  
+    let path = format!("{}/UDKGame/Config/DefaultRenegadeX.ini", renegadex_location);
+    let conf = match Ini::load_from_file(&path) {
+      Ok(file) => file,
+      Err(_e) => {
         crate::spawn_wrapper::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("full"), None)?; Ok(()) });
-        return Ok(());
-      },
-      Update::Resume => {
-        crate::spawn_wrapper::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("resume"), None)?; Ok(()) });
-        return Ok(());
-      },
-      Update::Delta => {
-        crate::spawn_wrapper::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("update"), None)?; Ok(()) });
-        return Ok(());
-      },
-      Update::Unknown => {}
-    }
-    drop(progress);
-    drop(update);
-    
-    let patcher = self.patcher.clone();
-		crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
-      let check_update = || -> Result<(), Error> {
-        let mut patcher = patcher.lock().or_else(|_| Err(Error::MutexPoisoned(format!(""))))?;
-        patcher.retrieve_mirrors()?;
-        let update_available = patcher.update_available().or_else(|e| Err(Error::None(e)))?;
-        drop(patcher);
-
-        match update_available {
-          Update::UpToDate => {
-            crate::spawn_wrapper::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("up_to_date"), None)?; Ok(()) });
-          },
-          Update::Full => {
-            crate::spawn_wrapper::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("full"), None)?; Ok(()) });
-          },
-          Update::Resume => {
-            crate::spawn_wrapper::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("resume"), None)?; Ok(()) });
-          },
-          Update::Delta => {
-            crate::spawn_wrapper::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("patch"), None)?; Ok(()) });
-          },
-          Update::Unknown => {
-            error!("Update::Unknown");
-          }
-        };
-        Ok(())
-		  };
-      let result : Result<(), Error> = check_update();
-      if let Err(err) = result {
-        error!("check_update failed with: {:#?}", &err);
-        crate::spawn_wrapper::spawn(move || -> Result<(), Error> { error.call(None, &make_args!(err.to_string()), None)?; Ok(()) });
+        return Ok(());      }
+    };
+  
+    let section = conf.section(Some("RenX_Game.Rx_Game".to_owned())).ok_or_else(|| Error::None(format!("No Configuration section named \"RenX_Game.Rx_Game\"")))?;
+    let game_version_number = section.get("GameVersionNumber").ok_or_else(|| Error::None(format!("No key in section \"RenX_Game.Rx_Game\"  named \"GameVersionNumber\"")))?;
+    let version_information = self.version_information.clone();
+    let version_url = self.configuration.get_version_url();
+    crate::spawn_wrapper::spawn_async(&self.runtime, async {
+      let version_information = version_information.lock().await;
+      if version_information.is_none() {
+        // download version information
+        *version_information = Some(VersionInformation::retrieve(&version_url).await?);
       }
-      Ok(())
+      let software_version = version_information.clone().unwrap().software;
+
+      if software_version.version_number != game_version_number.parse::<u64>()? {
+        crate::spawn_wrapper::spawn(move || -> Result<(), Error> { done.call(None, &make_args!("update"), None)?;; Ok(()) });
+        return Ok(());
+      }
+      
+      crate::spawn_wrapper::spawn(move || -> Result<(), Error> { done.call(None, &make_args!("up_to_date"), None)?; Ok(()) });
+      return Ok(());
     });
-    Ok(())
+    return Ok(());
   }
 
   /// Starts the downloading of the update/game
@@ -128,7 +112,7 @@ impl Handler {
 		});
     let patcher = self.patcher.clone();
     crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
-      let result : Result<(), renegadex_patcher::traits::Error>;
+      let result : Result<(), renegadex_patcher::Error>;
       {
         let mut locked_patcher = patcher.lock().or_else(|e| Err(Error::MutexPoisoned(format!("A poisoned Mutex: {}", e))))?;
         locked_patcher.rank_mirrors()?;
@@ -152,9 +136,9 @@ impl Handler {
 
   /// Removes files inside of the subdirectories that are not part of the instructions.json
   fn remove_unversioned(&self, callback_done: sciter::Value, error: sciter::Value) {
-    let patcher = self.patcher.clone();
+    let patcher = self.patcher.remove_unversioned();
     crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
-      let result : Result<(), renegadex_patcher::traits::Error>;
+      let result : Result<(), renegadex_patcher::Error>;
       {
         let mut locked_patcher = patcher.lock().or_else(|e| Err(Error::MutexPoisoned(format!("A poisoned Mutex: {}", e))))?;
         locked_patcher.rank_mirrors()?;

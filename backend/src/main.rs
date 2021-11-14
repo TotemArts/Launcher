@@ -21,13 +21,15 @@ mod handler;
 mod progress;
 mod error;
 mod spawn_wrapper;
+mod version_information;
+mod as_string;
 
 use crate::error::Error;
 use flexi_logger::{Age, Criterion, Cleanup, Logger, Naming};
 use log::*;
 use single_instance::SingleInstance;
 use std::sync::{Arc,Mutex};
-use renegadex_patcher::{Downloader};
+use renegadex_patcher::PatcherBuilder;
 use handler::Handler;
 
 static VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -145,10 +147,9 @@ fn launch_ui(current_dir: String) -> std::thread::JoinHandle<Result<(),Error>> {
       }
     }
     let runtime : tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build().expect("");
-    let patcher : Arc<Mutex<Downloader>> = Arc::new(Mutex::new(Downloader::new()));
     if configuration.get_playername().eq("UnknownPlayer") {
       let mut frame = sciter::Window::new();
-      frame.event_handler(Handler{patcher: patcher.clone(), configuration: configuration.clone(), runtime: runtime.handle().clone()});
+      frame.event_handler(Handler{patcher: None, version_information: None, configuration: configuration.clone(), runtime: runtime.handle().clone()});
       frame.load_file(&format!("file://{}/dom/first-startup.htm", &current_dir));
       frame.run_app();
     }
@@ -161,13 +162,8 @@ fn launch_ui(current_dir: String) -> std::thread::JoinHandle<Result<(),Error>> {
   
     let mut frame = sciter::Window::new();
     frame.sciter_handler(DebugHandler {});
-    let mut locked_patcher = patcher.lock().or_else(|e| Err(Error::MutexPoisoned(format!("A Mutex was poisoned: {}", e))))?;
-    locked_patcher.set_location(game_location);
-    locked_patcher.set_version_url(version_url);
-    drop(locked_patcher);
-    info!("Set patcher information!");
-  
-    frame.event_handler(Handler{patcher: patcher.clone(), configuration, runtime: runtime.handle().clone()});
+
+    frame.event_handler(Handler{patcher: None, version_information: None, configuration, runtime: runtime.handle().clone()});
     frame.load_file(&format!("file://{}/{}/index.htm", current_dir, &launcher_theme));
     info!("Launching app!");
   
