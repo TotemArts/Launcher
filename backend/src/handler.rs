@@ -117,7 +117,13 @@ impl Handler {
       });
 
       patcher.set_progress_callback(|progress| {
-        
+        let report_progress = || -> Result<(), Error> {
+          progress.get_current_action()?;
+          Ok(())
+        };
+        if let Err(e) = report_progress() {
+          error!("progress_callback: {}", e.to_string());
+        }
       });
 
       let mut patcher = patcher.build()?;
@@ -127,6 +133,17 @@ impl Handler {
       (*patcher_option) = Some(patcher);
       Ok(())
 		});
+  }
+
+  fn pause_patcher(&self) {
+    let patcher_mutex = self.patcher.clone();
+    crate::spawn_wrapper::spawn_async(&self.runtime, async move {
+        let patcher = patcher_mutex.lock().await;
+        if let Some(ref patcher) = *patcher {
+          let _ = patcher.pause();
+        }
+      Ok(())
+    });
   }
 
   /// Removes files inside of the subdirectories that are not part of the instructions.json
