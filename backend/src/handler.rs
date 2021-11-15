@@ -4,16 +4,13 @@ use socket2::*;
 use log::*;
 use tokio::sync::Mutex;
 
-use std::io::Write;
 use std::net::ToSocketAddrs;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use renegadex_patcher::{Patcher, PatcherBuilder};
 use sciter::Value;
-use sha2::{Sha256, Digest};
 use crate::configuration;
 use crate::error::Error;
-use crate::progress::ValueProgress;
 use crate::version_information::VersionInformation;
 use std::io::Read;
 use ini::Ini;
@@ -44,20 +41,23 @@ impl Handler {
     }
   
     let path = format!("{}/UDKGame/Config/DefaultRenegadeX.ini", renegadex_location);
-    let conf = match Ini::load_from_file(&path) {
+    let ini = Ini::load_from_file(&path);
+    let conf = match ini {
       Ok(file) => file,
       Err(_e) => {
         crate::spawn_wrapper::spawn(move || -> Result<(), Error> {done.call(None, &make_args!("full"), None)?; Ok(()) });
         return Ok(());
       }
     };
-  
     let section = conf.section(Some("RenX_Game.Rx_Game".to_owned())).ok_or_else(|| Error::None(format!("No Configuration section named \"RenX_Game.Rx_Game\"")))?;
-    let game_version_number = section.get("GameVersionNumber").ok_or_else(|| Error::None(format!("No key in section \"RenX_Game.Rx_Game\"  named \"GameVersionNumber\"")))?;
+    let game_version_number = section.get("GameVersionNumber").ok_or_else(|| Error::None(format!("No key in section \"RenX_Game.Rx_Game\"  named \"GameVersionNumber\"")))?.to_owned();
+    drop(section);
+    drop(conf);
+    
     let version_information = self.version_information.clone();
     let version_url = self.configuration.get_version_url();
-    crate::spawn_wrapper::spawn_async(&self.runtime, async {
-      let version_information = version_information.lock().await;
+    crate::spawn_wrapper::spawn_async(&self.runtime, async move {
+      let mut version_information = version_information.lock().await;
       if version_information.is_none() {
         // download version information
         *version_information = Some(VersionInformation::retrieve(&version_url).await?);
@@ -80,16 +80,17 @@ impl Handler {
     let configuration = self.configuration.clone();
     let version_information = self.version_information.clone();
     let patcher_mutex = self.patcher.clone();
+
 //    let progress = self.patcher.clone().lock().or_else(|_| Err(Error::MutexPoisoned(format!(""))))?.get_progress();
 		crate::spawn_wrapper::spawn_async(&self.runtime, async move {
       let patcher = patcher_mutex.lock().await;
-      if (*patcher).is_some() && (*patcher).as_ref().map(|patcher| patcher.in_progress).unwrap().load(Ordering::Relaxed) {
+      if (*patcher).is_some() && (*patcher).as_ref().map(|patcher| patcher.in_progress.clone()).unwrap().load(Ordering::Relaxed) {
 
         return Ok(());
       }
       drop(patcher);
 
-      let version_information = version_information.lock().await;
+      let mut version_information = version_information.lock().await;
       if version_information.is_none() {
         // download version information
         *version_information = Some(VersionInformation::retrieve(&configuration.get_version_url()).await?);
@@ -99,69 +100,33 @@ impl Handler {
       let mut patcher = PatcherBuilder::new();
       patcher.set_software_information(software_version.mirrors, software_version.version, software_version.instructions_hash);
       patcher.set_software_location(configuration.get_game_location());
-      let patcher = patcher.build()?;
+
+      patcher.set_success_callback(|| {
+        let success_callback = success_callback.clone();
+        info!("Calling download done");
+        crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
+          success_callback.call(None, &make_args!(false,false), None)?;
+          Ok(())
+        });
+      });
+
+      patcher.set_failure_callback(|e| {
+          let failure_callback = failure_callback.clone();
+          error!("{:#?}", &e);
+          crate::spawn_wrapper::spawn(move || -> Result<(), Error> {failure_callback.call(None, &make_args!(e.to_string()), None)?; Ok(()) });
+      });
+
+      patcher.set_progress_callback(|progress| {
+        
+      });
+
+      let mut patcher = patcher.build()?;
       patcher.start_patching().await;
       
-      let patcher_option = patcher_mutex.lock().await;
+      let mut patcher_option = patcher_mutex.lock().await;
       (*patcher_option) = Some(patcher);
-
-/*
-      let mut not_finished = true;
-      let mut last_download_size : u64 = 0;
-      while not_finished {
-        std::thread::sleep(std::time::Duration::from_millis(500));
-
-        let progress_locked = progress.lock().or_else(|_| Err(Error::MutexPoisoned(format!(""))))?;
-
-        let sizes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
-        let bytes = ((progress_locked.download_size.0 - last_download_size) * 2) as f64;
-        let base = bytes.log(1024_f64).floor() as usize;
-        let speed = format!("{:.2} {}/s", bytes / 1024_u64.pow(base as u32) as f64, sizes[base]);
-
-        let json = format!(
-          "{{\"hash\": [{},{}],\"download\": [{}.0,{}.0],\"patch\": [{},{}],\"download_speed\": \"{}\"}}",
-          progress_locked.hashes_checked.0,
-          progress_locked.hashes_checked.1,
-          progress_locked.download_size.0,
-          progress_locked.download_size.1,
-          progress_locked.patch_files.0,
-          progress_locked.patch_files.1,
-          speed
-        );
-        let me : Value = json.parse().or_else(|e| Err(Error::None(format!("Failed to parse Json, error \"{}\": {}", e, json))))?;
-        last_download_size = progress_locked.download_size.0;
-        not_finished = !progress_locked.finished_patching;
-        drop(progress_locked);
-        let callback_clone = callback.clone();
-        crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback_clone.call(None, &make_args!(me), None)?; Ok(()) });
-      }
-      */
       Ok(())
 		});
-    /*
-    let patcher = self.patcher.clone();
-    crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
-      let result : Result<(), renegadex_patcher::Error>;
-      {
-        let mut locked_patcher = patcher.lock().or_else(|e| Err(Error::MutexPoisoned(format!("A poisoned Mutex: {}", e))))?;
-        locked_patcher.rank_mirrors()?;
-        locked_patcher.poll_progress();
-        result = locked_patcher.download();
-      }
-      match result {
-        Ok(()) => {
-          info!("Calling download done");
-          crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback_done.call(None, &make_args!(false,false), None)?; Ok(()) });
-        },
-        Err(e) => {
-          error!("{:#?}", &e);
-          crate::spawn_wrapper::spawn(move || -> Result<(), Error> {error.call(None, &make_args!(e.to_string()), None)?; Ok(()) });
-        }
-      };
-      Ok(())
-    });
-    Ok(())
-    */
   }
 
   /// Removes files inside of the subdirectories that are not part of the instructions.json

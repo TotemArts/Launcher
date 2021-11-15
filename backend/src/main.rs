@@ -23,6 +23,7 @@ mod error;
 mod spawn_wrapper;
 mod version_information;
 mod as_string;
+mod functions;
 
 use crate::error::Error;
 use flexi_logger::{Age, Criterion, Cleanup, Logger, Naming};
