@@ -9,67 +9,7 @@
     @import url(news.css);
     @import url(chat.css);
   </style>
-  <script src="events.js" type="text/javascript"></script>
-  <script src="functional.js" type="text/javascript"></script>
   <script src="app.js" type="module"></script>
-  <script type="text/javascript">
-    var sciter, sys, debug, servers;
-
-    (async () => {
-      sciter = await import("@sciter");
-      sys = await import("@sys");
-      debug = await import("@debug");
-      servers = await import("servers");
-
-      debug.setUnhandledExeceptionHandler(function (err) {
-        try {
-          console.error("setUnhandledExceptionHandler:");
-          console.error(printf("Caught exception: %s\n%V", err, err.stacktrace));;
-        } catch (e) {
-          console.error("setUnhandledExceptionHandler:");
-          console.error(printf("Caught exception: %s\n%V", e, e.stacktrace));;
-        }
-      });
-
-      Element.prototype.load = function (file, base_url = undefined) {
-        try {
-          console.log("Called prototype load!");
-          if (base_url != undefined) {
-            console.log("Loading HTML into element:");
-            console.log(this);
-            this.content(file);
-            return true;
-          } else {
-            console.log("Loading file \"" + file + "\" into element:");
-            console.log(this);
-            this.content(sciter.decode(sys.fs.$readfile("dom/" + file)));
-            if (this.$("div.servers.placeholder")) {
-              let ServerList = servers.ServerList;
-              this.$("div.servers.placeholder").patch(<ServerList servers={server_list} />);
-            }
-            return true;
-          }
-        } catch (e) {
-          console.error("Element.load:");
-          console.error(printf("Caught exception: %s\n%V", e, e.stacktrace));;
-        }
-      };
-      try {
-        /*
-        document.$("#content").load(document.$("div.current").getAttribute("page"));
-        set_current_page(document.$("div.current"));
-        Window.this.xcall("check_launcher_update", check_launcher_result);
-        initialize_variables();
-        Window.this.xcall("get_servers", getServersCallback);
-        load_news_feed();
-        */
-      } catch (e) {
-        console.error("index.htm");
-        console.error(printf("Caught exception: %s\n%V", e, e.stacktrace));;
-      }
-    })();
-
-  </script>
 </head>
 
 <body />

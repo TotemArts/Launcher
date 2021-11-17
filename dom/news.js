@@ -4,6 +4,10 @@ export class News extends Element {
         console.log("hi");
     }
 
+    getServersCallback(text) {
+        console.log(text);
+    }
+
     render() {
         return <div class="news-grid">
             <div class="logo hflow">

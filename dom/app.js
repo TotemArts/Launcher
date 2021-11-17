@@ -1,22 +1,41 @@
 import { News } from "news";
 import { GameDashboard } from "game-dashboard";
 import { Settings } from "settings";
+import { Confirm } from "confirm";
+import { Progress } from "progress";
+import * as debug from "@debug";
+
+
+debug.setUnhandledExeceptionHandler(function (err) {
+    try {
+      console.error("setUnhandledExceptionHandler:");
+      console.error(printf("Caught exception: %s\n%V", err, err.stacktrace));;
+    } catch (e) {
+      console.error("setUnhandledExceptionHandler:");
+      console.error(printf("Caught exception: %s\n%V", e, e.stacktrace));;
+    }
+  });
+
+function check_launcher_result(version) {
+    console.log("check_launcher_result callback");
+}
+
+function getServersCallback(servers) {
+    globalThis.servers = servers;
+}
 
 class App extends Element {
-    news_items = [];
-    servers = [];
-
     constructor() {
         super();
+        globalThis.servers=[];
         Window.this.xcall("check_launcher_update", check_launcher_result);
-        Window.this.xcall("get_servers", News.getServersCallback);
-        load_news_feed();
+        Window.this.xcall("get_servers", getServersCallback);
+        //load_news_feed();
     }
 
-
     pages = {
-        news: <News items={this.news_items} />,
-        game: <GameDashboard servers={this.servers} />
+        news: <News />,
+        game: <GameDashboard />
     };
 
     overlays = {
@@ -24,6 +43,22 @@ class App extends Element {
     };
 
     current = "game";
+
+    reset_game() {
+        var overlay = document.$("#overlay");
+        overlay.patch(<div id="overlay">{<Confirm title="Clean Game Install" message={<p>Are you sure you want to do this?<br/>This will remove any additional content downloaded!</p>} confirm="Clean!" confirm_callback={this.internal_reset_game} cancel="Uh..."/>}</div>);
+
+        overlay.style["visibility"] = "visible";
+        document.$("div.menuEntries").state.disabled = true;
+    }
+
+    internal_reset_game() {
+        var overlay = document.$("#overlay");
+        overlay.patch(<div id="overlay">{<Progress />}</div>);
+
+        overlay.style["visibility"] = "visible";
+        document.$("div.menuEntries").state.disabled = true;
+    }
 
     componentDidMount() {
         document.$("#content").patch(<div id="content">{this.pages[this.current]}</div>);
@@ -61,10 +96,22 @@ class App extends Element {
         document.$("#content").patch(<div id="content">{this.pages[input.getAttribute("page")]}</div>);
         document.$("[page=" + this.current + "]").classList.remove("current");
         input.classList.add("current");
-        this.current = input;
+        this.current = input.getAttribute("page");
     }
+
     ["on click at [overlay]"](evt, input) {
-        document.$("#overlay").patch(<div id="overlay">{this.overlays[input.getAttribute("overlay")]}</div>);
+        var overlay = document.$("#overlay");
+        overlay.patch(<div id="overlay">{this.overlays[input.getAttribute("overlay")]}</div>);
+
+        overlay.style["visibility"] = "visible";
+        document.$("div.menuEntries").state.disabled = true;
+    }
+
+    ["on click at #overlay [close]"](evt, input) {
+        var overlay = document.$("#overlay");
+        overlay.patch(<div id="overlay"></div>);
+        overlay.style["visibility"] = "collapse";
+        document.$("div.menuEntries").state.disabled = false;
     }
 }
 
