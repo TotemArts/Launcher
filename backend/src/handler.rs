@@ -509,9 +509,11 @@ impl Handler {
     });
     Ok(())
   }
-
   fn open_launcher_logs_folder(&self) {
+    #[cfg(target_os = "windows")]
     let spawned_process = std::process::Command::new("explorer.exe").arg(self.configuration.get_log_directory()).spawn();
+    #[cfg(target_os = "linux")]
+    let spawned_process = std::process::Command::new("xdg-open").arg(self.configuration.get_log_directory()).spawn();
   }
 }
 

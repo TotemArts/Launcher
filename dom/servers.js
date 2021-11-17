@@ -6,11 +6,16 @@ export class VirtualList extends Element {
   props;
 
   this(props) {
-    super.this?.(props);
-    this.props = props; 
-    this.renderItem = props.renderItem || this.renderItem;
-    this.renderList = props.renderList || this.renderList;
+    console.log("VirtualList render");
+    let {renderItem,renderList,...rest } = props;
+    console.log("VirtualList render");
+    super.this?.(rest);
+    console.log("VirtualList render");
+    this.props = rest; 
+    this.renderItem = renderItem || this.renderItem;
+    this.renderList = renderList || this.renderList;
     this.styleset = props.styleset || (__DIR__ + "virtual-select.css#virtual-select");
+    console.log("VirtualList constructor");
   }
 
   itemAt(at) {     // virtual function, must be overriden
@@ -24,6 +29,7 @@ export class VirtualList extends Element {
   }
 
   render() {
+    console.log("VirtualList render");
     let list = [];
     if(!this.vlist) return this.renderList(list);
     
@@ -131,22 +137,22 @@ export class VirtualList extends Element {
     switch(evt.code) {
       case "KeyDOWN" : 
         if(!this.currentItem) { 
-          this.componentUpdate { currentItem : this.itemOfElement(this.vlist.firstVisibleItem) };
+          this.componentUpdate({ currentItem : this.itemOfElement(this.vlist.firstVisibleItem) });
         } else {
           let index = this.indexOf(this.currentItem);
           if( ++index < this.totalItems() ) {
-            this.componentUpdate { currentItem : this.itemAt(index) };
+            this.componentUpdate({ currentItem : this.itemAt(index) });
             this.vlist.navigate("advance",index);
           }
         }
         break;
       case "KeyUP" : 
         if(!this.currentItem) { 
-          this.componentUpdate { currentItem : this.itemOfElement(this.vlist.lastVisibleItem) };
+          this.componentUpdate({ currentItem : this.itemOfElement(this.vlist.lastVisibleItem) });
         } else {
           let index = this.indexOf(this.currentItem);
           if( --index >= 0 ) {
-            this.componentUpdate { currentItem : this.itemAt(index) };
+            this.componentUpdate({ currentItem : this.itemAt(index) });
             this.vlist.navigate("advance",index);
           }
         }
@@ -175,7 +181,7 @@ export class VirtualList extends Element {
       }
     }
     if(option) {
-      this.componentUpdate { currentItem : this.itemOfElement(option) };
+      this.componentUpdate({ currentItem : this.itemOfElement(option) });
       this.post(new Event("input", {bubbles:true}));
       return true;
     }
@@ -192,30 +198,41 @@ export class VirtualList extends Element {
 }
 
 
+
+
 export class ServerList extends VirtualList {
-    items = [];
+  list;
 
     constructor(props) {
-      super(props);
-      this.items = props?.items || [];
+      console.log("ServerList");
+      let {list, ...rest} = props;
+      console.log("ServerList 2");
+      super.this(rest);
+      console.log("ServerList 3");
+      this.list = list;
     }
 
-    itemAt(at) {     // virtual function, can be overriden
-      return this.items?.[at];
+    itemAt(at) {
+      console.log("ServerList itemAt");
+      return this.list[at];
     }
-    totalItems() {   // virtual function, can be overriden
-      return this.items?.length || 0; 
+    totalItems() {
+      console.log("ServerList totalItems");
+      return this.list.length;
     }
-    indexOf(item) {  // virtual function, can be overriden
-      return this.items?.indexOf(item);
+    indexOf(item) {
+      console.log("ServerList indexOf");
+      return this.list.indexOf(item);
+    }
+
+    renderItem(item,index) // overridable
+    {
+      console.log("renderItem");
+      return <option key={item.key}>item { index }</option>;
     }
 
     render(props) {
-      if((props?.items && (this.items !== props.items)) || !this.vlist) {
-        this.items = props?.items || [];
-        this.post( () => { this.vlist.navigate("start") } );
-        return this.renderList([],props);
-      }
+      console.log("ServerList render");
       return super.render(props);
     }
 
@@ -226,7 +243,7 @@ export class Servers extends Element
 {
   constructor(props) {
     super();
-    this.servers = props.servers;
+    //this.servers = props.servers;
     //console.log(this.servers.length);
   }
 
@@ -256,6 +273,7 @@ export class Servers extends Element
     </div>
     <div class="body mheight">
       <div class="servers">
+        
       </div>
     </div>
     <div class="titlebar">
