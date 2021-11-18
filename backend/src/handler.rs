@@ -155,6 +155,9 @@ impl Handler {
         let patcher = patcher_mutex.lock().await;
         if let Some(ref patcher) = *patcher {
           let _ = patcher.pause();
+          info!("paused patcher");
+        } else {
+          info!("No active patcher instance running to pause");
         }
       Ok(())
     });
@@ -166,6 +169,9 @@ impl Handler {
         let patcher = patcher_mutex.lock().await;
         if let Some(ref patcher) = *patcher {
           let _ = patcher.resume();
+          info!("resumed patcher");
+        } else {
+          info!("No active patcher instance running to resume");
         }
       Ok(())
     });
@@ -177,6 +183,9 @@ impl Handler {
       let mut patcher_option = patcher_mutex.lock().await;
       if let Some(patcher) = (*patcher_option).take() {
         patcher.cancel().await;
+        info!("cancelled patcher");
+      } else {
+        info!("No active patcher instance running to cancel");
       }
       Ok(())
     });

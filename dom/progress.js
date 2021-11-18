@@ -61,6 +61,7 @@ export class Progress extends Element
 
     ["on click at button#left"](evt, input) {
       console.log("cancelling download");
+      Window.this.xcall("cancel_patcher");
     }
 
     ["on click at button#right"](evt, input) {
