@@ -93,7 +93,17 @@ impl Handler {
       let mut version_information = version_information.lock().await;
       if version_information.is_none() {
         // download version information
-        *version_information = Some(VersionInformation::retrieve(&configuration.get_version_url()).await?);
+        let result = VersionInformation::retrieve(&configuration.get_version_url()).await;
+        if let Ok(info) = result {
+          *version_information = Some(info);
+        } else if let Err(e) = result {
+          //let failure_callback = failure_callback.clone();
+          //let error = e.to_string().clone();
+          //info!("{:?}", e);
+          let error = format!("{:?}", e);
+          crate::spawn_wrapper::spawn(move || -> Result<(), Error> {failure_callback.call(None, &make_args!(error), None)?; Ok(()) });
+          return Ok(());
+        }
       }
       let software_version = version_information.clone().unwrap().software;
 
@@ -101,30 +111,34 @@ impl Handler {
       patcher.set_software_information(software_version.mirrors, software_version.version, software_version.instructions_hash);
       patcher.set_software_location(configuration.get_game_location());
 
-      patcher.set_success_callback(|| {
+      patcher.set_success_callback(Box::new(move || {
         let success_callback = success_callback.clone();
         info!("Calling download done");
         crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
           success_callback.call(None, &make_args!(false,false), None)?;
           Ok(())
         });
-      });
+      }));
 
-      patcher.set_failure_callback(|e| {
+
+      patcher.set_failure_callback(Box::new(move |e| {
           let failure_callback = failure_callback.clone();
-          error!("{:#?}", &e);
+          error!("failure_callback {:#?}", &e);
           crate::spawn_wrapper::spawn(move || -> Result<(), Error> {failure_callback.call(None, &make_args!(e.to_string()), None)?; Ok(()) });
-      });
+      }));
 
-      patcher.set_progress_callback(|progress| {
+
+      patcher.set_progress_callback(Box::new(move |progress| {
         let report_progress = || -> Result<(), Error> {
-          progress.get_current_action()?;
+          let current_action = progress.get_current_action()?;
+          let progress_callback = progress_callback.clone();
+          crate::spawn_wrapper::spawn(move || -> Result<(), Error> {progress_callback.call(None, &make_args!(current_action), None)?; Ok(()) });
           Ok(())
         };
         if let Err(e) = report_progress() {
           error!("progress_callback: {}", e.to_string());
         }
-      });
+      }));
 
       let mut patcher = patcher.build()?;
       patcher.start_patching().await;
@@ -142,6 +156,28 @@ impl Handler {
         if let Some(ref patcher) = *patcher {
           let _ = patcher.pause();
         }
+      Ok(())
+    });
+  }
+
+  fn resume_patcher(&self) {
+    let patcher_mutex = self.patcher.clone();
+    crate::spawn_wrapper::spawn_async(&self.runtime, async move {
+        let patcher = patcher_mutex.lock().await;
+        if let Some(ref patcher) = *patcher {
+          let _ = patcher.resume();
+        }
+      Ok(())
+    });
+  }
+
+  fn cancel_patcher(&self) {
+    let patcher_mutex = self.patcher.clone();
+    crate::spawn_wrapper::spawn_async(&self.runtime, async move {
+      let mut patcher_option = patcher_mutex.lock().await;
+      if let Some(patcher) = (*patcher_option).take() {
+        patcher.cancel().await;
+      }
       Ok(())
     });
   }
@@ -525,7 +561,12 @@ impl sciter::EventHandler for Handler {
 	dispatch_script_call! {
     fn check_update(Value, Value);
     fn install_redists(Value, Value);
+
     fn start_download(Value, Value, Value);
+    fn cancel_patcher();
+    fn resume_patcher();
+    fn pause_patcher();
+
     fn remove_unversioned(Value, Value);
 
     fn get_playername();
