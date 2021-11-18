@@ -171,6 +171,7 @@ fn launch_ui(current_dir: String) -> std::thread::JoinHandle<Result<(),Error>> {
     frame.run_app();
   
     info!("Gracefully shutting down app!");
+    runtime.shutdown_background();
     Ok(())
   })
 }
