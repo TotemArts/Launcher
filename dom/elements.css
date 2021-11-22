@@ -376,14 +376,8 @@ div.downloadBar > .indicator {
  */
 table.servers {
   style-set: serverTable;
-  behavior: virtual-list;
   width: *;
   height: *;
-  min-height: 100dip;
-
-  flow: vertical;
-  overflow-x: none;
-  overflow-y: scroll-indicator;
   display: block;
 }
 
@@ -416,11 +410,16 @@ table.servers {
   }
   
   table:root[resizeable] > thead {
-    behavior:column-resizer;
+    //behavior:column-resizer;
   }
 
   table:root > tbody { 
-    overflow-y: auto;
+    overflow-x: none;
+    overflow-y: scroll-indicator;
+    behavior: virtual-list;
+    width: *;
+    height: *;
+    min-height: 100dip;
     scroll-manner: scroll-manner(
       animation:false,
       step:auto
