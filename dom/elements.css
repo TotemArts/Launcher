@@ -376,15 +376,19 @@ div.downloadBar > .indicator {
  */
 table.servers {
   style-set: serverTable;
+  behavior: virtual-list;
   width: *;
   height: *;
   min-height: 100dip;
-  aspect: "Emu.server_table";
+
+  flow: vertical;
+  overflow-x: none;
+  overflow-y: scroll-indicator;
+  display: block;
 }
 
 @set serverTable {
   table:root {
-    //prototype: VGrid url(vlist.js);  
     flow:table-fixed;
     border-spacing:0;
     padding:0;

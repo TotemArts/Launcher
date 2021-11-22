@@ -4,7 +4,9 @@
     behavior: virtual-list;
     display:block;
     flow:vertical;
-    size:*;
+    width: *;
+    min-height: 100dip;
+    height: *;
     overflow-x:none; 
     overflow-y:scroll-indicator;
   }
