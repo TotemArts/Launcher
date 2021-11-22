@@ -180,6 +180,8 @@ class VirtualList extends Element {
   }
 
   setCurrentOption(child) {
+    console.log("setCurrentOption");
+    console.log(child);
     let option;
     for(let node = child; node; node = node.parentElement) {
       if(node.parentElement === this) {
@@ -188,6 +190,7 @@ class VirtualList extends Element {
       }
     }
     if(option) {
+      console.log(this.itemOfElement(option));
       this.componentUpdate({ currentItem : this.itemOfElement(option) });
       this.post(new Event("input", {bubbles:true}));
       return true;
@@ -214,50 +217,41 @@ class List extends VirtualList {
   }
 
   itemAt(at) {
-    console.log("this.list.length: " + this.list.length);
+    console.log("itemAt: " + this.list[at]);
 
     return this.list[at];
   }
   totalItems() {
-    console.log("this.list.length: " + this.list.length);
+    console.log("totalItems: " + this.list.length);
     return this.list.length;
   }
   indexOf(item) {
-    console.log("this.list.length: " + this.list.length);
+    console.log("indexOf: " + item);
 
     return this.list.indexOf(item);
   }
 
+  renderList(items) // overridable
+  {
+    return <tbody>
+          { items }
+        </tbody>; 
+  }
+
   renderItem(item, isCurrent, isSelected) {
-    return <option key={item.key} 
-                   state-current={isCurrent} 
-                   state-checked={isSelected}>{item.text}</option>;
+    return <tr key={item.key}>
+              <th></th>
+              <th>Server Name</th>
+              <th>Map</th>
+              <th>Players</th>
+              <th>Ping</th>
+            </tr>;
   }
 }
 
 export class Servers extends Element 
 {
   list = [
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
     {key:"j",text:"hi"}, 
     {key:"j",text:"hi"}, 
     {key:"j",text:"hi"}, 
@@ -320,7 +314,18 @@ export class Servers extends Element
       <checkmark class="big checked" toggle/><p class="nowrap">Same version</p>
     </div>
     <div class="body mheight">
-      <List id="servers" list={this.list} />
+      <table class="servers" {...this.props}>
+        <thead>
+          <tr>
+            <th id="locked" class="locked sortable"></th>
+            <th id="name" class="sortable">Server Name</th>
+            <th id="map" class="sortable">Map</th>
+            <th id="players" class="sortable">Players</th>
+            <th id="latency" class="sortable">Ping</th>
+          </tr>
+        </thead>
+        <List list={this.list} />
+      </table>
     </div>
     <div class="titlebar">
       <h3 class="title"><output title_menu/></h3>
