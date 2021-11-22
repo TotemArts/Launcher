@@ -130,9 +130,21 @@ impl Handler {
 
       patcher.set_progress_callback(Box::new(move |progress| {
         let report_progress = || -> Result<(), Error> {
-          let current_action = progress.get_current_action()?;
           let progress_callback = progress_callback.clone();
-          crate::spawn_wrapper::spawn(move || -> Result<(), Error> {progress_callback.call(None, &make_args!(current_action), None)?; Ok(()) });
+
+          let json = format!(
+            "{{\"action\": \"{}\",\"hash\": [{},{}],\"download\": [{}.0,{}.0],\"patch\": [{},{}],\"download_speed\": \"{}\"}}",
+            progress.get_current_action()?,
+            progress.processed_instructions.0.load(Ordering::Relaxed),
+            progress.processed_instructions.1.load(Ordering::Relaxed),
+            progress.downloaded_bytes.0.load(Ordering::Relaxed),
+            progress.downloaded_bytes.1.load(Ordering::Relaxed),
+            progress.patched_files.0.load(Ordering::Relaxed),
+            progress.patched_files.1.load(Ordering::Relaxed),
+            "0 Mb/s"
+          );
+          let me : Value = json.parse().or_else(|e| Err(Error::None(format!("Failed to parse Json, error \"{}\": {}", e, json))))?;
+          crate::spawn_wrapper::spawn(move || -> Result<(), Error> {progress_callback.call(None, &make_args!(me), None)?; Ok(()) });
           Ok(())
         };
         if let Err(e) = report_progress() {
