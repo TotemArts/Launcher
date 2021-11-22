@@ -10,7 +10,7 @@ include = ["src/**/*", "Cargo.toml"]
 tokio = { version = "1.12", features = ["full"] }
 url = "2.2"
 sciter-rs = "0.5"
-renegadex_patcher = { path = "../../RenegadeX-patcher-lib" }
+renegadex_patcher = { git = "https://github.com/SonnyX/RenegadeX-patcher-lib" }
 rust-ini = "0.17"
 single-instance = "0.3"
 socket2 = {version="0.4", features=["all"]}
