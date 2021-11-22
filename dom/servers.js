@@ -1,4 +1,4 @@
-export class VirtualList extends Element {
+class VirtualList extends Element {
 
   currentItem = null; // item, one of items
   selectedItems;// TODO: = new WeakSet();
@@ -6,16 +6,13 @@ export class VirtualList extends Element {
   props;
 
   this(props) {
-    console.log("VirtualList render");
+
     let {renderItem,renderList,...rest } = props;
-    console.log("VirtualList render");
     super.this?.(rest);
-    console.log("VirtualList render");
     this.props = rest; 
     this.renderItem = renderItem || this.renderItem;
     this.renderList = renderList || this.renderList;
     this.styleset = props.styleset || (__DIR__ + "virtual-select.css#virtual-select");
-    console.log("VirtualList constructor");
   }
 
   itemAt(at) {     // virtual function, must be overriden
@@ -29,10 +26,12 @@ export class VirtualList extends Element {
   }
 
   render() {
-    console.log("VirtualList render");
     let list = [];
-    if(!this.vlist) return this.renderList(list);
-    
+    if(!this.vlist) {
+      console.log("this isn't a virtual list");
+      return this.renderList(list);
+    }
+    console.log("this is a virtual list");
     let firstIndex = this.vlist.firstBufferIndex;
     let lastIndex = this.vlist.lastBufferIndex;
     let firstVisibleIndex = firstIndex + this.vlist.firstVisibleItem?.elementIndex || 0;
@@ -64,6 +63,8 @@ export class VirtualList extends Element {
   // scroll down
   appendElements(index,n) 
   {
+    console.log("appendElements; index: " + index + ", n: " + n);
+
     let {currentItem, selectedItems } = this;
     if( index === undefined ) index = 0;
     let elements = [];
@@ -79,6 +80,7 @@ export class VirtualList extends Element {
   // scroll up
   prependElements(index,n) 
   {
+    console.log("prependElements; index: " + index + ", n: " + n);
     let {currentItem, selectedItems } = this;
     if( index === undefined ) index = this.totalItems() - 1;
     let elements = [];
@@ -95,6 +97,7 @@ export class VirtualList extends Element {
   // scroll to
   replaceElements(index,n) 
   {
+    console.log("replaceElements; index: " + index + ", n: " + n);
     let {currentItem, selectedItems } = this;
     let elements = [];
     let start = index;
@@ -111,8 +114,10 @@ export class VirtualList extends Element {
   }
 
   renderList(items) // overridable
-  { 
-    return <virtual-select {this.props} styleset={this.styleset}>{ items }</virtual-select>; 
+  {
+    console.log("renderList");
+    console.log(items);
+    return <table class="servers" {...this.props}>{ items }</table>; 
   }
 
   renderItem(item,index) // overridable
@@ -123,6 +128,8 @@ export class VirtualList extends Element {
   oncontentrequired(evt)
   {
     let {length, start, where} = evt.data;
+    console.log("oncontentrequired; evt.data.length: " + length + ", start: " + start);
+
     if(where > 0) evt.data = this.appendElements(start,length);  // scrolling down, need to append more elements
     else if(where < 0) evt.data = this.prependElements(start,length); // scrolling up, need to prepend more elements
     else evt.data = this.replaceElements(start,length); // scrolling to index
@@ -197,63 +204,104 @@ export class VirtualList extends Element {
 
 }
 
+class List extends VirtualList {
+  list; // array of items
 
+  this(props) { 
+    let {list, ...rest} = props;
+    super.this(rest); 
+    this.list = list;
+  }
 
+  itemAt(at) {
+    console.log("this.list.length: " + this.list.length);
 
-export class ServerList extends VirtualList {
-  list;
+    return this.list[at];
+  }
+  totalItems() {
+    console.log("this.list.length: " + this.list.length);
+    return this.list.length;
+  }
+  indexOf(item) {
+    console.log("this.list.length: " + this.list.length);
 
-    constructor(props) {
-      console.log("ServerList");
-      let {list, ...rest} = props;
-      console.log("ServerList 2");
-      super.this(rest);
-      console.log("ServerList 3");
-      this.list = list;
-    }
+    return this.list.indexOf(item);
+  }
 
-    itemAt(at) {
-      console.log("ServerList itemAt");
-      return this.list[at];
-    }
-    totalItems() {
-      console.log("ServerList totalItems");
-      return this.list.length;
-    }
-    indexOf(item) {
-      console.log("ServerList indexOf");
-      return this.list.indexOf(item);
-    }
-
-    renderItem(item,index) // overridable
-    {
-      console.log("renderItem");
-      return <option key={item.key}>item { index }</option>;
-    }
-
-    render(props) {
-      console.log("ServerList render");
-      return super.render(props);
-    }
-
-
+  renderItem(item, isCurrent, isSelected) {
+    return <option key={item.key} 
+                   state-current={isCurrent} 
+                   state-checked={isSelected}>{item.text}</option>;
+  }
 }
 
 export class Servers extends Element 
 {
-  constructor(props) {
-    super();
-    //this.servers = props.servers;
-    //console.log(this.servers.length);
-  }
+  list = [
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}, 
+    {key:"j",text:"hi"}];
 
   render(props) 
   {
-    let currentServer = props.current; // ChannelDriver
+    //let currentServer = props.current; // ChannelDriver
     //var list = Object.values(this.servers).map( (server) => <ServerCaption key={server.data.IP + ":" + server.data.Port} server={server} current={ server === currentServer } /> );
     //         {list}
 
-    return <div id="not_chat" class="join_server">
+    return <div {...this.props} id="not_chat" class="join_server">
     <div class="titlebar">
       <h3 class="title">Servers</h3>
       <p class="nowrap padding" style="font-size: 7pt;">There are currently <output players_online/> players online</p>
@@ -272,9 +320,7 @@ export class Servers extends Element
       <checkmark class="big checked" toggle/><p class="nowrap">Same version</p>
     </div>
     <div class="body mheight">
-      <div class="servers">
-        
-      </div>
+      <List id="servers" list={this.list} />
     </div>
     <div class="titlebar">
       <h3 class="title"><output title_menu/></h3>
