@@ -1,9 +1,9 @@
-import { News } from "news";
-import { GameDashboard } from "game-dashboard";
-import { Settings } from "settings";
-import { Confirm } from "confirm";
-import { Progress } from "progress";
-import { CallbackService } from "./callback_service";
+import { News } from "news.mjs";
+import { GameDashboard } from "game-dashboard.mjs";
+import { Settings } from "settings.mjs";
+import { Confirm } from "confirm.mjs";
+import { Progress } from "progress.mjs";
+import { CallbackService } from "callback_service.mjs";
 import * as debug from "@debug";
 
 globalThis.callback_service = new CallbackService();

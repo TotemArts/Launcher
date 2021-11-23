@@ -1,15 +1,16 @@
-import { Servers } from "servers.js";
+import { Servers } from "servers.mjs";
 
 export class GameDashboard extends Element 
 {
-  constructor(props) {
-    super();
-    this.servers = props.servers;
-    this.game_version = props.game_version;
+  username = "";
+  game_version = "";
+
+  this(props) {
     this.username = props.username;
+    this.game_version = props.game_version;
   }
 
-  render(props) 
+  render()
   {
     return <div class="grid">
   <div class="logo hflow">
@@ -29,7 +30,7 @@ export class GameDashboard extends Element
   <div class="right-margin"></div>
   <div class="footer-margin"></div>
   <div>
-    <Servers servers={this.servers} />
+    <Servers/>
     <div class="chat-container">
       <div class="titlebar">
         <h3 class="title">Chat Lobby</h3>
