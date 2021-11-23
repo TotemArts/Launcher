@@ -6,10 +6,21 @@ class ServersTable extends Element {
   list;
 
   this(props) {
-    let {list, ...rest} = props;
-    super.this?.(rest);
-    this.list = list;
-    this.props = rest; 
+    super.this?.(props);
+    this.props = props;
+
+    if(globalThis.servers) {
+      console.log("servers in globalThis");
+      this.list = globalThis.servers;
+    } else {
+      globalThis.servers_callback = function(data) {
+        console.log("servers_callback");
+        globalThis.servers = data;
+        globalThis.callback_service.publish("servers", data);
+      }
+      this.list = [];
+      Window.this.xcall("get_servers", globalThis.servers_callback);
+    }
   }
 
   itemAt(at) {
@@ -23,9 +34,12 @@ class ServersTable extends Element {
   }
 
   render() {
+    console.log("render ServerTable");
     let list = [];
     let totalItems = this.totalItems();
     let {currentItem, selectedItems } = this;
+
+
     for( let index = 0; index <= totalItems; ++index ) {
       let item = this.itemAt(index);
       if(item) list.push(this.renderItem(item,item === currentItem, selectedItems?.has(item)));
@@ -67,12 +81,18 @@ class ServersTable extends Element {
 
   renderItem(item, isCurrent, isSelected) {
     return <tr key={item.key}>
-              <th></th>
-              <th>Server Name</th>
-              <th>Map</th>
-              <th>Players</th>
+              <th class={this.isLocked(isCurrent)}></th>
+              <th>{item["Name"]}</th>
+              <th>{item["Current Map"]}</th>
+              <th>{item["Players"]}</th>
               <th>Ping</th>
             </tr>;
+  }
+
+  isLocked(isCurrent) {
+    if(isCurrent)
+      return "locked";
+    return "";
   }
   
   itemOfElement(element) {
@@ -80,6 +100,7 @@ class ServersTable extends Element {
   }
 
   onkeydown(evt) {
+    console.log("onkeydown");
     switch(evt.code) {
       case "KeyDOWN" : 
         if(!this.currentItem) { 
@@ -136,20 +157,13 @@ class ServersTable extends Element {
     }
   }
 
-  ["on mousedown"](evt) {
+  ["on mousedown at tr"](evt) {
     console.log("mousedown");
     if(evt.button == 1) {
       console.log("mousedown click");
       this.setCurrentOption(evt.target);
     }
   }
-  /*["on mousemove"](evt) {
-    console.log("mousemove");
-    if(evt.button == 1) {
-      console.log("mousemove click");
-      this.setCurrentOption(evt.target);
-    }
-  }*/
 
   get value() {
     if(!this.currentItem) return undefined;
@@ -157,52 +171,68 @@ class ServersTable extends Element {
   }
 }
 
+class ServerList {
+  minimum_players = 0;
+  maximum_players = 64;
+  sortBy = "Players";
+  game_version = "5.48.145";
+
+  servers;
+
+
+
+  set_minimum_players(players) {
+    this.minimum_players = players;
+    notify_subscribers();
+  }
+
+  set_maximum_players(players) {
+    this.maximum_players = players;
+    notify_subscribers();
+  }
+
+  notify_subscribers() {
+    const list = [];
+
+  /* Example entry of this.servers
+    {
+      "Name": "blabla",
+      "Current Map": "CNC-LakeSide",
+      "Bots": 1,
+      "Players": 0,
+      "Game Version": "5.48.145",
+      "Variables": {
+        "bPassworded": false,
+        "bAllowPrivateMessaging": true,
+        "bRanked": true,
+        "Game Type": 1,
+        "Player Limit": 10,
+        "Vehicle Limit": 11,
+        "bAutoBalanceTeams": false,
+        "Team Mode": 6,
+        "bSpawnCrates": true,
+        "CrateRespawnAfterPickup": 35.0,
+        "Time Limit": 0
+      },
+      "Port": 7777,
+      "IP": "00.00.00.143"
+    },
+  */
+    for(const server of this.servers) {
+      if(server["Players"] >= this.minimum_players && 
+        server["Players"] <= this.maximum_players &&
+        (!this.same_version || server["Game Version"] == this.game_version)) {
+          list.push(server);
+      }
+    }
+    globalThis.callback_service.publish("servers", list);
+  }
+}
+
 export class Servers extends Element 
 {
-  list = [
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}, 
-    {key:"j",text:"hi"}];
-
   render(props) 
   {
-    //let currentServer = props.current; // ChannelDriver
-    //var list = Object.values(this.servers).map( (server) => <ServerCaption key={server.data.IP + ":" + server.data.Port} server={server} current={ server === currentServer } /> );
-    //         {list}
-
     return <div {...this.props} id="not_chat" class="join_server">
     <div class="titlebar">
       <h3 class="title">Servers</h3>
@@ -210,7 +240,7 @@ export class Servers extends Element
       <div class="spacer"></div>
       filter
       <div class="filter down"></div>
-      <div class="refresh" onclick="Window.this.xcall('get_servers', getServersCallback);"></div>
+      <div class="refresh"></div>
     </div>
     <div class="filterbar">
       <p class="nowrap">Players: <output server_filter_players_min /> - <output server_filter_players_max /></p>
@@ -222,7 +252,7 @@ export class Servers extends Element
       <checkmark class="big checked" toggle/><p class="nowrap">Same version</p>
     </div>
     <div class="body mheight">
-      <ServersTable list={this.list}></ServersTable>
+      <ServersTable />
     </div>
     <div class="titlebar">
       <h3 class="title"><output title_menu/></h3>

@@ -22,17 +22,10 @@ function check_launcher_result(version) {
     console.log("check_launcher_result callback");
 }
 
-function getServersCallback(servers) {
-    globalThis.servers = servers;
-}
-
 class App extends Element {
     constructor() {
         super();
-        globalThis.servers=[];
         Window.this.xcall("check_launcher_update", check_launcher_result);
-        Window.this.xcall("get_servers", getServersCallback);
-        //load_news_feed();
     }
 
     pages = {
@@ -67,7 +60,7 @@ class App extends Element {
     }
 
     render(props) {
-        return <body model="Data">
+        return <body>
             <div id="header" style="background-color: #0D1721; margin-top: 2px;">
                 <div class="headerSpacer left">
                     <a class="facebook" href="https://www.facebook.com/RenXFirestorm/" target="@system"></a>
