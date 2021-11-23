@@ -51,17 +51,17 @@ export class Progress extends Element
       var download_progress = (progress["download"][1] != 0) ? progress["download"][0] * 100 / progress["download"][1] : 0.0;
 
       if (progress["download"][1] != 0 && progress["hash"][1] == 0) {
-        processed_instructions = 100;
+        var processed_instructions = 100;
       } else {
-        processed_instructions = (progress["hash"][1] != 0) ? progress["hash"][0] * 100 / progress["hash"][1] : 0;
+        var processed_instructions = (progress["hash"][1] != 0) ? progress["hash"][0] * 100 / progress["hash"][1] : 0;
       }
 
       document.$("div#progress").componentUpdate({
-        current_state: action,
+        current_state: progress["action"],
         hash_progress: processed_instructions,
         hash_progress_done: progress["hash"][0],
         hash_progress_total: progress["hash"][1],
-        download_progress: String.printf("%.1f", download_progress),
+        download_progress: printf("%.1f", download_progress),
         download_speed: progress["download_speed"],
         patch_progress: (progress["patch"][1] != 0) ? progress["patch"][0] * 100 / progress["patch"][1] : 0,
         patch_progress_done: progress["patch"][0],
