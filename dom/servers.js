@@ -1,176 +1,115 @@
-class VirtualList extends Element {
+class ServersTable extends Element {
 
-  currentItem = null; // item, one of items
-  selectedItems;// TODO: = new WeakSet();
-  styleSet;
+  currentItem = null;
+  selectedItems;
   props;
+  list;
 
   this(props) {
-
-    let {renderItem,renderList,...rest } = props;
+    let {list, ...rest} = props;
     super.this?.(rest);
+    this.list = list;
     this.props = rest; 
-    this.renderItem = renderItem || this.renderItem;
-    this.renderList = renderList || this.renderList;
-    this.styleset = props.styleset || (__DIR__ + "virtual-select.css#virtual-select");
   }
 
-  itemAt(at) {     // virtual function, must be overriden
-    return null;
+  itemAt(at) {
+    return this.list[at];
   }
-  totalItems() {   // virtual function, must be overriden
-    return 0; 
+  totalItems() {
+    return this.list.length;
   }
-  indexOf(item) {  // virtual function, must be overriden
-    return -1;
+  indexOf(item) {
+    return this.list.indexOf(item);
   }
 
   render() {
     let list = [];
-    if(!this.vlist) {
-      console.log("this isn't a virtual list");
-      return this.renderList(list);
-    }
-    console.log("this is a virtual list");
-    let firstIndex = this.vlist.firstBufferIndex;
-    let lastIndex = this.vlist.lastBufferIndex;
-    let firstVisibleIndex = firstIndex + this.vlist.firstVisibleItem?.elementIndex || 0;
-    let lastVisibleIndex = firstIndex + this.vlist.lastVisibleItem?.elementIndex;
-
     let totalItems = this.totalItems();
-
-    if(this.vlist.itemsTotal != totalItems) { // number of items reduced, update scroll
-      if( firstVisibleIndex == 0 ) {  
-        this.post(() => {this.vlist.navigate("start")});
-        return this.renderList([]); // render empty list and request "from start" navigation
-      }
-      if( lastVisibleIndex >= totalItems ) {  
-        this.post(() => {this.vlist.navigate("end")});
-        return this.renderList([]); // render empty list and request "from end" navigation
-      }
-      lastIndex = Math.min(totalItems, firstIndex + this.vlist.slidingWindowSize) - 1;
-      this.post( () => { this.vlist.itemsAfter = totalItems - this.vlist.itemsBefore - this.children.length; });
-    }
-
     let {currentItem, selectedItems } = this;
-    for( let index = firstIndex; index <= lastIndex; ++index ) {
+    for( let index = 0; index <= totalItems; ++index ) {
       let item = this.itemAt(index);
       if(item) list.push(this.renderItem(item,item === currentItem, selectedItems?.has(item)));
     }
     return this.renderList(list);
   }
 
-  // scroll down
-  appendElements(index,n) 
-  {
-    console.log("appendElements; index: " + index + ", n: " + n);
-
-    let {currentItem, selectedItems } = this;
-    if( index === undefined ) index = 0;
-    let elements = [];
-    for(let i = 0; i < n; ++i, ++index) {
-      if(index >= this.totalItems()) break;
-      let item = this.itemAt(index);
-      elements.push( this.renderItem(item,item === currentItem, selectedItems?.has(item)) );
-    }
-    this.append(elements);
-    return { moreafter: (this.totalItems() - index) }; // return estimated number of items below this chunk
+  componentDidMount() {
+    globalThis.callback_service.subscribe("servers", this, this.callback);
   }
 
-  // scroll up
-  prependElements(index,n) 
-  {
-    console.log("prependElements; index: " + index + ", n: " + n);
-    let {currentItem, selectedItems } = this;
-    if( index === undefined ) index = this.totalItems() - 1;
-    let elements = [];
-    for(let i = 0; i < n; ++i, --index) {
-      if(index < 0) break;
-      let item = this.itemAt(index);
-      elements.push( this.renderItem(item,item === currentItem, selectedItems?.has(item)) );
-    }
-    elements.reverse();
-    this.prepend(elements);
-    return { morebefore: (index < 0 ? 0 : index + 1) }; // return estimated number of items above this chunk
+  callback(data) {
+    console.log("Servers callback");
+    console.log(this);
+    this.componentUpdate({ list: data });
   }
 
-  // scroll to
-  replaceElements(index,n) 
-  {
-    console.log("replaceElements; index: " + index + ", n: " + n);
-    let {currentItem, selectedItems } = this;
-    let elements = [];
-    let start = index;
-    for(let i = 0; i < n; ++i, ++index) {
-      if(index >= this.totalItems()) break;
-      let item = this.itemAt(index);
-      elements.push( this.renderItem(item,item === currentItem, selectedItems?.has(item)) );
-    }
-    this.patch(elements);
-    return { 
-      morebefore: start <= 0 ? 0 : start,
-      moreafter:  this.totalItems() - index
-    }; // return estimated number of items before and above this chunk
+  componentWillUnmount() {
+    globalThis.callback_service.unsubscribe("servers", this, this.callback);
   }
 
-  renderList(items) // overridable
+  renderList(items)
   {
-    console.log("renderList");
-    console.log(items);
-    return <table class="servers" {...this.props}>{ items }</table>; 
+    return <table class="servers" {...this.props}>
+      <thead>
+        <tr>
+          <th id="locked" class="locked sortable"></th>
+          <th id="name" class="sortable">Server Name</th>
+          <th id="map" class="sortable">Map</th>
+          <th id="players" class="sortable">Players</th>
+          <th id="latency" class="sortable">Ping</th>
+        </tr>
+      </thead>
+      <tbody>
+        { items }
+      </tbody>
+    </table>;
   }
 
-  renderItem(item,index) // overridable
-  {
-    return <option key={index}>item { index }</option>;
+  renderItem(item, isCurrent, isSelected) {
+    return <tr key={item.key}>
+              <th></th>
+              <th>Server Name</th>
+              <th>Map</th>
+              <th>Players</th>
+              <th>Ping</th>
+            </tr>;
   }
   
-  oncontentrequired(evt)
-  {
-    let {length, start, where} = evt.data;
-    console.log("oncontentrequired; evt.data.length: " + length + ", start: " + start);
-
-    if(where > 0) evt.data = this.appendElements(start,length);  // scrolling down, need to append more elements
-    else if(where < 0) evt.data = this.prependElements(start,length); // scrolling up, need to prepend more elements
-    else evt.data = this.replaceElements(start,length); // scrolling to index
-    return true;
-  }
-
   itemOfElement(element) {
-    return this.itemAt(element.elementIndex + this.vlist.firstBufferIndex);
+    return this.itemAt(element.elementIndex);
   }
 
   onkeydown(evt) {
     switch(evt.code) {
       case "KeyDOWN" : 
         if(!this.currentItem) { 
-          this.componentUpdate({ currentItem : this.itemOfElement(this.vlist.firstVisibleItem) });
+          this.componentUpdate({ currentItem : this.itemOfElement(0) });
         } else {
           let index = this.indexOf(this.currentItem);
           if( ++index < this.totalItems() ) {
             this.componentUpdate({ currentItem : this.itemAt(index) });
-            this.vlist.navigate("advance",index);
+            //this.vlist.navigate("advance",index);
           }
         }
         break;
       case "KeyUP" : 
         if(!this.currentItem) { 
-          this.componentUpdate({ currentItem : this.itemOfElement(this.vlist.lastVisibleItem) });
+          this.componentUpdate({ currentItem : this.itemAt(this.list.length - 1) });
         } else {
           let index = this.indexOf(this.currentItem);
           if( --index >= 0 ) {
             this.componentUpdate({ currentItem : this.itemAt(index) });
-            this.vlist.navigate("advance",index);
+            //this.vlist.navigate("advance",index);
           }
         }
         break;
       case "KeyEND" : 
         this.currentItem = this.itemAt(this.totalItems() - 1);
-        this.vlist.navigate("end");
+        //this.vlist.navigate("end");
         break;
       case "KeyHOME" : 
         this.currentItem = this.itemAt(0);
-        this.vlist.navigate("start");
+        //this.vlist.navigate("start");
         break;
       default:
         return false;
@@ -197,55 +136,24 @@ class VirtualList extends Element {
     }
   }
 
-  ["on mousedown"](evt) { if(evt.button == 1) this.setCurrentOption(evt.target); }
-  ["on mousemove"](evt) { if(evt.button == 1) this.setCurrentOption(evt.target); }
+  ["on mousedown"](evt) {
+    console.log("mousedown");
+    if(evt.button == 1) {
+      console.log("mousedown click");
+      this.setCurrentOption(evt.target);
+    }
+  }
+  /*["on mousemove"](evt) {
+    console.log("mousemove");
+    if(evt.button == 1) {
+      console.log("mousemove click");
+      this.setCurrentOption(evt.target);
+    }
+  }*/
 
   get value() {
     if(!this.currentItem) return undefined;
     return this.currentItem;
-  }
-
-}
-
-class List extends VirtualList {
-  list; // array of items
-
-  this(props) { 
-    let {list, ...rest} = props;
-    super.this(rest); 
-    this.list = list;
-  }
-
-  itemAt(at) {
-    console.log("itemAt: " + this.list[at]);
-
-    return this.list[at];
-  }
-  totalItems() {
-    console.log("totalItems: " + this.list.length);
-    return this.list.length;
-  }
-  indexOf(item) {
-    console.log("indexOf: " + item);
-
-    return this.list.indexOf(item);
-  }
-
-  renderList(items) // overridable
-  {
-    return <tbody>
-          { items }
-        </tbody>; 
-  }
-
-  renderItem(item, isCurrent, isSelected) {
-    return <tr key={item.key}>
-              <th></th>
-              <th>Server Name</th>
-              <th>Map</th>
-              <th>Players</th>
-              <th>Ping</th>
-            </tr>;
   }
 }
 
@@ -314,18 +222,7 @@ export class Servers extends Element
       <checkmark class="big checked" toggle/><p class="nowrap">Same version</p>
     </div>
     <div class="body mheight">
-      <table class="servers" {...this.props}>
-        <thead>
-          <tr>
-            <th id="locked" class="locked sortable"></th>
-            <th id="name" class="sortable">Server Name</th>
-            <th id="map" class="sortable">Map</th>
-            <th id="players" class="sortable">Players</th>
-            <th id="latency" class="sortable">Ping</th>
-          </tr>
-        </thead>
-        <List list={this.list} />
-      </table>
+      <ServersTable list={this.list}></ServersTable>
     </div>
     <div class="titlebar">
       <h3 class="title"><output title_menu/></h3>

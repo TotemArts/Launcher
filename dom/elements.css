@@ -405,9 +405,6 @@ table.servers {
   th {
     behavior:clickable;
   }
-  th.sortable {
-    //prototype: VTh url(vlist.js);
-  }
   
   table:root[resizeable] > thead {
     //behavior:column-resizer;

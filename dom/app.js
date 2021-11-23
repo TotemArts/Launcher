@@ -3,8 +3,10 @@ import { GameDashboard } from "game-dashboard";
 import { Settings } from "settings";
 import { Confirm } from "confirm";
 import { Progress } from "progress";
+import { CallbackService } from "./callback_service";
 import * as debug from "@debug";
 
+globalThis.callback_service = new CallbackService();
 
 debug.setUnhandledExeceptionHandler(function (err) {
     try {
