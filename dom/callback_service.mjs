@@ -16,12 +16,18 @@ export class CallbackService {
         }
     }
 
-    unsubscribe(to, subscriber) {
+    unsubscribe(to, context) {
         if(!this.subscribers[to])
             return;
-        const index = this.subscribers[to].indexOf({context: subscriberContext, subscriber: subscriber});
-        if(index > -1) {
-            this.subscribers[to].splice(index, 1);
+        
+        for (const sub of this.subscribers[to]) {
+            if(sub.context == context) {
+                const index = this.subscribers[to].indexOf(sub);
+                if(index > -1) {
+                    this.subscribers[to].splice(index, 1);
+                }
+                return;
+            }
         }
     }
 
