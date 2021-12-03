@@ -18,7 +18,8 @@ class ServersTable extends Element {
         globalThis.servers = data;
         globalThis.callback_service.publish("servers", data);
       }
-      this.list = [];
+      globalThis.servers = [];
+      this.list = globalThis.servers;
       Window.this.xcall("get_servers", globalThis.servers_callback);
     }
   }
@@ -34,6 +35,7 @@ class ServersTable extends Element {
   }
 
   render() {
+    
     console.log("render ServerTable");
     let list = [];
     let totalItems = this.totalItems();
