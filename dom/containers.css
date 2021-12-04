@@ -88,8 +88,8 @@ div.titlebar > .close {
 
 div.titlebar > .title {
   margin-left: 10dip;
-    overflow-x:hidden;
-    text-overflow:ellipsis;
+  overflow-x:hidden;
+  text-overflow:ellipsis;
   vertical-align: middle;
 }
 
@@ -156,7 +156,6 @@ div.titlebar > .title {
   width: *;
   height: *;
   padding: -10dip;
-  aspect: fillHeight;
 }
 
 .grid > div:nth-child(5) > * {
