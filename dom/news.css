@@ -37,10 +37,6 @@
   background-color: #0c151ee6;
 }
 
-.news_items_container > div:nth-child(2) {
-  aspect: "Emu.render_news_items";
-}
-
 .news_items_container > div:nth-child(2) > div {
   width: *;
   height: 60dip;
@@ -129,7 +125,7 @@
 
 #news img {
   border-style: none;
-  aspect: "Emu.news_image";
+  max-width: 750dip;
   image-rendering: optimize-quality;
 }
 
@@ -160,7 +156,6 @@
     font-size: 13px;
     display: block;
     cursor: pointer;
-    aspect: "Emu.spoiler";
 }
 
 

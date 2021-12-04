@@ -157,7 +157,16 @@ export class News extends Element {
     globalThis.callback_service.unsubscribe("news", this, this.callback);
   }
 
-
+  ["on click at .ipsSpoiler_header,.ipsQuote_citation"](evt, target) {
+    var spoiler = target.nextElementSibling;
+    if (spoiler.style["visibility"] == "collapse") {
+      spoiler.style["visibility"] = "visible";
+    } else if (spoiler.style["visibility"] == "visible") {
+      spoiler.style["visibility"] = "collapse";
+    } else {
+      console.log("Weird");
+    }
+  }
 
   ["on click at div.news_item[id]"](evt, target) {
     var id = parseInt(target.getAttribute("id"));
