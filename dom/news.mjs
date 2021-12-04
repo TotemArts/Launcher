@@ -1,6 +1,6 @@
 import { toBase64 } from "@sciter";
 
-globalThis.news_feed_callback = function(text) {
+globalThis.news_feed_callback = function (text) {
   try {
     var arr = text.match(/(<item>(?:.|\n)+?<\/item>)/gm);
     globalThis.news_items = [];
@@ -22,7 +22,7 @@ globalThis.news_feed_callback = function(text) {
   }
 }
 
-globalThis.load_news_item = function(text) {
+globalThis.load_news_item = function (text) {
   try {
     text = text.replace(/\s<\/span/g, "&nbsp;</span").replace(/[\r\n\s\t]+/g, " ").replace(/>\s</, ">&nbsp;<");
     var topicID = text.match(/data-topicID='(.+?)'/)[1];
@@ -34,6 +34,8 @@ globalThis.load_news_item = function(text) {
     text = text.replace(iframe_regex, "");
     globalThis.news_items[this.id].html = text;
 
+    globalThis.callback_service.publish("news", { id: this.id });
+
     var regex = /<img[^>]+?src="(http[^"]+?\.(?!gif)[^"]{3,4}(?:\?[^"]+?)?)"[^>]*?>/;
     var img = text.match(regex);
     if (img && img[1]) Window.this.xcall("fetch_image", img[1], {}, globalThis.image_callback, { id: this.id, url: img[1] });
@@ -43,23 +45,15 @@ globalThis.load_news_item = function(text) {
   }
 }
 
-globalThis.image_callback = function(image2) {
+globalThis.image_callback = function (image) {
   try {
     var escaped_url = this.url.replace(/([\?\.\|\/\?\(\)])/g, "\\$1").trim();
-    if (image2) {
-      let image = Graphics.Image.fromBytes(image2);
-      if (image && this.url) {
-        var url_regex = new RegExp(escaped_url, "g");
-        let bytes, base64;
-        bytes = image.toBytes("webp", 100);
-        base64 = toBase64(bytes);
-        globalThis.news_items[this.id].html = globalThis.news_items[this.id].html.replace(url_regex, "data:image/webp;base64," + base64);
-      } else {
-        console.log("Image at url \"" + escaped_url + "\" appears to be damaged.");
-        var escaped_tag = "<img[^>]+?src=\"" + escaped_url + "\"[^>]*?\/>";
-        var image_regex = new RegExp(escaped_tag, "g");
-        globalThis.news_items[this.id].html = globalThis.news_items[this.id].html.replace(image_regex, "");
-      }
+    if (image) {
+      var url_regex = new RegExp(escaped_url, "g");
+      let bytes, base64;
+      bytes = image.toBytes("webp", 100);
+      base64 = toBase64(bytes);
+      globalThis.news_items[this.id].html = globalThis.news_items[this.id].html.replace(url_regex, "data:image/webp;base64," + base64);
     } else {
       console.log("Image at url \"" + escaped_url + "\" appears to be missing.");
       var escaped_tag = "<img[^>]+?src=\"" + escaped_url + "\"[^>]*?\/>";
@@ -80,7 +74,8 @@ export class News extends Element {
     super(props, kids);
   }
 
-  current_news_title = "";
+  current_news_id = 0;
+  news_html = globalThis.news_items[this.current_news_id].html ?? "";
 
   render() {
     var news_items = this.render_news_feed();
@@ -104,19 +99,10 @@ export class News extends Element {
             <h3 class="title uppercase">News</h3>
           </div>
           <div class="expand">
-            { news_items }
+            {news_items}
           </div>
         </div>
-        <div class="news_container vflow">
-          <div class="titlebar">
-            <h3 class="title">{this.current_news_title}</h3>
-          </div>
-          <div>
-            <div id="news">
-              { news_item }
-            </div>
-          </div>
-        </div>
+        {news_item}
       </div>
     </div>
   }
@@ -128,9 +114,11 @@ export class News extends Element {
       var type_string = "General";
       if (item.title.match(/\sPATCH\s/i))
         type_string = "Patch";
-
-      list.push(<div class="news_item hflow" id={item.id}>
-        <pubDate><day> { (date.getDay() < 10 ? '0' : '') + date.getDay() }</day><month>{ date.toUTCString().split(' ')[2] }</month></pubDate>
+      var classes = "news_item hflow";
+      if (this.current_news_id == item.id)
+        classes += " current"
+      list.push(<div class={classes} id={item.id}>
+        <pubDate><day> {(date.getDay() < 10 ? '0' : '') + date.getDay()}</day><month>{date.toUTCString().split(' ')[2]}</month></pubDate>
         <div class="vflow">
           <p class="news_type">{type_string}</p>
           <p class="news_title">{item.title}</p>
@@ -141,6 +129,44 @@ export class News extends Element {
   }
 
   render_news_item() {
-    return <div></div>
+    if (globalThis.news_items.length == 0)
+      return <div></div>
+
+    var news_item = globalThis.news_items[this.current_news_id];
+    return <div class="news_container vflow">
+      <div class="titlebar">
+        <h3 class="title">{news_item.title}</h3>
+      </div>
+      <div>
+        <div id="news" state-html={this.news_html}></div>
+      </div>
+    </div>;
+  }
+
+  componentDidMount() {
+    globalThis.callback_service.subscribe("news", this, this.callback);
+  }
+
+  callback(data) {
+    if(data.id == this.current_news_id) {
+      this.componentUpdate({ news_html: globalThis.news_items[data.id].html });
+    }
+  }
+
+  componentWillUnmount() {
+    globalThis.callback_service.unsubscribe("news", this, this.callback);
+  }
+
+
+
+  ["on click at div.news_item[id]"](evt, target) {
+    var id = parseInt(target.getAttribute("id"));
+    var item = globalThis.news_items[id];
+    if (!item.html) {
+      this.componentUpdate({ current_news_id: id, news_html: ""});
+      Window.this.xcall("fetch_resource", item.link + "?preview=1", { "Referer": "https://ren-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache" }, globalThis.load_news_item, { "id": id });
+    } else {
+      this.componentUpdate({ current_news_id: id, news_html: item.html });
+    }
   }
 }
