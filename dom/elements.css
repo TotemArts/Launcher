@@ -53,6 +53,14 @@ input|text {
   margin-right: 10dip;
 }
 
+#map.hidden {
+  padding: 0dip;
+}
+
+#map.hidden>* {
+  visibility: collapse;
+}
+
 #map_video {
   width: 320;
   height: 180;
@@ -402,18 +410,9 @@ table.servers {
     behavior:column-resizer;
   }
 
-  th {
-    behavior:clickable;
-  }
-  
-  table:root[resizeable] > thead {
-    //behavior:column-resizer;
-  }
-
   table:root > tbody { 
     overflow-x: none;
     overflow-y: scroll-indicator;
-    behavior: virtual-list;
     width: *;
     height: *;
     min-height: 100dip;
@@ -423,7 +422,7 @@ table.servers {
     );
   }
   table:root > tbody > tr.highlighted,
-  table:root > tbody > tr:current,
+  table:root > tbody > tr.current,
   table:root > tbody > tr:checked {
     background-color: #0c2e3f;
   }
@@ -437,9 +436,6 @@ table.servers {
     background-position: center center;
     background-repeat: no-repeat;
     background-size: auto 10dip;
-  }
-  table:root > tbody > tr {
-    behavior:form; /* mission critical: each repeated child is treated as a form so it can accept object values  */
   }
   table:root > tbody > tr > td:nth-child(1) { max-width:5dip; color: rgba(0,0,0,0)}
 

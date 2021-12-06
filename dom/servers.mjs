@@ -3,18 +3,11 @@ class ServersTable extends Element {
   currentItem = null;
   selectedItems;
   props;
-  list;
+  list = [];
 
   this(props) {
     super.this?.(props);
     this.props = props;
-
-    if (globalThis.server_list) {
-      console.log("servers in globalThis.server_list");
-      this.list = globalThis.server_list.get_servers();
-    } else {
-      this.list = [];
-    }
   }
 
   itemAt(at) {
@@ -23,13 +16,11 @@ class ServersTable extends Element {
   totalItems() {
     return this.list.length;
   }
-  indexOf(item) {
-    return this.list.indexOf(item);
+  indexOf(key) {
+    return this.list.indexOf(this.list.filter((prop) => prop.key == key)[0]);
   }
 
   render() {
-
-    console.log("render ServerTable");
     let list = [];
     let totalItems = this.totalItems();
     let { currentItem, selectedItems } = this;
@@ -37,18 +28,21 @@ class ServersTable extends Element {
 
     for (let index = 0; index <= totalItems; ++index) {
       let item = this.itemAt(index);
-      if (item) list.push(this.renderItem(item, item === currentItem, selectedItems?.has(item)));
+      if (item) list.push(this.renderItem(item, item.key === currentItem, selectedItems?.has(item)));
     }
     return this.renderList(list);
   }
 
   componentDidMount() {
+    if (globalThis.server_list) {
+      this.list = globalThis.server_list.get_servers();
+    } else {
+      this.list = [];
+    }
     globalThis.callback_service.subscribe("servers", this, this.callback);
   }
 
   callback(data) {
-    console.log("Servers callback");
-    console.log(this);
     this.componentUpdate({ list: data });
   }
 
@@ -74,17 +68,29 @@ class ServersTable extends Element {
   }
 
   renderItem(item, isCurrent, isSelected) {
-    return <tr key={item.key}>
-      <th class={this.isLocked(isCurrent)}></th>
+    var classes = "";
+    if (isCurrent) {
+      classes += "current";
+    }
+    return <tr class={classes} key={item.key}>
+      <th class={this.isLocked(item)}></th>
       <th>{item["Name"]}</th>
       <th>{item["Current Map"]}</th>
       <th>{item["Players"]}</th>
-      <th>Ping</th>
+      <th>-</th>
     </tr>;
   }
 
-  isLocked(isCurrent) {
-    if (isCurrent)
+  ["on click at tr[key]"](evt,target) {
+    this.setCurrentOption(target);
+  }
+
+  ["on dblclick at tr[key]"](evt, target) {
+    // launch current option
+  }
+
+  isLocked(item) {
+    if (item["Variables"]["bPassworded"])
       return "locked";
     return "";
   }
@@ -93,38 +99,33 @@ class ServersTable extends Element {
     return this.itemAt(element.elementIndex);
   }
 
-  onkeydown(evt) {
-    console.log("onkeydown");
+  ["on keydown"](evt) {
     switch (evt.code) {
       case "KeyDOWN":
         if (!this.currentItem) {
-          this.componentUpdate({ currentItem: this.itemOfElement(0) });
+          this.componentUpdate({ currentItem: this.itemOfElement(0).key });
         } else {
           let index = this.indexOf(this.currentItem);
           if (++index < this.totalItems()) {
-            this.componentUpdate({ currentItem: this.itemAt(index) });
-            //this.vlist.navigate("advance",index);
+            this.componentUpdate({ currentItem: this.itemAt(index).key });
           }
         }
         break;
       case "KeyUP":
         if (!this.currentItem) {
-          this.componentUpdate({ currentItem: this.itemAt(this.list.length - 1) });
+          this.componentUpdate({ currentItem: this.itemAt(this.list.length - 1).key });
         } else {
           let index = this.indexOf(this.currentItem);
           if (--index >= 0) {
-            this.componentUpdate({ currentItem: this.itemAt(index) });
-            //this.vlist.navigate("advance",index);
+            this.componentUpdate({ currentItem: this.itemAt(index).key });
           }
         }
         break;
       case "KeyEND":
-        this.currentItem = this.itemAt(this.totalItems() - 1);
-        //this.vlist.navigate("end");
+        this.currentItem = this.itemAt(this.totalItems() - 1).key;
         break;
       case "KeyHOME":
-        this.currentItem = this.itemAt(0);
-        //this.vlist.navigate("start");
+        this.currentItem = this.itemAt(0).key;
         break;
       default:
         return false;
@@ -134,34 +135,16 @@ class ServersTable extends Element {
   }
 
   setCurrentOption(child) {
-    console.log("setCurrentOption");
-    console.log(child);
-    let option;
-    for (let node = child; node; node = node.parentElement) {
-      if (node.parentElement === this) {
-        option = node;
-        break;
-      }
-    }
-    if (option) {
-      console.log(this.itemOfElement(option));
-      this.componentUpdate({ currentItem: this.itemOfElement(option) });
+    if (child) {
+      this.componentUpdate({ currentItem: this.itemOfElement(child).key });
       this.post(new Event("input", { bubbles: true }));
       return true;
     }
   }
 
-  ["on mousedown at tr"](evt) {
-    console.log("mousedown");
-    if (evt.button == 1) {
-      console.log("mousedown click");
-      this.setCurrentOption(evt.target);
-    }
-  }
-
   get value() {
     if (!this.currentItem) return undefined;
-    return this.currentItem;
+    return this.list[this.indexOf(this.currentItem)];
   }
 }
 
@@ -234,10 +217,10 @@ class ServerList {
       if (server["Players"] >= globalThis.server_list.minimum_players &&
         server["Players"] <= globalThis.server_list.maximum_players &&
         (!globalThis.server_list.same_version || server["Game Version"] == globalThis.server_list.game_version)) {
-        list.push(server);
+          server.key = server["IP"] + ":" + server["Port"];
+          list.push(server);
       }
     }
-    console.log("total players: " + globalThis.server_list.current_players);
     return list;
   }
 }
@@ -256,7 +239,6 @@ export class Servers extends Element {
   }
 
   callback(server_list) {
-    console.log("Servers callback called Sjdkfja;");
     var server_list_clone = Object.assign({}, globalThis.server_list);
     this.componentUpdate({ server_list: server_list_clone });
   }
@@ -266,8 +248,6 @@ export class Servers extends Element {
   }
 
   render(props) {
-    console.log("current players in this: " + this.server_list.current_players);
-    console.log("current players in globalThis: " + globalThis.server_list.current_players);
     return <div {...this.props} id="not_chat" class="join_server">
       <div class="titlebar">
         <h3 class="title">Servers</h3>
@@ -290,46 +270,58 @@ export class Servers extends Element {
         <ServersTable />
       </div>
       <div class="titlebar">
-        <h3 class="title"><output title_menu /></h3>
+        <h3 class="title">{ this.selectedServer? this.selectedServer["Name"] : "No Server Selected" }</h3>
         <div class="spacer"></div>
         <div class="dropdown_menu closed">PLAY ONLINE</div>
-      </div>
-      <div class="body hflow">
-        <div class="menu child-padding" style="visibility: hidden;">
-          <div class="padding" overlay="ip.htm"><h4>JOIN IP</h4></div>
-          <div class="padding"><h4>LAUNCH SERVER</h4></div>
-          <div class="padding"><h4>PLAY ONLINE</h4></div>
-          <div class="padding"><h4>PLAY SKIRMISH</h4></div>
-        </div>
-        <div class="expand" style="margin-right: 10px; ">
-          <h3>MAP: <span id="map-name" style="color: #CE5135;"></span></h3>
-          <div class="hflow" style=" height: *; vertical-align: bottom;">
-            <div class="vflow expand child-padding">
-              <p>Time Limit: <span id="time-limit"></span></p>
-              <p>Vehicle Limit: <span id="vehicle-limit"></span></p>
-              <p>Player Limit: <span id="player-limit"></span></p>
-              <p>Mine Limit: <span id="mine-limit"></span></p>
-              <p>Game Mode: <span id="game-mode"></span></p>
-            </div>
-            <div class="vflow expand child-padding">
-              <p><checkmark class="checked" id="crates" />Crates</p>
-              <p><checkmark class="checked" id="steam" />Steam Required</p>
-              <p><checkmark class="checked" id="ranked" />Ranked</p>
-              <p><checkmark class="checked" id="balance" />Auto Balance</p>
-              <p><checkmark class="checked" id="infantry" />Infantry Only</p>
-            </div>
+        <div style="position: relative;">
+          <div class="menu child-padding" style="visibility: hidden;">
+            <div class="padding" overlay="ip.htm"><h4>JOIN IP</h4></div>
+            <div class="padding"><h4>LAUNCH SERVER</h4></div>
+            <div class="padding"><h4>PLAY ONLINE</h4></div>
+            <div class="padding"><h4>PLAY SKIRMISH</h4></div>
           </div>
-          <button class="green" style="bottom: 0px;" onclick="joinServer();">JOIN SERVER</button>
         </div>
-        <video id="map_video" src="../../PreviewVids/Default.avi" loop />
       </div>
+      { this.renderSelectedMap() }
     </div>
+  }
+
+  renderSelectedMap() {
+    if (!this.selectedServer)
+      return <div id="map"></div>;
+
+    let entry = this.selectedServer;
+    var mapName = entry["Current Map"].split("-",2);
+
+    return <div id="map" class="body hflow">
+    <div class="expand" style="margin-right: 10px; ">
+      <h3>MAP: <span style="color: #CE5135;">{mapName[1].replace("_", " ")}</span></h3>
+      <div class="hflow" style=" height: *; vertical-align: bottom;">
+        <div class="vflow expand child-padding">
+          <p>Time Limit: <span>{entry["Variables"]["Time Limit"].toString()}</span></p>
+          <p>Vehicle Limit: <span>{entry["Variables"]["Vehicle Limit"].toString()}</span></p>
+          <p>Player Limit: <span>{entry["Variables"]["Player Limit"].toString()}</span></p>
+          <p>Mine Limit: <span>{entry["Variables"]["Mine Limit"].toString()}</span></p>
+          <p>Game Mode: <span>{mapName[0]}</span></p>
+        </div>
+        <div class="vflow expand child-padding">
+          <p><checkmark class={ entry["Variables"]["bSpawnCrates"]? "checked" : ""} id="crates" />Crates</p>
+          <p><checkmark class={ entry["Variables"]["bSteamRequired"]? "checked" : ""} id="steam" />Steam Required</p>
+          <p><checkmark class="checked" id="ranked" />Ranked</p>
+          <p><checkmark class={ entry["Variables"]["bAutoBalanceTeams"]? "checked" : ""} id="balance" />Auto Balance</p>
+          <p><checkmark class="" id="infantry" />Infantry Only</p>
+        </div>
+      </div>
+      <button class="green" style="bottom: 0px;" onclick="joinServer();">JOIN SERVER</button>
+    </div>
+    <video id="map_video" src="../../PreviewVids/Default.avi" loop />
+  </div>;
   }
 
   ["on click at div.dropdown_menu"](evt, target) {
     target.classList.toggle('open');
     target.classList.toggle('closed');
-    document.$('div.body > div.menu').style['visibility'] = target.classList.contains('closed') ? 'collapse' : 'visible';
+    document.$('div.menu').style['visibility'] = target.classList.contains('closed') ? 'collapse' : 'visible';
   }
 
   ["on click at div.refresh"](evt, target) {
@@ -343,5 +335,12 @@ export class Servers extends Element {
     } else if (spoiler.style["visibility"] == "visible") {
       spoiler.style["visibility"] = "collapse";
     }
+  }
+
+  ["on input"](evt, target) {
+    if(this.$("#map.hidden")) {
+      this.$("#map.hidden").classList.toggle('hidden');
+    }
+    this.componentUpdate({ selectedServer: target.value });
   }
 }
