@@ -25,7 +25,6 @@ class ServersTable extends Element {
     let totalItems = this.totalItems();
     let { currentItem, selectedItems } = this;
 
-
     for (let index = 0; index <= totalItems; ++index) {
       let item = this.itemAt(index);
       if (item) list.push(this.renderItem(item, item.key === currentItem, selectedItems?.has(item)));
@@ -34,10 +33,10 @@ class ServersTable extends Element {
   }
 
   componentDidMount() {
-    if (globalThis.server_list) {
-      this.list = globalThis.server_list.get_servers();
-    } else {
+    if (globalThis.server_list === undefined) {
       this.list = [];
+    } else {
+      this.componentUpdate({ list: globalThis.server_list.get_servers() });
     }
     globalThis.callback_service.subscribe("servers", this, this.callback);
   }
@@ -329,13 +328,10 @@ class ServerList extends Object {
 }
 
 export class Servers extends Element {
-  server_list = new ServerList();
-
   this() {
-    if(!globalThis.server_list)
-      globalThis.server_list = this.server_list;
-    else
-      this.server_list = globalThis.server_list;
+    if(globalThis.server_list === undefined)
+      globalThis.server_list = new ServerList();
+    this.server_list = globalThis.server_list;
   }
 
   componentDidMount() {
@@ -418,7 +414,7 @@ export class Servers extends Element {
       </div>
       <button class="green" style="bottom: 0px;" onclick="joinServer();">JOIN SERVER</button>
     </div>
-    <video id="map_video" src="../../PreviewVids/Default.avi" loop />
+    <video id="map_video" src={"../../PreviewVids/" + entry["Current Map"] + ".avi"} loop />
   </div>;
   }
 
