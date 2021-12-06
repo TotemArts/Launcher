@@ -163,17 +163,20 @@ fn launch_ui(current_dir: String) -> std::thread::JoinHandle<Result<(),Error>> {
     
     info!("Launching sciter!");
   
-    let mut frame = sciter::Window::new();
-    frame.sciter_handler(DebugHandler {});
-    frame.expand(true);
-
-    frame.event_handler(Handler{patcher: Arc::new(Mutex::new(None)), version_information: Arc::new(Mutex::new(None)), configuration, runtime: runtime.handle().clone()});
-    frame.load_file(&format!("file://{}/{}/index.htm", current_dir, &launcher_theme));
-    info!("Launching app!");
-  
+    let guard = runtime.enter();
+    
     std::panic::catch_unwind(|| {
+      let mut frame = sciter::Window::new();
+      frame.sciter_handler(DebugHandler {});
+      frame.expand(true);
+  
+      frame.event_handler(Handler{patcher: Arc::new(Mutex::new(None)), version_information: Arc::new(Mutex::new(None)), configuration, runtime: tokio::runtime::Handle::current()});
+      frame.load_file(&format!("file://{}/{}/index.htm", current_dir, &launcher_theme));
+      info!("Launching app!");
       frame.run_app();
     });
+
+    drop(guard);
   
     info!("Gracefully shutting down app!");
     runtime.shutdown_background();

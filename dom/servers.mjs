@@ -77,7 +77,7 @@ class ServersTable extends Element {
       <th>{item["Name"]}</th>
       <th>{item["Current Map"]}</th>
       <th>{item["Players"]}</th>
-      <th>-</th>
+      <th>{item["Latency"] ?? "-"}</th>
     </tr>;
   }
 
@@ -164,20 +164,61 @@ class ServerList {
   refresh_servers() {
     Window.this.xcall("get_servers", globalThis.server_list.servers_callback);
   }
+  /*
+  diff(obj1, obj2) {
+    const result = {};
+    if (Object.is(obj1, obj2)) {
+        return undefined;
+    }
+    if (!obj2 || typeof obj2 !== 'object') {
+        return obj2;
+    }
+    let objkeys = Object.keys(obj1 || {});
+    objkeys = objkeys.concat(Object.keys(obj2 || {}).filter(key => !objkeys.includes(key)));
+    objkeys.forEach(key => {
+        if(typeof obj2[key] === 'object' && typeof obj1[key] === 'object') {
+            const value = globalThis.server_list.diff(obj1[key], obj2[key]);
+            if (value !== undefined && Object.keys(value).length !== 0) {
+                console.log("2 adding key: " + JSON.stringify(key) + ", value: " + JSON.stringify(value));
+                result[key] = value;
+            }
+        } else if(obj2[key] !== obj1[key] && !Object.is(obj1[key], obj2[key]) && obj2[key] !== undefined) {
+          console.log("1 adding: " + JSON.stringify(key) + ", value: " + JSON.stringify(obj2[key]));
+          result[key] = obj2[key];
+      } 
+    });
+    return result;
+  }*/
 
   servers_callback(data) {
+    /*
+    if(globalThis.server_list.servers) {
+      var obj = globalThis.server_list.diff(globalThis.server_list.servers, data);
+      console.warn("servers_callback: " + JSON.stringify(obj));
+    }
+    */
+
     globalThis.server_list.servers = data;
+    for(const server of data) {
+      Window.this.xcall("get_ping", server["IP"] + ":" + server["Port"], globalThis.server_list.ping_callback);
+    }
+    globalThis.server_list.notify_subscribers();
+  }
+
+  ping_callback(key, time_response) {
+    let updateServer = globalThis.server_list.servers.filter((server) => server["IP"] + ":" + server["Port"] == key)[0];
+    updateServer["Latency"] = time_response;
     globalThis.server_list.notify_subscribers();
   }
 
   set_minimum_players(players) {
     globalThis.server_list.minimum_players = players;
-    notify_subscribers();
+    globalThis.server_list.notify_subscribers();
   }
 
   set_maximum_players(players) {
     globalThis.server_list.maximum_players = players;
-    notify_subscribers();
+    globalThis.server_list.notify_subscribers();
   }
 
   notify_subscribers() {

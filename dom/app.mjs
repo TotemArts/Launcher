@@ -91,26 +91,37 @@ class App extends Element {
         </body>
     }
 
-    ["on click at [page]"](evt, input) {
-        document.$("#content").patch(<div id="content">{this.pages[input.getAttribute("page")]}</div>);
+    ["on click at [page]"](evt, target) {
+        document.$("#content").patch(<div id="content">{this.pages[target.getAttribute("page")]}</div>);
         document.$("[page=" + this.current + "]").classList.remove("current");
-        input.classList.add("current");
-        this.current = input.getAttribute("page");
+        target.classList.add("current");
+        this.current = target.getAttribute("page");
     }
 
-    ["on click at [overlay]"](evt, input) {
-        var overlay = document.$("#overlay");
-        overlay.patch(<div id="overlay">{this.overlays[input.getAttribute("overlay")]}</div>);
+    ["on click at [overlay]"](evt, target) {
+        if(this.overlays[target.getAttribute("overlay")]) {
+            var overlay = document.$("#overlay");
+            overlay.patch(<div id="overlay">{this.overlays[target.getAttribute("overlay")]}</div>);
 
-        overlay.style["visibility"] = "visible";
-        document.$("div.menuEntries").state.disabled = true;
+            overlay.style["visibility"] = "visible";
+            document.$("div.menuEntries").state.disabled = true;
+        } else {
+            console.error("no such overlay: " + target.getAttribute("overlay"));
+        }
     }
 
-    ["on click at #overlay [close]"](evt, input) {
+    ["on click at #overlay [close]"](evt, target) {
         var overlay = document.$("#overlay");
         overlay.patch(<div id="overlay"></div>);
         overlay.style["visibility"] = "collapse";
         document.$("div.menuEntries").state.disabled = false;
+    }
+
+    ["on keydown"](evt, target) {
+        if ( evt.code == "KeyF5" ) {
+            console.log(window.location);
+            Window.this.load(window.location.href);
+        }
     }
 }
 
