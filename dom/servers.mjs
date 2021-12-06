@@ -54,17 +54,27 @@ class ServersTable extends Element {
     return <table class="servers" {...this.props}>
       <thead>
         <tr>
-          <th id="locked" class="locked sortable"></th>
-          <th id="name" class="sortable">Server Name</th>
-          <th id="map" class="sortable">Map</th>
-          <th id="players" class="sortable">Players</th>
-          <th id="latency" class="sortable">Ping</th>
+          <th class="locked"></th>
+          <th sortable="Name" order={this.getOrderOf("Name")}>Server Name</th>
+          <th sortable="Current Map" order={this.getOrderOf("Current Map")}>Map</th>
+          <th sortable="Players" order={this.getOrderOf("Players")}>Players</th>
+          <th sortable="Latency" order={this.getOrderOf("Latency")}>Ping</th>
         </tr>
       </thead>
       <tbody>
         {items}
       </tbody>
     </table>;
+  }
+
+  getOrderOf(key) {
+    if(globalThis.server_list.sortBy != key || globalThis.server_list.sortOrder == "")
+      return "";
+    return globalThis.server_list.sortOrder == "Ascending"? "ascend" : "descend";
+  }
+
+  ["on click at th[sortable]"](evt,target) {
+    globalThis.server_list.sort_by(target.getAttribute("sortable"));
   }
 
   renderItem(item, isCurrent, isSelected) {
@@ -148,21 +158,26 @@ class ServersTable extends Element {
   }
 }
 
-class ServerList {
+class ServerList extends Object {
   minimum_players = 0;
   maximum_players = 64;
   current_players = 0;
+
   sortBy = "Players";
+  sortOrder = "Ascending";
+
   game_version = "5.48.145";
 
   servers = [];
 
   constructor() {
+    super();
+    console.log("creating ServerList");
     Window.this.xcall("get_servers", this.servers_callback);
   }
 
   refresh_servers() {
-    Window.this.xcall("get_servers", globalThis.server_list.servers_callback);
+    Window.this.xcall("get_servers", this.servers_callback);
   }
   /*
   diff(obj1, obj2) {
@@ -177,7 +192,7 @@ class ServerList {
     objkeys = objkeys.concat(Object.keys(obj2 || {}).filter(key => !objkeys.includes(key)));
     objkeys.forEach(key => {
         if(typeof obj2[key] === 'object' && typeof obj1[key] === 'object') {
-            const value = globalThis.server_list.diff(obj1[key], obj2[key]);
+            const value = this.diff(obj1[key], obj2[key]);
             if (value !== undefined && Object.keys(value).length !== 0) {
                 console.log("2 adding key: " + JSON.stringify(key) + ", value: " + JSON.stringify(value));
                 result[key] = value;
@@ -212,17 +227,46 @@ class ServerList {
   }
 
   set_minimum_players(players) {
-    globalThis.server_list.minimum_players = players;
-    globalThis.server_list.notify_subscribers();
+    this.minimum_players = players;
+    this.notify_subscribers();
   }
 
   set_maximum_players(players) {
-    globalThis.server_list.maximum_players = players;
-    globalThis.server_list.notify_subscribers();
+    this.maximum_players = players;
+    this.notify_subscribers();
+  }
+
+  sort_by(key) {
+    if(this.sortBy == key) {
+      console.log("updating order from: " + this.sortOrder);
+      if(this.sortOrder == "Ascending")
+        this.sortOrder = "Descending";
+      else if(this.sortOrder == "Descending")
+        this.sortOrder = "";
+      else if(this.sortOrder == "")
+        this.sortOrder = "Ascending";
+      else
+        this.sortOrder = "Ascending";
+      console.log("updating order to: " + this.sortOrder);
+    } else {
+      console.log("updating sortOrder");
+      this.sortBy = key;
+      this.sortOrder = "Ascending";      
+    }
+    this.notify_subscribers();
   }
 
   notify_subscribers() {
-    globalThis.callback_service.publish("servers", globalThis.server_list.get_servers());
+    globalThis.callback_service.publish("servers", this.get_servers());
+  }
+
+  is_all_versions() {
+    return this.same_version;
+  }
+
+  toggle_versions() {
+    this.same_version = !this.same_version;
+    this.notify_subscribers();
   }
 
   get_servers() {
@@ -252,15 +296,33 @@ class ServerList {
         "IP": "00.00.00.143"
       },
     */
-    globalThis.server_list.current_players = 0;
-    for (const server of globalThis.server_list.servers) {
-      globalThis.server_list.current_players += server["Players"];
-      if (server["Players"] >= globalThis.server_list.minimum_players &&
-        server["Players"] <= globalThis.server_list.maximum_players &&
-        (!globalThis.server_list.same_version || server["Game Version"] == globalThis.server_list.game_version)) {
+    this.current_players = 0;
+    for (const server of this.servers) {
+      this.current_players += server["Players"];
+      if (server["Players"] >= this.minimum_players &&
+        server["Players"] <= this.maximum_players &&
+        (!this.same_version || server["Game Version"] == this.game_version)) {
           server.key = server["IP"] + ":" + server["Port"];
           list.push(server);
       }
+    }
+    if(this.sortOrder != "") {
+      console.log("Sorting server_list by " + this.sortBy + " in order " + this.sortOrder);
+      list.sort((first,second) => {
+        try {
+        if (first[this.sortBy] > second[this.sortBy]) {
+          return this.sortOrder=="Ascending"? -1 : 1;
+        }
+        if (first[this.sortBy] < second[this.sortBy]) {
+          return this.sortOrder=="Ascending"? 1 : -1;
+        }
+        // a must be equal to b
+        return 0;
+        } catch(e) {
+          console.error(e);
+          throw e;
+        }
+      });
     }
     return list;
   }
@@ -271,8 +333,9 @@ export class Servers extends Element {
 
   this() {
     if(!globalThis.server_list)
-      globalThis.server_list = new ServerList();
-    this.server_list = globalThis.server_list;
+      globalThis.server_list = this.server_list;
+    else
+      this.server_list = globalThis.server_list;
   }
 
   componentDidMount() {
