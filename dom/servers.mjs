@@ -288,7 +288,7 @@ export class Servers extends Element {
 
   renderSelectedMap() {
     if (!this.selectedServer)
-      return <div id="map"></div>;
+      return <div id="map" style="margin-bottom: 10dip;"></div>;
 
     let entry = this.selectedServer;
     var mapName = entry["Current Map"].split("-",2);

@@ -126,7 +126,9 @@ fn main() -> Result<(), Error> {
     .build());
   }));
 
-  launch_ui(current_dir).join();
+  std::panic::catch_unwind(|| {
+    launch_ui(current_dir).join();
+  });
 
   log::logger().flush();
   Ok(())
@@ -169,7 +171,9 @@ fn launch_ui(current_dir: String) -> std::thread::JoinHandle<Result<(),Error>> {
     frame.load_file(&format!("file://{}/{}/index.htm", current_dir, &launcher_theme));
     info!("Launching app!");
   
-    frame.run_app();
+    std::panic::catch_unwind(|| {
+      frame.run_app();
+    });
   
     info!("Gracefully shutting down app!");
     runtime.shutdown_background();
