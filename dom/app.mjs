@@ -4,6 +4,7 @@ import { Settings } from "settings.mjs";
 import { Confirm } from "confirm.mjs";
 import { Progress } from "progress.mjs";
 import { CallbackService } from "callback_service.mjs";
+import { InputModal } from "input-modal.mjs";
 import * as debug from "@debug";
 
 globalThis.callback_service = new CallbackService();
@@ -38,10 +39,19 @@ class App extends Element {
     };
 
     overlays = {
-        settings: <Settings />
+        settings: <Settings />,
+        username: <InputModal title="Welcome back commander!" key="Username" placeholder="" callback={this.set_username} />,
+        progress: <Progress />
     };
 
     current = "game";
+
+    set_username(value) {
+        Window.this.xcall("set_playername", value);
+        globalThis.username = value;
+        me = document.$("body");
+        me.$("#content").patch(<div id="content">{me.pages[me.current]}</div>);
+    }
 
     reset_game() {
         var overlay = document.$("#overlay");
@@ -53,14 +63,10 @@ class App extends Element {
 
     internal_reset_game() {
         var overlay = document.$("#overlay");
-        overlay.patch(<div id="overlay">{<Progress />}</div>);
+        overlay.patch(<div id="overlay">{this.overlays["progress"]}</div>);
 
         overlay.style["visibility"] = "visible";
         document.$("div.menuEntries").state.disabled = true;
-    }
-
-    componentDidMount() {
-        document.$("#content").patch(<div id="content">{this.pages[this.current]}</div>);
     }
 
     render(props) {
@@ -87,7 +93,7 @@ class App extends Element {
             </div>
 
             <div id="overlay"></div>
-            <div id="content"></div>
+            <div id="content">{this.pages[this.current]}</div>
         </body>
     }
 

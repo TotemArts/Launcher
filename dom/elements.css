@@ -339,31 +339,29 @@ checkmark.crossed {
 
 div.slider {
   width: *;
-  height: 8dip;
-  position: relative;
+  flow: horizontal;
+}
+
+div.slider > div.filler {
   background-color: #0C151E;
-  aspect: "Emu.moveSliders";
+  height: 8dip;
+  margin-top: 3dip;
+  width: 25%;
 }
 
 div.slider > div.range {
-  position: relative;
   background-color: #CE5135;
   height: 8dip;
-  top: 0dip;
-  left: 0%;
-  width: 100%;
+  margin-top: 3dip;
 }
 
 div.slider > div.handle {
-  position: absolute;
   border: 1dip solid #c5c5c5;
   background: #f6f6f6;
   cursor: default;
   width: 5dip;
   height: 12dip;
   border-radius: 3dip;
-  top: -3dip;
-  left: 0%;
 }
 
 div.downloadBar {

@@ -21,6 +21,10 @@ class ServersTable extends Element {
   }
 
   render() {
+    if (this.currentItem && this.list.filter((prop) => prop.key == this.currentItem).length != 1) {
+      this.currentItem = undefined;
+      this.post(new Event("input", { bubbles: true }));
+    }
     let list = [];
     let totalItems = this.totalItems();
     let { currentItem, selectedItems } = this;
@@ -157,7 +161,7 @@ class ServersTable extends Element {
   }
 }
 
-class ServerList extends Object {
+export class ServerList extends Object {
   minimum_players = 0;
   maximum_players = 64;
   current_players = 0;
@@ -165,6 +169,7 @@ class ServerList extends Object {
   sortBy = "Players";
   sortOrder = "Ascending";
 
+  same_version = true;
   game_version = "5.48.145";
 
   servers = [];
@@ -309,14 +314,22 @@ class ServerList extends Object {
       console.log("Sorting server_list by " + this.sortBy + " in order " + this.sortOrder);
       list.sort((first,second) => {
         try {
-        if (first[this.sortBy] > second[this.sortBy]) {
-          return this.sortOrder=="Ascending"? -1 : 1;
-        }
-        if (first[this.sortBy] < second[this.sortBy]) {
-          return this.sortOrder=="Ascending"? 1 : -1;
-        }
-        // a must be equal to b
-        return 0;
+          var sort = this.sortOrder=="Ascending"? -1 : 1;
+          if (first[this.sortBy] === undefined && second[this.sortBy] === undefined)
+            return 0;
+          if (first[this.sortBy] === undefined)
+            return -sort
+          if (second[this.sortBy] === undefined)
+            return sort
+
+          if (first[this.sortBy] > second[this.sortBy]) {
+            return sort
+          }
+          if (first[this.sortBy] < second[this.sortBy]) {
+            return -sort
+          }
+          // a must be equal to b
+          return 0;
         } catch(e) {
           console.error(e);
           throw e;
@@ -328,10 +341,12 @@ class ServerList extends Object {
 }
 
 export class Servers extends Element {
+  server_list;
+
   this() {
     if(globalThis.server_list === undefined)
       globalThis.server_list = new ServerList();
-    this.server_list = globalThis.server_list;
+    this.server_list = Object.assign({}, globalThis.server_list);
   }
 
   componentDidMount() {
@@ -359,12 +374,8 @@ export class Servers extends Element {
       </div>
       <div class="filterbar">
         <p class="nowrap">Players: { this.server_list.minimum_players } - { this.server_list.maximum_players }</p>
-        <div class="slider" minValue="0" maxValue="64" min={ this.server_list.minimum_players } max={ this.server_list.maximum_players }>
-          <div class="range" style="left: 0%; width: *; margin-right: 6dip;"></div>
-          <div class="handle start" style="left: -3dip;"></div>
-          <div class="handle end" style="left: auto; right: 0dip; margin-right: 0dip;"></div>
-        </div>
-        <checkmark class="big checked" toggle /><p class="nowrap">Same version</p>
+        <Slider {...this.server_list} />
+        <checkmark class={"big" + (this.server_list.same_version? " checked": "")} toggle /><p class="nowrap">Same version</p>
       </div>
       <div class="body mheight">
         <ServersTable />
@@ -437,10 +448,79 @@ export class Servers extends Element {
     }
   }
 
+
+  ["on click at div.filterbar checkmark"](evt, target) {
+    try {
+      globalThis.server_list.toggle_versions();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   ["on input"](evt, target) {
     if(this.$("#map.hidden")) {
       this.$("#map.hidden").classList.toggle('hidden');
     }
     this.componentUpdate({ selectedServer: target.value });
+  }
+}
+
+class Slider extends Element {
+  this() {
+
+  }
+
+  render(props) {
+    return <div class="slider">
+      <div class="filler" style={ "width: " + props.minimum_players + "*"} />
+      <div class="handle start"></div>
+      <div class="range" style={ "width: " + (props.maximum_players - props.minimum_players) + "*"}></div>
+      <div class="handle end"></div>
+      <div class="filler" style={ "width: " + (64 - props.maximum_players) + "*"}/>
+    </div>
+  }
+
+  ["on mousedown at .handle"](evt, target) {
+    try {
+      this.state.capture(true);
+      console.log("mousedown");
+      this.handle = target;
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  ["on mouseup"](evt, target) {
+    try {
+      this.handle = undefined;
+      this.state.capture(false);
+      console.log("mouseup");
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  ["on mousemove"](evt, target) {
+    try {
+      if(this.handle) {
+        var players = Math.round(evt.x / this.state.box("width","inner") * 64);
+        var start = this.handle.classList.contains("start");
+        if (start) {
+          if(players >= globalThis.server_list.maximum_players)
+            players = globalThis.server_list.maximum_players - 1;
+          if(players < 0)
+            players = 0;
+          globalThis.server_list.set_minimum_players(players);
+        } else {
+          if(players <= globalThis.server_list.minimum_players)
+            players = globalThis.server_list.minimum_players + 1;
+          if(players > 64)
+            players = 64;
+          globalThis.server_list.set_maximum_players(players);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
   }
 }
