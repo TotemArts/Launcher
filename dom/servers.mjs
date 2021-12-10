@@ -466,10 +466,6 @@ export class Servers extends Element {
 }
 
 class Slider extends Element {
-  this() {
-
-  }
-
   render(props) {
     return <div class="slider">
       <div class="filler" style={ "width: " + props.minimum_players + "*"} />

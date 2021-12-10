@@ -102,13 +102,13 @@ div.titlebar > .title {
   vertical-align: middle; 
 }
 
-.settings-window {
+.settings-modal {
   width: 485dip;
   margin: auto auto;
   background-color: #0c151e;
 }
 
-.input-modal {
+.modal {
   width: 400dip;
   margin: auto auto;
   background-color: #0c151e;

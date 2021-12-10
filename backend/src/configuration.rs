@@ -139,6 +139,10 @@ impl Configuration {
         config_directory.to_str().expect("").to_owned()
     }
 
+    pub fn get_game_log_directory(&self) -> String {
+        format!("{}", self.get_local_setting("GameLocation"))
+    }
+
     fn get_global_configuration_directory() -> std::path::PathBuf {
         let mut config_directory = dirs::config_dir().expect("");
         config_directory.push("Renegade X");

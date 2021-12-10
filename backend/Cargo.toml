@@ -2,7 +2,7 @@
 name = "RenegadeX-Launcher"
 version = "0.9.31"
 authors = ["SonnyX"]
-edition = "2018"
+edition = "2021"
 build = "build.rs"
 include = ["src/**/*", "Cargo.toml"]
 
@@ -19,7 +19,7 @@ percent-encoding = "2.1"
 unzip = { git = "https://github.com/SonnyX/unzip-rs" }
 dirs = "4.0"
 runas = { git = "https://github.com/SonnyX/rust-runas" }
-sha2 = "0.9"
+sha2 = "0.10"
 hex = "0.4"
 log = "0.4"
 flexi_logger = "0.20"

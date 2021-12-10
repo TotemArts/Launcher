@@ -8,7 +8,7 @@ export class InputModal extends Element {
   }
 
   render() {
-    return <div class="input-modal">
+    return <div class="modal">
       <div class="titlebar">
         <h3 class="title.center uppercase" style="width: *;">{this.title}</h3>
         <div class="close" close></div>

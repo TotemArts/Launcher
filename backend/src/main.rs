@@ -126,9 +126,17 @@ fn main() -> Result<(), Error> {
     .build());
   }));
 
-  std::panic::catch_unwind(|| {
-    launch_ui(current_dir).join();
+  let unwind = std::panic::catch_unwind(|| {
+    launch_ui(current_dir).join().map_err(|e| Error::None(format!("{:?}", e)))??;
+    Ok::<(), Error>(())
   });
+
+  if let Err(e) = unwind {
+    error!("sciter panicked with: {:?}", e);
+  } else if let Ok(Err(e)) = unwind {
+    error!("sciter panicked with: {:?}", e);
+  }
+
 
   log::logger().flush();
   Ok(())
@@ -157,15 +165,13 @@ fn launch_ui(current_dir: String) -> std::thread::JoinHandle<Result<(),Error>> {
       frame.run_app();
     }
   
-    let game_location = configuration.get_game_location();
-    let version_url = configuration.get_version_url();
     let launcher_theme = configuration.get_launcher_theme();
     
     info!("Launching sciter!");
   
     let guard = runtime.enter();
     
-    std::panic::catch_unwind(|| {
+    let unwind = std::panic::catch_unwind(|| {
       let mut frame = sciter::Window::new();
       frame.sciter_handler(DebugHandler {});
       frame.expand(true);
@@ -175,6 +181,10 @@ fn launch_ui(current_dir: String) -> std::thread::JoinHandle<Result<(),Error>> {
       info!("Launching app!");
       frame.run_app();
     });
+
+    if let Err(e) = unwind {
+      error!("sciter panicked with: {:?}", e);
+    }
 
     drop(guard);
   

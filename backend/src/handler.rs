@@ -355,7 +355,7 @@ impl Handler {
 
   /// Sets the setting in the launchers configuration file.
   fn set_setting(&self, setting: sciter::Value, value: sciter::Value) {
-    self.configuration.set_global_setting(&setting.as_string().expect(""), &value.as_string().expect(""))
+    self.configuration.set_global_setting(&setting.as_string().expect("setting is not a string"), &value.as_string().expect("value is not a string"))
   }
 
   /// Get the current launcher version
@@ -572,6 +572,13 @@ impl Handler {
     #[cfg(target_os = "linux")]
     let spawned_process = std::process::Command::new("xdg-open").arg(self.configuration.get_log_directory()).spawn();
   }
+
+  fn open_game_logs_folder(&self) {
+    #[cfg(target_os = "windows")]
+    let spawned_process = std::process::Command::new("explorer.exe").arg(self.configuration.get_game_log_directory()).spawn();
+    #[cfg(target_os = "linux")]
+    let spawned_process = std::process::Command::new("xdg-open").arg(self.configuration.get_game_log_directory()).spawn();
+  }
 }
 
 impl sciter::EventHandler for Handler {
@@ -603,6 +610,7 @@ impl sciter::EventHandler for Handler {
     fn set_setting(Value, Value);
     fn get_launcher_version();
     fn open_launcher_logs_folder();
+    fn open_game_logs_folder();
 
     fn check_launcher_update(Value);
     fn update_launcher(Value);
