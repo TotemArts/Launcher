@@ -1,6 +1,7 @@
 export class SettingsModal extends Element {
   x64bitVersion = Window.this.xcall("get_setting", "64-bit-version");
   skipMovies = Window.this.xcall("get_setting", "skipMovies");
+  launcherVersion = Window.this.xcall("get_launcher_version");
 
   constructor() {
     super();
@@ -22,7 +23,7 @@ export class SettingsModal extends Element {
         <button class="setting uppercase" setting="game-logs">Game Log Folder</button>
       </div>
       <div class="center uppercase padding" style="font-size: 7pt;">This Application uses <a href="https://sciter.com" target="@system">Sciter Engine</a>, copyright Terra Informatica Software, Inc.</div>
-      <div class="center uppercase padding" style="font-size: 8pt;">Launcher version <output launcher_version /></div>
+      <div class="center uppercase padding" style="font-size: 8pt;">Launcher version {this.launcherVersion}</div>
     </div>
   }
 

@@ -1,4 +1,5 @@
 
+use sha2::Sha256;
 use socket2::*;
 
 use log::*;
@@ -11,7 +12,10 @@ use renegadex_patcher::{Patcher, PatcherBuilder};
 use sciter::Value;
 use crate::configuration;
 use crate::error::Error;
+use crate::progress::ValueProgress;
 use crate::version_information::VersionInformation;
+use crate::sha2::Digest;
+use std::io::Write;
 use std::io::Read;
 use ini::Ini;
 
@@ -39,7 +43,7 @@ impl Handler {
         return Ok(());
       }
     }
-  
+    
     let path = format!("{}/UDKGame/Config/DefaultRenegadeX.ini", renegadex_location);
     let ini = Ini::load_from_file(&path);
     let conf = match ini {
@@ -63,7 +67,7 @@ impl Handler {
         *version_information = Some(VersionInformation::retrieve(&version_url).await?);
       }
       let software_version = version_information.clone().unwrap().software;
-
+      
       if software_version.version_number != game_version_number.parse::<u64>()? {
         crate::spawn_wrapper::spawn(move || -> Result<(), Error> { done.call(None, &make_args!("update"), None)?; Ok(()) });
         return Ok(());
@@ -74,22 +78,22 @@ impl Handler {
     });
     return Ok(());
   }
-
+  
   /// Starts the downloading of the update/game
   fn start_download(&self, progress_callback: sciter::Value, success_callback: sciter::Value, failure_callback: sciter::Value) {
     let configuration = self.configuration.clone();
     let version_information = self.version_information.clone();
     let patcher_mutex = self.patcher.clone();
-
-//    let progress = self.patcher.clone().lock().or_else(|_| Err(Error::MutexPoisoned(format!(""))))?.get_progress();
-		crate::spawn_wrapper::spawn_async(&self.runtime, async move {
+    
+    //    let progress = self.patcher.clone().lock().or_else(|_| Err(Error::MutexPoisoned(format!(""))))?.get_progress();
+    crate::spawn_wrapper::spawn_async(&self.runtime, async move {
       let patcher = patcher_mutex.lock().await;
       if (*patcher).is_some() && (*patcher).as_ref().map(|patcher| patcher.in_progress.clone()).unwrap().load(Ordering::Relaxed) {
-
+        
         return Ok(());
       }
       drop(patcher);
-
+      
       let mut version_information = version_information.lock().await;
       if version_information.is_none() {
         // download version information
@@ -106,11 +110,11 @@ impl Handler {
         }
       }
       let software_version = version_information.clone().unwrap().software;
-
+      
       let mut patcher = PatcherBuilder::new();
       patcher.set_software_information(software_version.mirrors, software_version.version, software_version.instructions_hash);
       patcher.set_software_location(configuration.get_game_location());
-
+      
       patcher.set_success_callback(Box::new(move || {
         let success_callback = success_callback.clone();
         info!("Calling download done");
@@ -119,19 +123,19 @@ impl Handler {
           Ok(())
         });
       }));
-
-
+      
+      
       patcher.set_failure_callback(Box::new(move |e| {
-          let failure_callback = failure_callback.clone();
-          error!("failure_callback {:#?}", &e);
-          crate::spawn_wrapper::spawn(move || -> Result<(), Error> {failure_callback.call(None, &make_args!(e.to_string()), None)?; Ok(()) });
+        let failure_callback = failure_callback.clone();
+        error!("failure_callback {:#?}", &e);
+        crate::spawn_wrapper::spawn(move || -> Result<(), Error> {failure_callback.call(None, &make_args!(e.to_string()), None)?; Ok(()) });
       }));
-
-
+      
+      
       patcher.set_progress_callback(Box::new(move |progress| {
         let report_progress = || -> Result<(), Error> {
           let progress_callback = progress_callback.clone();
-
+          
           let json = format!(
             "{{\"action\": \"{}\",\"hash\": [{},{}],\"download\": [{}.0,{}.0],\"patch\": [{},{}],\"download_speed\": \"{}\"}}",
             progress.get_current_action()?,
@@ -151,44 +155,44 @@ impl Handler {
           error!("progress_callback: {}", e.to_string());
         }
       }));
-
+      
       let mut patcher = patcher.build()?;
       patcher.start_patching().await;
       
       let mut patcher_option = patcher_mutex.lock().await;
       (*patcher_option) = Some(patcher);
       Ok(())
-		});
+    });
   }
-
+  
   fn pause_patcher(&self) {
     let patcher_mutex = self.patcher.clone();
     crate::spawn_wrapper::spawn_async(&self.runtime, async move {
-        let patcher = patcher_mutex.lock().await;
-        if let Some(ref patcher) = *patcher {
-          let _ = patcher.pause();
-          info!("paused patcher");
-        } else {
-          info!("No active patcher instance running to pause");
-        }
+      let patcher = patcher_mutex.lock().await;
+      if let Some(ref patcher) = *patcher {
+        let _ = patcher.pause();
+        info!("paused patcher");
+      } else {
+        info!("No active patcher instance running to pause");
+      }
       Ok(())
     });
   }
-
+  
   fn resume_patcher(&self) {
     let patcher_mutex = self.patcher.clone();
     crate::spawn_wrapper::spawn_async(&self.runtime, async move {
-        let patcher = patcher_mutex.lock().await;
-        if let Some(ref patcher) = *patcher {
-          let _ = patcher.resume();
-          info!("resumed patcher");
-        } else {
-          info!("No active patcher instance running to resume");
-        }
+      let patcher = patcher_mutex.lock().await;
+      if let Some(ref patcher) = *patcher {
+        let _ = patcher.resume();
+        info!("resumed patcher");
+      } else {
+        info!("No active patcher instance running to resume");
+      }
       Ok(())
     });
   }
-
+  
   fn cancel_patcher(&self) {
     let patcher_mutex = self.patcher.clone();
     crate::spawn_wrapper::spawn_async(&self.runtime, async move {
@@ -202,7 +206,7 @@ impl Handler {
       Ok(())
     });
   }
-
+  
   /// Removes files inside of the subdirectories that are not part of the instructions.json
   fn remove_unversioned(&self, callback_done: sciter::Value, error: sciter::Value) {
     /*
@@ -228,21 +232,21 @@ impl Handler {
     });
     */
   }
-
+  
   fn get_video_location(&self, map_name: sciter::Value) -> String {
     self.configuration.get_video_location(map_name.to_string())
   }
-
+  
   /// Retrieve the playername
   fn get_playername(&self) -> String {
     self.configuration.get_playername()
   }
-
+  
   /// Set the playername
   fn set_playername(&self, username: sciter::Value) {
     self.configuration.set_playername(&username.as_string().expect(""))
   }
-
+  
   /// Get Server List as plain text
   fn get_servers(&self, callback: sciter::Value) {
     crate::spawn_wrapper::spawn_async(&self.runtime, async move {
@@ -251,11 +255,11 @@ impl Handler {
       downloader.use_uri(uri);
       let headers = downloader.headers().expect("Could not unwrap headers");
       headers.append("User-Agent".parse::<download_async::http::header::HeaderName>().unwrap(), format!("RenX-Launcher ({})", VERSION).parse::<download_async::http::header::HeaderValue>().unwrap());
-
+      
       let mut buffer = vec![];
-
+      
       downloader.download(download_async::Body::empty(), &mut buffer).await?;
-
+      
       crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
         let text : Value = std::str::from_utf8(&buffer).expect("Expected an utf-8 string").parse().expect(concat!(file!(),":",line!()));
         callback.call(None, &make_args!(text), None)?;
@@ -264,7 +268,7 @@ impl Handler {
       Ok::<(), Error>(())
     });
   }
-
+  
   /// Get ping of server
   fn get_ping(&self, server: sciter::Value, callback: sciter::Value) {
     crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
@@ -300,17 +304,17 @@ impl Handler {
       Ok(())
     });
   }
-
+  
   /// Get the installed game's version
   fn get_game_version(&self) -> String {
     self.configuration.get_game_version()
   }
-
+  
   /// Launch the game, if server variable it's value is "", then the game will be launched to the menu.
   fn launch_game(&self, server: Value, done: Value, error: Value) {
     let game_location = self.configuration.get_game_location();
     let launch_info =  self.configuration.get_launch_info();
-
+    
     crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
       let server = server.as_string().ok_or_else(|| Error::None(format!("{}", concat!(file!(),":",line!()))))?;
       let mut args = vec![];
@@ -323,12 +327,12 @@ impl Handler {
         args.push("-nomoviestartup".to_string());
       }
       args.push("-UseAllAvailableCores".to_string());
-
+      
       match std::process::Command::new(format!("{}/Binaries/Win{}/UDK.exe", game_location, launch_info.bit_version))
-                                     .args(&args)	
-                                     .stdout(std::process::Stdio::piped())
-                                     .stderr(std::process::Stdio::inherit())
-                                     .spawn() {
+      .args(&args)	
+      .stdout(std::process::Stdio::piped())
+      .stderr(std::process::Stdio::inherit())
+      .spawn() {
         Ok(mut child) => {
           let output = child.wait()?;
           if output.success() {
@@ -347,53 +351,53 @@ impl Handler {
       Ok(())
     });
   }
-
+  
   /// Gets the setting from the launchers configuration file.
   fn get_setting(&self, setting: sciter::Value) -> String {
     self.configuration.get_global_setting(&setting.as_string().expect(""))
   }
-
+  
   /// Sets the setting in the launchers configuration file.
   fn set_setting(&self, setting: sciter::Value, value: sciter::Value) {
     self.configuration.set_global_setting(&setting.as_string().expect("setting is not a string"), &value.as_string().expect("value is not a string"))
   }
-
+  
   /// Get the current launcher version
   fn get_launcher_version(&self) -> &str {
     VERSION
   }
-
+  
   /// Checks if the launcher is up to date
   fn check_launcher_update(&self, callback: Value) -> Result<(), Error> {
-    /*
-    let launcher_info_option = self.patcher.lock().or_else(|e| Err(Error::MutexPoisoned(format!("A mutex got poisoned: {}", e))))?.get_launcher_info();
-    if let Some(launcher_info) = launcher_info_option {
-      if VERSION != launcher_info.version_name && !launcher_info.prompted {
-        crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback.call(None, &make_args!(launcher_info.version_name), None)?; Ok(()) });
+    let configuration = self.configuration.clone();
+    let version_information = self.version_information.clone();
+    
+    //    let progress = self.patcher.clone().lock().or_else(|_| Err(Error::MutexPoisoned(format!(""))))?.get_progress();
+    crate::spawn_wrapper::spawn_async(&self.runtime, async move {
+      let mut version_information = version_information.lock().await;
+      if version_information.is_none() {
+        // download version information
+        let result = VersionInformation::retrieve(&configuration.get_version_url()).await;
+        if let Ok(info) = result {
+          *version_information = Some(info);
+        } else if let Err(e) = result {
+          error!("{:?}", e);
+          return Ok(());
+        }
+      }
+      let launcher_version = version_information.clone().unwrap().launcher;
+      if VERSION != launcher_version.version {
+        crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback.call(None, &make_args!(launcher_version.version), None)?; Ok(()) });
       } else {
         crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback.call(None, &make_args!(Value::null()), None)?; Ok(()) });
       }
-    } else {
-      let patcher = self.patcher.clone();
-      crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
-        let mut patcher = patcher.lock().or_else(|e| Err(Error::MutexPoisoned(format!("A mutex got poisoned: {}", e))))?;
-        patcher.retrieve_mirrors()?;
-        let launcher_info_option = patcher.get_launcher_info();
-        drop(patcher);
-        if let Some(launcher_info) = launcher_info_option {
-          if VERSION != launcher_info.version_name && !launcher_info.prompted {
-            crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback.call(None, &make_args!(launcher_info.version_name), None)?; Ok(()) });
-          } else {
-            crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback.call(None, &make_args!(Value::null()), None)?; Ok(()) });
-          }
-        }
-        Ok(())
-      });
-    }
-    */
+      
+      Ok::<(), Error>(())
+    });
+
     Ok(())
   }
-
+  
   fn install_redists(&self, done: Value, error_callback: Value) -> Result<(), Error> {
     /*
     let mut cache_dir = dirs::cache_dir().ok_or_else(|| Error::None(format!("")))?;
@@ -411,7 +415,7 @@ impl Handler {
         crate::spawn_wrapper::spawn(move || -> Result<(), Error> {error_callback.call(None, &make_args!(error_string), None)?; Ok(()) });
         return Err(Error::PatcherError(error));
       }
-
+      
       //run installer of UE3Redist and quit this.
       match runas::Command::new(cache_dir.to_str().ok_or_else(|| Error::None(format!("Failed to transform cache_dir to str")))?).gui(true).spawn() {
         Ok(mut child) => {
@@ -436,34 +440,36 @@ impl Handler {
           crate::spawn_wrapper::spawn(move || -> Result<(), Error> {error_callback.call(None, &make_args!(format!("Failed to open UE3 Redistributables: {}", &e)), None)?; Ok(()) });
         }
       };
-
+      
       Ok::<(), Error>(())
     });
     */
     Ok(())
   }
-
+  
   /// Launcher updater
-  fn update_launcher(&self, progress: Value) -> Result<(), Error> {
-    /*
-    let launcher_info = self.patcher.lock().or_else(|e| Err(Error::MutexPoisoned(format!("A mutex got poisoned: {}", e))))?.get_launcher_info().ok_or_else(|| Error::None(format!("Couldn't fetch launcher info")))?;
-    if VERSION != launcher_info.version_name {
-      let socket_addrs = launcher_info.patch_url.parse::<url::Url>()?.socket_addrs(|| None)?;
-      let uri = launcher_info.patch_url.parse::<download_async::http::Uri>()?;
-      let good_hash = launcher_info.patch_hash.clone();
-      drop(launcher_info);
-      crate::spawn_wrapper::spawn_async(&self.runtime, async move {
+  fn update_launcher(&self, progress_callback: Value, failure_callback: Value) -> Result<(), Error> {
+    let version_information = self.version_information.clone();
+    
+    //    let progress = self.patcher.clone().lock().or_else(|_| Err(Error::MutexPoisoned(format!(""))))?.get_progress();
+    crate::spawn_wrapper::spawn_async(&self.runtime, async move {
+      let result = async move {
+        let software_version = version_information.lock().await.clone().unwrap().launcher;
+        let url = software_version.url.clone();
+        let good_hash = software_version.hash.clone();
+        drop(software_version);
+        
         // Set up a request
         let mut downloader = download_async::Downloader::new();
-        downloader.use_uri(uri);
+        downloader.use_uri(url.parse::<download_async::http::Uri>().unwrap());
         downloader.allow_http();
-        downloader.use_sockets(socket_addrs.into());
-        let value_progress = ValueProgress::new(progress.clone());
+        let value_progress = ValueProgress::new(progress_callback.clone());
         downloader.use_progress(value_progress);
         downloader.headers().unwrap().append("User-Agent".parse::<download_async::http::header::HeaderName>().unwrap(), "sonny-launcher/1.0".parse::<download_async::http::header::HeaderValue>().unwrap());
         let mut buffer = vec![];
         downloader.download(download_async::Body::empty(), &mut buffer).await?;
-
+        
+        
         // check instructions hash
         if &good_hash != "" {
           let mut sha256 = Sha256::new();
@@ -475,7 +481,7 @@ impl Handler {
             panic!("The hashes don't match one another!");
           }
         }
-
+        
         let download_contents = std::io::Cursor::new(buffer);
         let mut output_path = std::env::current_exe()?;
         output_path.pop();
@@ -485,7 +491,8 @@ impl Handler {
         output_path.push("launcher_update_extracted/");
         info!("Extracting launcher update to: {:?}", output_path);
         let mut self_update_executor = output_path.clone();
-
+        
+        
         //extract files
         let result = unzip::Unzipper::new(download_contents, output_path).unzip().or_else(|e| Err(Error::UnzipError(e)))?;
         info!("{:#?}", result);
@@ -494,25 +501,32 @@ impl Handler {
         self_update_executor.push("SelfUpdateExecutor.exe");
         let args = vec![format!("--pid={}",std::process::id()), format!("--target={}", target_dir.to_str().ok_or_else(|| Error::None(format!("Couldn't stringify target_dir")))?)];
         std::process::Command::new(self_update_executor)
-                                    .current_dir(working_dir)
-                                    .args(&args)
-                                    .stdout(std::process::Stdio::piped())
-                                    .stderr(std::process::Stdio::inherit())
-                                    .spawn()?;
-        std::process::exit(0);
-        Ok::<(),Error>(())
-      });
-    }
-    */
+        .current_dir(working_dir)
+        .args(&args)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::inherit())
+        .spawn()?;
+        Ok::<(), Error>(())
+      };
+      match result.await {
+        Ok(_) => std::process::exit(0),
+        Err(e) => {
+          let failure_callback = failure_callback.clone();
+          error!("failure_callback {:#?}", &e);
+          crate::spawn_wrapper::spawn(move || -> Result<(), Error> {failure_callback.call(None, &make_args!(e.to_string()), None)?; Ok(()) });
+        },
+      };
+      Ok::<(),Error>(())
+    });
     Ok(())
   }
-
+  
   /// Fetch the text-resource at url with the specified headers.
   fn fetch_resource(&self, url: Value, mut headers_value: Value, callback: Value, context: Value) -> Result<(), Error> {
     headers_value.isolate();
     let mut downloader = download_async::Downloader::new();
     let headers = downloader.headers().expect("Couldn't get the headers of the request");
-
+    
     for (key,value) in headers_value.items() {
       headers.insert(key.as_string().ok_or_else(|| Error::None(format!("Key value was empty.")))?.parse::<download_async::http::header::HeaderName>().unwrap(), value.as_string().ok_or_else(|| Error::None(format!("header value was empty.")))?.parse::<download_async::http::header::HeaderValue>().unwrap());
     }
@@ -520,7 +534,7 @@ impl Handler {
     let uri = url.as_string().ok_or_else(|| Error::None(format!("Couldn't parse url as string.")))?.parse::<download_async::http::Uri>().unwrap();
     downloader.use_uri(uri);
     downloader.allow_http();
-
+    
     crate::spawn_wrapper::spawn_async(&self.runtime, async move {
       let mut buffer = vec![];
       downloader.download(download_async::Body::empty(), &mut buffer).await?;
@@ -533,7 +547,7 @@ impl Handler {
     });
     Ok(())
   }
-
+  
   /// Fetch the image at url with specified headers
   fn fetch_image(&self, url: Value, mut headers_value: Value, callback: Value, context: Value) -> Result<(), Error> {
     headers_value.isolate();
@@ -546,10 +560,10 @@ impl Handler {
     let uri = url.as_string().ok_or_else(|| Error::None(format!("Couldn't parse url as string.")))?.parse::<download_async::http::Uri>()?;
     downloader.use_uri(uri);
     downloader.allow_http();
-
+    
     crate::spawn_wrapper::spawn_async(&self.runtime, async move {
       let mut buffer = vec![];
-
+      
       downloader.download(download_async::Body::empty(), &mut buffer).await?;
       crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
         let image = sciter::graphics::Image::load(&buffer).ok();
@@ -572,7 +586,7 @@ impl Handler {
     #[cfg(target_os = "linux")]
     let spawned_process = std::process::Command::new("xdg-open").arg(self.configuration.get_log_directory()).spawn();
   }
-
+  
   fn open_game_logs_folder(&self) {
     #[cfg(target_os = "windows")]
     let spawned_process = std::process::Command::new("explorer.exe").arg(self.configuration.get_game_log_directory()).spawn();
@@ -585,50 +599,50 @@ impl sciter::EventHandler for Handler {
   fn get_subscription(&mut self) -> Option<sciter::dom::event::EVENT_GROUPS> {
     Some(sciter::dom::event::default_events() | sciter::dom::event::EVENT_GROUPS::HANDLE_METHOD_CALL)
   }
-
-	dispatch_script_call! {
+  
+  dispatch_script_call! {
     fn check_update(Value, Value);
     fn install_redists(Value, Value);
-
+    
     fn start_download(Value, Value, Value);
     fn cancel_patcher();
     fn resume_patcher();
     fn pause_patcher();
-
+    
     fn remove_unversioned(Value, Value);
-
+    
     fn get_playername();
-
+    
     fn get_game_version();
     fn set_playername(Value);
-
+    
     fn get_servers(Value);
     fn launch_game(Value, Value, Value); //Parameters: (Server IP+Port, onDone, onError);
     fn get_ping(Value, Value);
-
+    
     fn get_setting(Value);
     fn set_setting(Value, Value);
     fn get_launcher_version();
     fn open_launcher_logs_folder();
     fn open_game_logs_folder();
-
+    
     fn check_launcher_update(Value);
-    fn update_launcher(Value);
+    fn update_launcher(Value,Value);
     fn fetch_resource(Value,Value,Value,Value);
     fn fetch_image(Value,Value,Value,Value);
     fn get_video_location(Value);
   }
-
+  
   fn on_script_call(&mut self, root: sciter::HELEMENT, name: &str, argv: &[Value]) -> Option<Value> {
-      let args = argv.iter().map(|x| format!("{:?}", &x)).collect::<Vec<String>>().join(", ");
-      
-      info!("Called {}({}) from element: {:?}", name, args, sciter::Element::from(root));
-      let handled = self.dispatch_script_call(root, name, argv);
-      if handled.is_some() {
-        info!("End {}({}): {:?}", name, args, handled);
-        return handled;
-      }
-      error!("{}({}) does not exist!", name, args);
-      None
+    let args = argv.iter().map(|x| format!("{:?}", &x)).collect::<Vec<String>>().join(", ");
+    
+    info!("Called {}({}) from element: {:?}", name, args, sciter::Element::from(root));
+    let handled = self.dispatch_script_call(root, name, argv);
+    if handled.is_some() {
+      info!("End {}({}): {:?}", name, args, handled);
+      return handled;
+    }
+    error!("{}({}) does not exist!", name, args);
+    None
   }
 }

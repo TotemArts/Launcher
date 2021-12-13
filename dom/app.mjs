@@ -6,6 +6,7 @@ import { ProgressModal } from "progress-modal.mjs";
 import { CallbackService } from "callback-service.mjs";
 import { InputModal } from "input-modal.mjs";
 import * as debug from "@debug";
+import { LauncherProgressModal } from "./launcher-progress-modal.mjs";
 
 globalThis.callback_service = new CallbackService();
 
@@ -20,7 +21,7 @@ debug.setUnhandledExeceptionHandler(function (err) {
 });
 
 function check_launcher_result(version) {
-  console.log("check_launcher_result callback");
+  globalThis.document.body.update_launcher(version);
 }
 
 class App extends Element {
@@ -43,7 +44,7 @@ class App extends Element {
     username: <InputModal title="Welcome back commander!" key="Username" placeholder="" callback={this.set_username} />,
     progress: <ProgressModal />,
     clean_install: <ConfirmationModal title="Clean Game Install" message={<p>Are you sure you want to do this?<br />This will remove any additional content downloaded, and reset your settings!</p>} confirm="Clean!" confirm_callback={this.internal_clean_game} cancel="Uh..." />,
-    validate_install: <ConfirmationModal title="Validate Game Install" message={<p>Are you sure you want to do this?<br />This will also reset your settings!</p>} confirm="Validate!" confirm_callback={this.internal_validate_game} cancel="Uh..." />
+    validate_install: <ConfirmationModal title="Validate Game Install" message={<p>Are you sure you want to do this?<br />This will also reset your settings!</p>} confirm="Validate!" confirm_callback={this.internal_validate_game} cancel="Uh..." />,
   };
 
   current = "game";
@@ -79,6 +80,34 @@ class App extends Element {
     } catch (e) {
       console.error(e);
     }
+  }
+
+  update_launcher(version) {
+    try {
+      var overlay = document.$("#overlay");
+      overlay.patch(<div id="overlay"><ConfirmationModal title="A new version of the launcher is available!" message={<p>Do you want to download launcher version: {version}<br />You are currently on version: {Window.this.xcall("get_launcher_version")}</p>} confirm="Update!" confirm_callback={this.internal_update_launcher} cancel="I'd rather stay on this version" /></div>);
+      overlay.style["visibility"] = "visible";
+      document.$("div.menuEntries").state.disabled = true;
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  internal_update_launcher() {
+    globalThis.progress_callback = (array) => {
+      var overlay = globalThis.document.$("#overlay");
+      overlay.patch(<div id="overlay"><LauncherProgressModal current={array[0]} max={array[1]} /></div>);
+      overlay.style["visibility"] = "visible";
+      globalThis.document.$("div.menuEntries").state.disabled = true;
+    };
+    globalThis.failure_callback = (error) => {
+      var overlay = globalThis.document.$("#overlay");
+      overlay.patch(<div id="overlay"><ConfirmationModal title="The launcher update failed!" message={<p>Updating the launcher has failed:<br />{error}</p>} confirm="Uh...." confirm_callback={undefined} cancel="Uh..." /></div>);
+      overlay.style["visibility"] = "visible";
+      globalThis.document.$("div.menuEntries").state.disabled = true;
+    };
+    Window.this.xcall("update_launcher", globalThis.progress_callback, globalThis.failure_callback)
+    console.log("Oh no, he wants to update!");
   }
 
   internal_validate_game() {

@@ -1,4 +1,4 @@
-export class CallbackService {
+export class CallbackService extends Object {
     subscribers = {};
 
     subscribe(to, subscriberContext, subscriber) {
