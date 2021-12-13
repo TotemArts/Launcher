@@ -1,10 +1,10 @@
-import { News } from "news.mjs";
-import { GameDashboard } from "game-dashboard.mjs";
-import { SettingsModal } from "settings-modal.mjs";
-import { ConfirmationModal } from "confirmation-modal.mjs";
-import { ProgressModal } from "progress-modal.mjs";
-import { CallbackService } from "callback-service.mjs";
-import { InputModal } from "input-modal.mjs";
+import { News } from "./news.mjs";
+import { GameDashboard } from "./game-dashboard.mjs";
+import { SettingsModal } from "./settings-modal.mjs";
+import { ConfirmationModal } from "./confirmation-modal.mjs";
+import { ProgressModal } from "./progress-modal.mjs";
+import { CallbackService } from "./callback-service.mjs";
+import { InputModal } from "./input-modal.mjs";
 import * as debug from "@debug";
 import { LauncherProgressModal } from "./launcher-progress-modal.mjs";
 
@@ -42,6 +42,7 @@ class App extends Element {
   overlays = {
     settings: <SettingsModal />,
     username: <InputModal title="Welcome back commander!" key="Username" placeholder="" callback={this.set_username} />,
+    ip: <InputModal title="Join IP!" key="Hey there sarge!" placeholder="IP:port" callback={this.join_server} />,
     progress: <ProgressModal />,
     clean_install: <ConfirmationModal title="Clean Game Install" message={<p>Are you sure you want to do this?<br />This will remove any additional content downloaded, and reset your settings!</p>} confirm="Clean!" confirm_callback={this.internal_clean_game} cancel="Uh..." />,
     validate_install: <ConfirmationModal title="Validate Game Install" message={<p>Are you sure you want to do this?<br />This will also reset your settings!</p>} confirm="Validate!" confirm_callback={this.internal_validate_game} cancel="Uh..." />,
@@ -53,11 +54,15 @@ class App extends Element {
     try {
       Window.this.xcall("set_playername", value);
       globalThis.username = value;
-      me = document.body;
+      var me = document.body;
       me.$("#content").patch(<div id="content">{me.pages[me.current]}</div>);
     } catch (e) {
       console.error(e);
     }
+  }
+
+  join_server(server) {
+    console.log("We're trying to join: " + server);
   }
 
   validate_game_modal() {

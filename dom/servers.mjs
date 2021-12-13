@@ -386,10 +386,7 @@ export class Servers extends Element {
         <div class="dropdown_menu closed">PLAY ONLINE</div>
         <div style="position: relative;">
           <div class="menu child-padding" style="visibility: hidden;">
-            <div class="padding" overlay="ip.htm"><h4>JOIN IP</h4></div>
-            <div class="padding"><h4>LAUNCH SERVER</h4></div>
-            <div class="padding"><h4>PLAY ONLINE</h4></div>
-            <div class="padding"><h4>PLAY SKIRMISH</h4></div>
+            <div class="padding" overlay="ip"><h4>JOIN IP</h4></div>
           </div>
         </div>
       </div>

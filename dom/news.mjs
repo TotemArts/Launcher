@@ -1,4 +1,4 @@
-import { toBase64 } from "@sciter";
+import { toBase64, devicePixels } from "@sciter";
 
 globalThis.news_feed_callback = function (text) {
   try {
@@ -31,7 +31,7 @@ globalThis.load_news_item = function (text) {
     text = text.replace(youtube_regex, "<a.playable href=\"https://youtube.com/watch?v=$1\"><img src=\"https://img.youtube.com/vi_webp/$1/maxresdefault.webp\"/></a>");
 
     var iframe_regex = /<i?frame[^>]*?(?:\/>|>[^<>]*?<\/i?frame>)/g;
-    text = text.replace(iframe_regex, "");
+    text = text.replace(iframe_regex, "External content hidden");
     globalThis.news_items[this.id].html = text;
 
     globalThis.callback_service.publish("news", { id: this.id });
@@ -53,7 +53,10 @@ globalThis.image_callback = function (image) {
       let bytes, base64;
       bytes = image.toBytes("webp", 100);
       base64 = toBase64(bytes);
-      globalThis.news_items[this.id].html = globalThis.news_items[this.id].html.replace(url_regex, "data:image/webp;base64," + base64);
+
+      var escaped_tag = "<img[^>]+?src=\"" + escaped_url + "\"[^>]*?(/|>[^<]*?</img)?>";
+      var image_regex = new RegExp(escaped_tag, "g");
+      globalThis.news_items[this.id].html = globalThis.news_items[this.id].html.replace(image_regex, "<img src=\"data:image/webp;base64," + base64 + "\" />");
     } else {
       console.log("Image at url \"" + escaped_url + "\" appears to be missing.");
       var escaped_tag = "<img[^>]+?src=\"" + escaped_url + "\"[^>]*?\/>";
@@ -75,9 +78,13 @@ export class News extends Element {
   }
 
   current_news_id = 0;
-  news_html = globalThis.news_items[this.current_news_id].html ?? "";
+  current_news = globalThis.news_items[this.current_news_id];
 
   render() {
+    var width = globalThis.document.body.state.box("width", "border", "parent");
+    console.error("Hi render");
+    console.error(width);
+
     var news_items = this.render_news_feed();
     var news_item = this.render_news_item();
 
@@ -138,13 +145,36 @@ export class News extends Element {
         <h3 class="title">{news_item.title}</h3>
       </div>
       <div>
-        <div id="news" state-html={this.news_html}></div>
+        <div id="news" state-html={this.current_news.html ?? ""}></div>
+        <div id="news-footer">View the full thread: <a href={this.current_news.link} target="@system">{this.current_news.title}</a></div>
       </div>
     </div>;
   }
 
   componentDidMount() {
     globalThis.callback_service.subscribe("news", this, this.callback);
+    var target =  this.$(".news-grid > div:nth-child(5)");
+    target.onsizechange = this.recalculateLayout;
+
+    var width = target.state.box("width", "border", "parent");
+    console.error("Hi componentDidMount");
+    console.error(width);
+  }
+  recalculateLayout() {
+    var target =  this;
+    var min_width = target.children.length * devicePixels(500);
+    var parent_width = target.state.box("width", "border", "parent");
+    console.error("parent_width:");
+    console.error(parent_width);
+    if (parent_width >= min_width) {
+      if (target.style["flow"] != "horizontal") {
+        target.style["flow"] = "horizontal";
+      }
+    } else {
+      if (target.style["flow"] != "vertical") {
+        target.style["flow"] = "vertical";
+      }
+    }
   }
 
   callback(data) {

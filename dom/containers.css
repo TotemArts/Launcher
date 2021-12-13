@@ -230,7 +230,6 @@ div.titlebar > .title {
 }
 
 .body {
-  position: relative;
   background-color: #0c151ee6;
   padding: 10dip;
   margin-bottom: 10dip;
@@ -242,10 +241,11 @@ div.titlebar > .title {
 
 .menu {
   position: absolute;
-  top: 0px;
-  right: 0px;
+  bottom: 17dip;
+  right: -4dip;
   min-width: 200dip;
   background-color: #0D1721;
+  border: 1dip inset #ce5135;
 }
 
 .menu > div {

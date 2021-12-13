@@ -13,7 +13,7 @@
     </style>
     <script type="text/javascript">
       let [sx,sy,sw,sh] = Window.this.screenBox("workarea","rectw");
-      let [w,h] = document.$("div.username-window").state.box("dimension", "margin");
+      let [w,h] = document.$("div.modal").state.box("dimension", "margin");
 
       Window.this.move(sx + (sw - w) / 2, sy + (sh - h) / 2,w,h,false);
 
@@ -27,7 +27,7 @@
     </script>
   </head>
   <body>
-    <div class="username-window" role="window-caption">
+    <div class="modal" role="window-caption">
       <div class="titlebar">
         <h3 class="title center uppercase" style="width: *;">Another instance is already running!</h3>
       </div>

@@ -1,4 +1,4 @@
-import { Servers } from "servers.mjs";
+import { Servers } from "./servers.mjs";
 import { devicePixels } from "@sciter";
 
 export class GameDashboard extends Element 
@@ -52,6 +52,8 @@ export class GameDashboard extends Element
     var target =  this;
     var min_width = target.children.length * devicePixels(500);
     var parent_width = target.state.box("width", "border", "parent");
+    console.error("parent_width:");
+    console.error(parent_width);
     if (parent_width >= min_width) {
       if (target.style["flow"] != "horizontal") {
         target.style["flow"] = "horizontal";

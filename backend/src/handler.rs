@@ -3,6 +3,7 @@ use sha2::Sha256;
 use socket2::*;
 
 use log::*;
+use tokio::io::AsyncWriteExt;
 use tokio::sync::Mutex;
 
 use std::net::ToSocketAddrs;
@@ -399,21 +400,36 @@ impl Handler {
   }
   
   fn install_redists(&self, done: Value, error_callback: Value) -> Result<(), Error> {
-    /*
+    
     let mut cache_dir = dirs::cache_dir().ok_or_else(|| Error::None(format!("")))?;
-    let patcher = self.patcher.clone();
+
+    let version_information = self.version_information.clone();
+
     // Spawn thread, to not block the main process.
-    crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
+    crate::spawn_wrapper::spawn_async(&self.runtime, async move {
       cache_dir.set_file_name("UE3Redist.exe");
-      let file = std::fs::File::create(&cache_dir)?;
-      let mut patcher = patcher.lock().or_else(|e| Err(Error::MutexPoisoned(format!("A mutex got poisoned: {}", e))))?;
-      patcher.rank_mirrors()?;
-      let result = patcher.download_file_from_mirrors("/redists/UE3Redist.exe", file);
-      drop(patcher);
-      if let Err(error) = result {
-        let error_string = format!("Failed to download UE3Redist: {}", error);
-        crate::spawn_wrapper::spawn(move || -> Result<(), Error> {error_callback.call(None, &make_args!(error_string), None)?; Ok(()) });
-        return Err(Error::PatcherError(error));
+      let mut file = tokio::fs::File::create(&cache_dir).await?;
+      //let result = patcher.download_file_from_mirrors("", file);
+      let version_information = version_information.lock().await;
+      let mirrors = version_information.clone().unwrap().software.mirrors.clone();
+      drop(version_information);
+
+      for mirror in mirrors {
+        let url = format!("{}/redists/UE3Redist.exe", mirror.url);
+
+        // Set up a request
+        let mut downloader = download_async::Downloader::new();
+        downloader.use_uri(url.parse::<download_async::http::Uri>().unwrap());
+        downloader.allow_http();
+        downloader.headers().unwrap().append("User-Agent".parse::<download_async::http::header::HeaderName>().unwrap(), "sonny-launcher/1.0".parse::<download_async::http::header::HeaderValue>().unwrap());
+        let mut buffer = vec![];
+        match downloader.download(download_async::Body::empty(), &mut buffer).await {
+            Ok(_) => {
+              file.write_all(&buffer).await?;
+              break;
+            },
+            Err(_) => continue,
+        }
       }
       
       //run installer of UE3Redist and quit this.
@@ -443,7 +459,7 @@ impl Handler {
       
       Ok::<(), Error>(())
     });
-    */
+    
     Ok(())
   }
   
