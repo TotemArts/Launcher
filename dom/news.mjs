@@ -49,7 +49,6 @@ globalThis.image_callback = function (image) {
   try {
     var escaped_url = this.url.replace(/([\?\.\|\/\?\(\)])/g, "\\$1").trim();
     if (image) {
-      var url_regex = new RegExp(escaped_url, "g");
       let bytes, base64;
       bytes = image.toBytes("webp", 100);
       base64 = toBase64(bytes);
@@ -79,15 +78,9 @@ export class News extends Element {
 
   current_news_id = 0;
   current_news = globalThis.news_items[this.current_news_id];
+  body_width = globalThis.document.body.state.box("width", "border", "parent");
 
   render() {
-    var width = globalThis.document.body.state.box("width", "border", "parent");
-    console.error("Hi render");
-    console.error(width);
-
-    var news_items = this.render_news_feed();
-    var news_item = this.render_news_item();
-
     return <div class="news-grid">
       <div class="logo hflow">
         <div class="vflow vcenter">
@@ -101,17 +94,45 @@ export class News extends Element {
       <div class="right-margin"></div>
       <div class="footer-margin"></div>
       <div class="hflow child-margin expand">
-        <div class="news_items_container vflow">
+        {this.render_news()}
+      </div>
+    </div>
+  }
+
+  render_news() {
+    var news_items = this.render_news_feed();
+
+    if(this.body_width < 1290) {
+      var list = [];
+      for(const news_item of news_items) {
+        list.push(news_item);
+        if(news_item[1]["id"] == this.current_news_id) list.push(<div id="news" state-html={this.current_news.html ?? ""}/>);
+      }
+      
+      return <div class="child-margin expand" style="width: *;">
+        <div class="news_items_container vflow" style="width: *;">
           <div class="titlebar">
             <h3 class="title uppercase">News</h3>
           </div>
           <div class="expand">
-            {news_items}
+            {list}
           </div>
         </div>
-        {news_item}
+      </div>;
+    }
+
+    var news_item = this.render_news_article();
+    return <div class="hflow child-margin expand">
+      <div class="news_items_container vflow">
+        <div class="titlebar">
+          <h3 class="title uppercase">News</h3>
+        </div>
+        <div class="expand">
+          {news_items}
+        </div>
       </div>
-    </div>
+      {news_item}
+    </div>;
   }
 
   render_news_feed() {
@@ -135,51 +156,32 @@ export class News extends Element {
     return list;
   }
 
-  render_news_item() {
+  render_news_article() {
     if (globalThis.news_items.length == 0)
       return <div></div>
 
-    var news_item = globalThis.news_items[this.current_news_id];
     return <div class="news_container vflow">
       <div class="titlebar">
-        <h3 class="title">{news_item.title}</h3>
+        <h3 class="title">{this.current_news.title}</h3>
       </div>
       <div>
         <div id="news" state-html={this.current_news.html ?? ""}></div>
-        <div id="news-footer">View the full thread: <a href={this.current_news.link} target="@system">{this.current_news.title}</a></div>
       </div>
+      <div id="news-footer">View the full thread: <a href={this.current_news.link} target="@system">{this.current_news.title}</a></div>
     </div>;
   }
 
   componentDidMount() {
     globalThis.callback_service.subscribe("news", this, this.callback);
-    var target =  this.$(".news-grid > div:nth-child(5)");
-    target.onsizechange = this.recalculateLayout;
-
-    var width = target.state.box("width", "border", "parent");
-    console.error("Hi componentDidMount");
-    console.error(width);
-  }
-  recalculateLayout() {
-    var target =  this;
-    var min_width = target.children.length * devicePixels(500);
-    var parent_width = target.state.box("width", "border", "parent");
-    console.error("parent_width:");
-    console.error(parent_width);
-    if (parent_width >= min_width) {
-      if (target.style["flow"] != "horizontal") {
-        target.style["flow"] = "horizontal";
-      }
-    } else {
-      if (target.style["flow"] != "vertical") {
-        target.style["flow"] = "vertical";
-      }
-    }
+    this.onsizechange = (evt, target) => {
+      var width = globalThis.document.body.state.box("width", "border", "parent");
+      this.componentUpdate({ body_width: width });
+    };
   }
 
   callback(data) {
     if(data.id == this.current_news_id) {
-      this.componentUpdate({ news_html: globalThis.news_items[data.id].html });
+      this.componentUpdate({ current_news: Object.assign({}, globalThis.news_items[data.id]) });
     }
   }
 
@@ -201,11 +203,9 @@ export class News extends Element {
   ["on click at div.news_item[id]"](evt, target) {
     var id = parseInt(target.getAttribute("id"));
     var item = globalThis.news_items[id];
+    this.componentUpdate({ current_news_id: id, current_news: item});
     if (!item.html) {
-      this.componentUpdate({ current_news_id: id, news_html: ""});
       Window.this.xcall("fetch_resource", item.link + "?preview=1", { "Referer": "https://ren-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache" }, globalThis.load_news_item, { "id": id });
-    } else {
-      this.componentUpdate({ current_news_id: id, news_html: item.html });
     }
   }
 }

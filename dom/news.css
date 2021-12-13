@@ -17,7 +17,7 @@
 
 .news-grid > div:nth-child(2), .news-grid > div:nth-child(3) {
   height: *;
-  width: *;
+  min-width: 20dip;
 }
 
 .news-grid > div:nth-child(4) {
@@ -33,9 +33,10 @@
 }
 
 
-
 .news_items_container {
-  width: 400dip;
+  min-width: 400dip;
+  width: *;
+  max-width: 750dip;
   background-color: #0c151ee6;
 }
 
@@ -102,8 +103,12 @@
 
 
 .news_container {
-  width: 750dip;
+  min-width: 300dip;
+  width: *;
+  max-width: 750dip;
+
   height: *;
+  min-height: 300dip;
 }
 
 .news_container > div:nth-child(2) {
@@ -134,7 +139,7 @@
 
 #news img {
   border-style: none;
-  max-width: 750dip;
+  max-width: 730dip;
   image-rendering: optimize-quality;
 }
 
