@@ -1,5 +1,6 @@
 import { Servers } from "./servers.mjs";
 import { devicePixels } from "@sciter";
+import { Footer } from "./footer.mjs";
 
 export class GameDashboard extends Element 
 {
@@ -21,7 +22,7 @@ export class GameDashboard extends Element
               </div>
               <div class="left-margin"></div>
               <div class="right-margin"></div>
-              <div class="footer-margin"></div>
+              <Footer class="footer-margin"/>
               <div>
                 <Servers/>
                 <div class="chat-container">
