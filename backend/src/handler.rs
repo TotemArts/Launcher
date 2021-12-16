@@ -5,6 +5,8 @@ use socket2::*;
 use log::*;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::Mutex;
+use quick_xml::Reader;
+use quick_xml::events::Event;
 
 use std::net::ToSocketAddrs;
 use std::sync::Arc;
@@ -609,6 +611,78 @@ impl Handler {
     #[cfg(target_os = "linux")]
     let spawned_process = std::process::Command::new("xdg-open").arg(self.configuration.get_game_log_directory()).spawn();
   }
+
+  fn html_to_jsx(&self, html: Value) -> Result<Value,Error> {
+    let mut input = html.as_string().ok_or_else(|| Error::None(format!("Couldn't parse html as string.")))?;
+    input = input.replace("\n","\\n").replace("\r","\\r");
+    let mut reader = Reader::from_str(&input);
+    let mut json = format!("");
+    let mut buf = Vec::new();
+    let mut add_comma = false;
+    loop {
+      match reader.read_event(&mut buf) {
+        Ok(event) => {
+          match event {
+            Event::Start(ref e) => {
+              let comma = match add_comma {
+                true => ",".to_string(),
+                false => "".to_string()
+              };
+              let attrs = e.attributes().filter(|attr| attr.is_ok()).map(|result| result.unwrap()).map(|attr| format!("\"{}\": \"{}\"", &std::str::from_utf8(&attr.key).unwrap(), &std::str::from_utf8(&attr.value).unwrap())).collect::<Vec<String>>().join(",");
+              json = format!("{}{}[\"{}\", {{ {} }}, [", json, comma, &std::str::from_utf8(e.name())?, attrs);
+              add_comma = false;
+            },
+            Event::End(ref e) => {
+              json = format!("{}]]", json);
+              add_comma = true;
+            },
+            Event::CData(text) => {
+              let comma = match add_comma {
+                true => ",".to_string(),
+                false => "".to_string()
+              };
+              json = format!("{}{}\"{}\"", json, comma, &text.unescape_and_decode(&reader).unwrap()).replace("\"", "\\\"");
+              add_comma = true;
+            },
+            Event::Text(text) => {
+              if !json.is_empty() {
+                let text = &reader.decode(&text).unwrap();
+                if !text.is_empty() {
+                  let comma = match add_comma {
+                    true => ",".to_string(),
+                    false => "".to_string()
+                  };
+                  json = format!("{}{}\"{}\"", json, comma, text.replace("\"", "\\\""));
+                  add_comma = true;
+                }
+              }
+            },
+            Event::Empty(ref e) => {
+              let comma = match add_comma {
+                true => ",".to_string(),
+                false => "".to_string()
+              };
+              let attrs = e.attributes().filter(|attr| attr.is_ok()).map(|result| result.unwrap()).map(|attr| format!("\"{}\": \"{}\"", &std::str::from_utf8(&attr.key).unwrap(), &std::str::from_utf8(&attr.value).unwrap())).collect::<Vec<String>>().join(",");
+              json = format!("{}{}[\"{}\", {{ {} }}, []]", json, comma, &std::str::from_utf8(e.name())?, attrs);
+              add_comma = true;
+            },
+            Event::Eof => {
+              break;
+            },
+            _ => {
+              error!("Unhandled event: {:#?}", &event);
+            }
+          };
+        },
+        Err(e) => {
+          error!("Couldn't process text: {:#?}", e);
+          break;
+        }
+      }
+    }
+    info!("json: {}", &json);
+    Ok(json.parse().or_else(|e| Err(Error::None(format!("Couldn't parse json as object. code: {}", e))))?)
+  }
 }
 
 impl sciter::EventHandler for Handler {
@@ -647,6 +721,8 @@ impl sciter::EventHandler for Handler {
     fn fetch_resource(Value,Value,Value,Value);
     fn fetch_image(Value,Value,Value,Value);
     fn get_video_location(Value);
+
+    fn html_to_jsx(Value);
   }
   
   fn on_script_call(&mut self, root: sciter::HELEMENT, name: &str, argv: &[Value]) -> Option<Value> {

@@ -318,15 +318,15 @@ export class ServerList extends Object {
           if (first[this.sortBy] === undefined && second[this.sortBy] === undefined)
             return 0;
           if (first[this.sortBy] === undefined)
-            return -sort
+            return 1;
           if (second[this.sortBy] === undefined)
-            return sort
+            return -1;
 
           if (first[this.sortBy] > second[this.sortBy]) {
-            return sort
+            return sort;
           }
           if (first[this.sortBy] < second[this.sortBy]) {
-            return -sort
+            return -sort;
           }
           // a must be equal to b
           return 0;

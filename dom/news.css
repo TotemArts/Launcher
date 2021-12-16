@@ -143,10 +143,6 @@
   image-rendering: optimize-quality;
 }
 
-#news #ipsTabs_elTopic_topicID_elTopic_topicID_latestPost_panel, #elTopic_topicID, #news .ipsPhotoPanel, #news hr {
-  visibility: none;
-}
-
 #news .ipsSpoiler, #news .ipsStyle_spoiler, #news .ipsQuote {
     margin: 0;
     padding: 0px 15px;
