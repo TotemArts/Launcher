@@ -157,7 +157,7 @@ fn launch_ui(current_dir: String) -> std::thread::JoinHandle<Result<(),Error>> {
         frame.run_app();
       }
     }
-    let runtime : tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build().expect("");
+    let runtime : tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread().enable_all().thread_stack_size(2_usize.pow(22)).build().expect("");
     if configuration.get_playername().eq("UnknownPlayer") {
       let mut frame = sciter::Window::new();
       frame.event_handler(Handler{patcher: Arc::new(Mutex::new(None)), version_information: Arc::new(Mutex::new(None)), configuration: configuration.clone(), runtime: runtime.handle().clone()});
