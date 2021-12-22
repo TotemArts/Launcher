@@ -3,6 +3,7 @@ import { GameDashboard } from "./game-dashboard.mjs";
 import { SettingsModal } from "./settings-modal.mjs";
 import { ConfirmationModal } from "./confirmation-modal.mjs";
 import { ProgressModal } from "./progress-modal.mjs";
+import { Progress } from "./progress.mjs";
 import { CallbackService } from "./callback-service.mjs";
 import { InputModal } from "./input-modal.mjs";
 import * as debug from "@debug";
@@ -30,6 +31,7 @@ class App extends Element {
     Window.this.xcall("check_launcher_update", check_launcher_result);
     globalThis.username = Window.this.xcall("get_playername");
     globalThis.game_version = Window.this.xcall("get_game_version");
+    globalThis.progress = new Progress();
     globalThis.news_items = [];
     Window.this.xcall("fetch_resource", "https://ren-x.com/rss/1-recent-news.xml/", { "Referer": "https://ren-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache" }, globalThis.news_feed_callback, {});
   }

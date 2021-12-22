@@ -87,7 +87,7 @@ export class ProgressModal extends Element
     ["on click at button#right"](evt, input) {
       if (!this.in_progress) {
         console.log("starting download");
-        Window.this.xcall("start_download", this.progress_callback, this.success_callback, this.failure_callback);
+        Window.this.xcall("start_download", globalThis.progress.callback, this.success_callback, this.failure_callback);
         this.in_progress = true;
         evt.target.content(<p>Pause</p>);
       } else if (this.paused) {
