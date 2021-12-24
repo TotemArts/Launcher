@@ -8,9 +8,12 @@ use tokio::sync::Mutex;
 use quick_xml::Reader;
 use quick_xml::events::Event;
 
+use std::future::Future;
 use std::net::ToSocketAddrs;
+use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
+use std::task::Poll;
 use renegadex_patcher::{Patcher, PatcherBuilder};
 use sciter::Value;
 use crate::configuration;
@@ -80,6 +83,24 @@ impl Handler {
       return Ok(());
     });
     return Ok(());
+  }
+
+  fn get_remote_game_version(&self) -> Result<String, Error> {
+    let version_information = self.version_information.clone();
+    let version_url = self.configuration.get_version_url();
+    let a = crate::spawn_wrapper::spawn_async(&self.runtime, async move {
+      let mut version_information = version_information.lock().await;
+      if version_information.is_none() {
+        // download version information
+        *version_information = Some(VersionInformation::retrieve(&version_url).await?);
+      }
+      let software_version = version_information.clone().unwrap().software;
+      
+      return Ok(software_version.name);
+    });
+    let version = self.runtime.block_on(a).unwrap()?;
+
+    return Ok(version);
   }
   
   /// Starts the downloading of the update/game
@@ -704,6 +725,7 @@ impl sciter::EventHandler for Handler {
     fn get_playername();
     
     fn get_game_version();
+    fn get_remote_game_version();
     fn set_playername(Value);
     
     fn get_servers(Value);

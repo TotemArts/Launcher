@@ -100,6 +100,28 @@ class App extends Element {
     }
   }
 
+  update_game(version) {
+    try {
+      var overlay = document.$("#overlay");
+      overlay.patch(<div id="overlay"><ConfirmationModal title="A new version of the game is available!" message={<p>Do you want to download game version: {version}<br />You are currently on version: {Window.this.xcall("get_remote_game_version")}</p>} confirm="Update!" confirm_callback={this.internal_update_game} cancel="I'd rather stay on this version" /></div>);
+      overlay.style["visibility"] = "visible";
+      document.$("div.menuEntries").state.disabled = true;
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  internal_update_game() {
+    globalThis.failure_callback = (error) => {
+      var overlay = globalThis.document.$("#overlay");
+      overlay.patch(<div id="overlay"><ConfirmationModal title="The launcher update failed!" message={<p>Updating the launcher has failed:<br />{error}</p>} confirm="Uh...." confirm_callback={undefined} cancel="Uh..." /></div>);
+      overlay.style["visibility"] = "visible";
+      globalThis.document.$("div.menuEntries").state.disabled = true;
+    };
+    Window.this.xcall("start_download", globalThis.progress.callback, globalThis.success_callback, globalThis.failure_callback)
+    console.log("Oh no, he wants to update!");
+  }
+
   internal_update_launcher() {
     globalThis.progress_callback = (array) => {
       var overlay = globalThis.document.$("#overlay");
