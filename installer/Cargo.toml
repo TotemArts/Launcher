@@ -1,0 +1,15 @@
+[package]
+name = "Launcher-Installer"
+version = "0.1.0"
+authors = ["SonnyX"]
+edition = "2021"
+
+[dependencies]
+sciter-rs = "0.5"
+
+[build-dependencies]
+embed-resource = "1.6"
+
+[profile.release]
+opt-level = 'z'
+lto = true

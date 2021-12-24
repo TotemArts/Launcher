@@ -1,8 +1,13 @@
 backend/target
 backend/Cargo.lock
+installer/target
+installer/Cargo.lock
 RenegadeX-Launcher.ini
 RenegadeX-Launcher.exe
 C:/
 .idea/
 .vs/
 RenegadeX-Launcher
+Renegade X Launcher.exe
+Launcher-Installer.exe
+RenX-Launcher.zip

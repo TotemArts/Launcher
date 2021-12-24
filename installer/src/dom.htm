@@ -1,0 +1,59 @@
+<html window-frame="extended" window-resizable>
+
+<head>
+  <title>Totem Arts Launcher Installer</title>
+  <style>
+      
+  </style>
+  <script type="module">
+    import * as sys from "@sys";
+
+    function log(str)
+    {
+      const plaintext = document.$("plaintext");
+
+      plaintext.append(str);
+      console.log(str);
+    }
+
+    document.on("click", "button", async function() {
+      try {
+        const url = "https://static.ren-x.com/launcher_data/version/release.json";
+
+        log("start download...");
+
+        const json_response = await fetch(url, {
+          downloadProgress: function(index, total) {
+            log(`progress - ${index} - ${total} - ${Math.round(100 * index / total)}%`);
+          }
+        });
+
+        const version_info = await json_response.json();
+        const download_url = version_info["launcher"]["patch_url"];
+
+        const zip_response = await fetch(download_url, {
+          downloadProgress: function(index, total) {
+            log(`progress - ${index} - ${total} - ${Math.round(100 * index / total)}%`);
+          }
+        });
+        const zip = await zip_response.arrayBuffer();
+
+        log("download complete");
+
+        let file = await sys.fs.open("launcher.zip", "w+", 0o666);
+        await file.write(zip);
+        await file.close();
+      } catch (e) {
+        log(e);
+      }
+    });
+  </script>
+</head>
+
+<body>
+  <h1>fetch file download with progress</h1>
+  <button>Download</button>
+  <plaintext />
+</body>
+
+</html>
