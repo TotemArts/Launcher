@@ -701,7 +701,6 @@ impl Handler {
         }
       }
     }
-    info!("json: {}", &json);
     Ok(json.parse().or_else(|e| Err(Error::None(format!("Couldn't parse json as object. code: {}", e))))?)
   }
 }
@@ -750,10 +749,14 @@ impl sciter::EventHandler for Handler {
   fn on_script_call(&mut self, root: sciter::HELEMENT, name: &str, argv: &[Value]) -> Option<Value> {
     let args = argv.iter().map(|x| format!("{:?}", &x)).collect::<Vec<String>>().join(", ");
     
-    info!("Called {}({}) from element: {:?}", name, args, sciter::Element::from(root));
+    if name != "html_to_jsx" {
+      info!("Called {}({}) from element: {:?}", name, args, sciter::Element::from(root));
+    }
     let handled = self.dispatch_script_call(root, name, argv);
     if handled.is_some() {
-      info!("End {}({}): {:?}", name, args, handled);
+      if name != "html_to_jsx" {
+        info!("End {}({}): {:?}", name, args, handled);
+      }
       return handled;
     }
     error!("{}({}) does not exist!", name, args);

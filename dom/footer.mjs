@@ -1,28 +1,46 @@
 export class Footer extends Element {
-    is_in_progress=true;
-    current_action="Updating to version " + Window.this.xcall("get_remote_game_version");
-    progress_percentage=0;
-    update_available=false;
+    progress;
+    update_available="";
+
+    this() {
+      this.progress = Object.assign({}, globalThis.progress);
+      Window.this.xcall("check_update", this.update_handler, this.error_callback);
+    }
+
+    update_handler(result) {
+      document.$("div#footer").componentUpdate({
+        update_available: result
+      });
+    }
+
+    error_callback() {
+
+    }
     
     get_progressbar_style(width) {
         return printf("width:%s%%", width);
     }
 
     render(props) {
-        if (this.is_in_progress) {
-            return <div {...props}>
+      console.log("rendered footer");
+        if (this.progress.is_in_progress) {
+            return <div id="footer" {...props}>
                 <div class="downloadBar">
-                    <progressbar class="indicator" style={this.get_progressbar_style(this.progress_percentage)} />
+                    <progressbar class="indicator" style={this.get_progressbar_style(this.progress.total_progress_done)} />
                 </div>
                 <p class="nowrap" style="float:left;">
-                    {this.current_action}: <span class="green">{this.progress_percentage}%</span>
+                    {this.progress.current_action}: <span class="green">{this.progress.total_progress_done}%</span>
                 </p>
                 <p overlay="progress" style="float:right;">more details</p>
             </div>;
-        } else if (this.update_available) {
-            return <div {...props}><div class="hexpand hflow vcenter"><p class="uppercase red hexpand vcenter">&#10005; Your game is not up-to-date!</p><button class="green" id="update">Update Game</button></div></div>;
-        } else {
-            return <div {...props}><div class="hexpand hflow vcenter"><p class="uppercase green hexpand vcenter">&#10003; Your game is up-to-date!</p><button class="green" id="launch">Launch to Menu</button></div></div>;
+        } else if (this.update_available == "update") {
+          return <div id="footer" {...props}><div class="hexpand hflow vcenter"><p class="uppercase red hexpand vcenter"><span state-html="&#10005;"/> A new version is available: { Window.this.xcall("get_remote_game_version") }!</p><button class="green" id="update" overlay="progress">Update Game</button></div></div>;
+        } else if (this.update_available == "full") {
+          return <div id="footer" {...props}><div class="hexpand hflow vcenter"><p class="uppercase red hexpand vcenter"><span state-html="&#10005;"/> The game is not installed, version available: { Window.this.xcall("get_remote_game_version") }!</p><button class="green" id="update" overlay="progress">Install Game</button></div></div>;
+        } else if (this.update_available == "") {
+          return <div id="footer" {...props}>Attempting to reach the download servers for version information!</div>;
+        } else if (this.update_available == "up_to_date") {
+            return <div id="footer" {...props}><div class="hexpand hflow vcenter"><p class="uppercase green hexpand vcenter"><span state-html="&#10003;"/> Your game is up-to-date!</p><button class="green" id="launch">Launch to Menu</button></div></div>;
         }
     }
 
@@ -35,29 +53,8 @@ export class Footer extends Element {
 
     callback(progress) {
         this.componentUpdate({
-            is_in_progress: true,
+            progress: Object.create({}, progress),
         });
-        this.process_progress(progress);
-    }
-
-    process_progress(progress) {
-        if(Object.keys(progress).length == 5) {
-            var download_progress = (progress["download"][1] != 0) ? progress["download"][0] * 100 / progress["download"][1] : 0.0;
-
-            if (progress["download"][1] != 0 && progress["hash"][1] == 0) {
-              var processed_instructions = 100;
-            } else {
-              var processed_instructions = (progress["hash"][1] != 0) ? progress["hash"][0] * 100 / progress["hash"][1] : 0;
-            }
-            var patch_progress = (progress["patch"][1] != 0) ? progress["patch"][0] * 100 / progress["patch"][1] : 0;
-            var current_state = progress["action"];
-            var total_progress = (processed_instructions + download_progress + patch_progress) / 3;
-
-            this.componentUpdate({
-                current_action: current_state,
-                progress_percentage: total_progress
-            });
-        }
     }
 
     componentWillUnmount() {
@@ -65,8 +62,6 @@ export class Footer extends Element {
       }
 
     ["on click at button#update"](evt, target) {
-        view.start_download(onProgress, onUpdateDone, onUpdateErr);
-        output_variables["current_action"] = "Updating game";
-        show_overlay("verify.htm");
+        Window.this.xcall("start_download", globalThis.progress.callback, globalThis.progress.on_done, globalThis.progress.on_error);
     }
 }
