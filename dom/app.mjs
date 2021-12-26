@@ -1,5 +1,5 @@
 import { News } from "./news.mjs";
-import { GameDashboard } from "./game-dashboard.mjs";
+import { RenegadeXDashboard } from "./renegadex-dashboard.mjs";
 import { SettingsModal } from "./settings-modal.mjs";
 import { ConfirmationModal } from "./confirmation-modal.mjs";
 import { ProgressModal } from "./progress-modal.mjs";
@@ -38,7 +38,7 @@ class App extends Element {
 
   pages = {
     news: <News />,
-    game: <GameDashboard />
+    game: <RenegadeXDashboard />
   };
 
   overlays = {

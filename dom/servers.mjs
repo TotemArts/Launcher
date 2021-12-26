@@ -1,3 +1,5 @@
+import { RenegadeXState } from "./renegadex.mjs";
+
 class ServersTable extends Element {
 
   currentItem = null;
@@ -99,7 +101,7 @@ class ServersTable extends Element {
   }
 
   ["on dblclick at tr[key]"](evt, target) {
-    // launch current option
+    globalThis.renegade_x_state.launch_to_server(this.currentItem);
   }
 
   isLocked(item) {
@@ -170,7 +172,7 @@ export class ServerList extends Object {
   sortOrder = "Ascending";
 
   same_version = true;
-  game_version = "5.48.145";
+  game_version = globalThis.game_version;
 
   servers = [];
 
@@ -347,6 +349,8 @@ export class Servers extends Element {
     if(globalThis.server_list === undefined)
       globalThis.server_list = new ServerList();
     this.server_list = Object.assign({}, globalThis.server_list);
+    if(globalThis.renegade_x_state === undefined)
+      globalThis.renegade_x_state = new RenegadeXState();
   }
 
   componentDidMount() {
@@ -422,7 +426,7 @@ export class Servers extends Element {
       </div>
       <button class="green" style="bottom: 0px;" onclick="joinServer();">JOIN SERVER</button>
     </div>
-    <video id="map_video" src={"../../PreviewVids/" + entry["Current Map"] + ".avi"} loop />
+    <video id="map_video" src={Window.this.xcall("get_video_location", entry["Current Map"])} loop />
   </div>;
   }
 
