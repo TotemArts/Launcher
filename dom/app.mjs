@@ -1,13 +1,13 @@
 import { News } from "./news.mjs";
 import { RenegadeXDashboard } from "./renegadex-dashboard.mjs";
-import { SettingsModal } from "./settings-modal.mjs";
-import { ConfirmationModal } from "./confirmation-modal.mjs";
-import { ProgressModal } from "./progress-modal.mjs";
+import { SettingsModal } from "./modals/settings-modal.mjs";
+import { ConfirmationModal } from "./modals/confirmation-modal.mjs";
+import { ProgressModal } from "./modals/progress-modal.mjs";
 import { Progress } from "./progress.mjs";
 import { CallbackService } from "./callback-service.mjs";
-import { InputModal } from "./input-modal.mjs";
+import { InputModal } from "./modals/input-modal.mjs";
 import * as debug from "@debug";
-import { LauncherProgressModal } from "./launcher-progress-modal.mjs";
+import { LauncherProgressModal } from "./modals/launcher-progress-modal.mjs";
 
 globalThis.callback_service = new CallbackService();
 
@@ -118,7 +118,7 @@ class App extends Element {
       overlay.style["visibility"] = "visible";
       globalThis.document.$("div.menuEntries").state.disabled = true;
     };
-    Window.this.xcall("start_download", globalThis.progress.callback, globalThis.success_callback, globalThis.failure_callback)
+    Window.this.xcall("start_download", globalThis.progress.callback, globalThis.progress.success_callback, globalThis.progress.failure_callback)
     console.log("Oh no, he wants to update!");
   }
 

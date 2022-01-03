@@ -45,15 +45,15 @@ export class Footer extends Element {
     }
 
     componentDidMount() {
-        if (globalThis.progress.data != undefined) {
-          this.process_progress(globalThis.progress.data);
+        if (globalThis.progress != undefined) {
+          this.callback(globalThis.progress);
         }
         globalThis.callback_service.subscribe("progress", this, this.callback);
     }
 
     callback(progress) {
         this.componentUpdate({
-            progress: Object.create({}, progress),
+            progress: Object.assign({}, progress),
         });
     }
 
@@ -62,6 +62,6 @@ export class Footer extends Element {
       }
 
     ["on click at button#update"](evt, target) {
-        Window.this.xcall("start_download", globalThis.progress.callback, globalThis.progress.on_done, globalThis.progress.on_error);
+        Window.this.xcall("start_download", globalThis.progress.callback, globalThis.progress.success_callback, globalThis.progress.failure_callback);
     }
 }
