@@ -38,7 +38,7 @@ impl VersionInformation {
         downloader.allow_http();
         let response = downloader.download(download_async::Body::empty(), &mut buffer);
     
-        let result = tokio::time::timeout(Duration::from_secs(10), response).await??;
+        let _ = tokio::time::timeout(Duration::from_secs(10), response).await??;
 
         let file = String::from_utf8(buffer)?;
         let parsed_json = json::parse(&file)?;

@@ -1,19 +1,19 @@
 
 use sha2::Sha256;
-use socket2::*;
 
-use log::*;
+use log::{info, error};
+use socket2::Domain;
+use socket2::Protocol;
+use socket2::Socket;
+use socket2::Type;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::Mutex;
 use quick_xml::Reader;
 use quick_xml::events::Event;
 
-use std::future::Future;
 use std::net::ToSocketAddrs;
-use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
-use std::task::Poll;
 use renegadex_patcher::{Patcher, PatcherBuilder};
 use sciter::Value;
 use crate::configuration;
@@ -222,8 +222,8 @@ impl Handler {
     crate::spawn_wrapper::spawn_async(&self.runtime, async move {
       let mut patcher_option = patcher_mutex.lock().await;
       if let Some(patcher) = (*patcher_option).take() {
-        patcher.cancel().await;
-        info!("cancelled patcher");
+        patcher.cancel().await.or_else(|_| Err(Error::None(format!("Failed to cancel"))))?;
+        info!("Cancelled Patcher");
       } else {
         info!("No active patcher instance running to cancel");
       }
@@ -621,16 +621,16 @@ impl Handler {
   }
   fn open_launcher_logs_folder(&self) {
     #[cfg(target_os = "windows")]
-    let spawned_process = std::process::Command::new("explorer.exe").arg(self.configuration.get_log_directory()).spawn();
+    let _ = std::process::Command::new("explorer.exe").arg(self.configuration.get_log_directory()).spawn();
     #[cfg(target_os = "linux")]
-    let spawned_process = std::process::Command::new("xdg-open").arg(self.configuration.get_log_directory()).spawn();
+    let _ = std::process::Command::new("xdg-open").arg(self.configuration.get_log_directory()).spawn();
   }
   
   fn open_game_logs_folder(&self) {
     #[cfg(target_os = "windows")]
-    let spawned_process = std::process::Command::new("explorer.exe").arg(self.configuration.get_game_log_directory()).spawn();
+    let _ = std::process::Command::new("explorer.exe").arg(self.configuration.get_game_log_directory()).spawn();
     #[cfg(target_os = "linux")]
-    let spawned_process = std::process::Command::new("xdg-open").arg(self.configuration.get_game_log_directory()).spawn();
+    let _ = std::process::Command::new("xdg-open").arg(self.configuration.get_game_log_directory()).spawn();
   }
 
   fn html_to_jsx(&self, html: Value) -> Result<Value,Error> {
@@ -653,7 +653,7 @@ impl Handler {
               json = format!("{}{}[\"{}\", {{ {} }}, [", json, comma, &std::str::from_utf8(e.name())?, attrs);
               add_comma = false;
             },
-            Event::End(ref e) => {
+            Event::End(ref _e) => {
               json = format!("{}]]", json);
               add_comma = true;
             },

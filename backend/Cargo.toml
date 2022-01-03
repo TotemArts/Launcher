@@ -1,5 +1,5 @@
 [package]
-name = "RenegadeX-Launcher"
+name = "renegade-x-launcher"
 version = "0.9.31"
 authors = ["SonnyX"]
 edition = "2021"
@@ -22,7 +22,7 @@ runas = { git = "https://github.com/SonnyX/rust-runas" }
 sha2 = "0.10"
 hex = "0.4"
 log = "0.4"
-flexi_logger = "0.20"
+flexi_logger = "0.22"
 download-async = "0.10"
 async-trait = "0.1"
 json = "0.12"

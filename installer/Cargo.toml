@@ -1,5 +1,5 @@
 [package]
-name = "Launcher-Installer"
+name = "launcher-installer"
 version = "0.1.0"
 authors = ["SonnyX"]
 edition = "2021"
