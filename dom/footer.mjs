@@ -22,7 +22,6 @@ export class Footer extends Element {
     }
 
     render(props) {
-      console.log("rendered footer");
         if (this.progress.is_in_progress) {
             return <div id="footer" {...props}>
                 <div class="downloadBar">
