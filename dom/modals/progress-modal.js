@@ -43,7 +43,7 @@ export class ProgressModal extends Element
           {this.actionOrProgressbars()}
           <div>
             <button id="left" class="orange">Cancel</button>
-            <button id="right" class="green"><p>Start</p></button>
+            <button id="right" class="green">Start</button>
           </div>
         </div>
       </div>
