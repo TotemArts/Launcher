@@ -1,4 +1,4 @@
-import { RenegadeXState } from "./renegadex.mjs";
+import { RenegadeXState } from "./renegadex.js";
 
 class ServersTable extends Element {
 

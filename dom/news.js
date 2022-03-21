@@ -14,7 +14,7 @@ globalThis.news_feed_callback = function (text) {
         pubDate: text.match(/<pubDate>(?:<!\[CDATA\[)?((?:.|\n)+?)(?:\]\]>)?<\/pubDate>/m)[1],
       };
       globalThis.news_items.push(item);
-      if (i == 0) Window.this.xcall("fetch_resource", item.link + "?preview=1", { "Referer": "https://ren-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache" }, globalThis.load_news_item, { "id": i });
+      if (i == 0) Window.this.xcall("fetch_resource", item.link + "?preview=1", { "Referer": "https://totemarts.games/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache" }, globalThis.load_news_item, { "id": i });
     }
   } catch (e) {
     console.error("news_feed_callback");
@@ -275,7 +275,7 @@ export class News extends Element {
     var item = globalThis.news_items[id];
     this.componentUpdate({ current_news_id: id, current_news: item});
     if (!item.html) {
-      Window.this.xcall("fetch_resource", item.link + "?preview=1", { "Referer": "https://ren-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache" }, globalThis.load_news_item, { "id": id });
+      Window.this.xcall("fetch_resource", item.link + "?preview=1", { "Referer": "https://totemarts.games/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache" }, globalThis.load_news_item, { "id": id });
     }
   }
 }

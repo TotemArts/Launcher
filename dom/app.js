@@ -1,13 +1,13 @@
-import { News } from "./news.mjs";
-import { RenegadeXDashboard } from "./renegadex-dashboard.mjs";
-import { SettingsModal } from "./modals/settings-modal.mjs";
-import { ConfirmationModal } from "./modals/confirmation-modal.mjs";
-import { ProgressModal } from "./modals/progress-modal.mjs";
-import { Progress } from "./progress.mjs";
-import { CallbackService } from "./callback-service.mjs";
-import { InputModal } from "./modals/input-modal.mjs";
+import { News } from './news.js';
+import { RenegadeXDashboard } from "./renegadex-dashboard.js";
+import { SettingsModal } from "./modals/settings-modal.js";
+import { ConfirmationModal } from "./modals/confirmation-modal.js";
+import { ProgressModal } from "./modals/progress-modal.js";
+import { Progress } from "./progress.js";
+import { CallbackService } from "./callback-service.js";
+import { InputModal } from "./modals/input-modal.js";
 import * as debug from "@debug";
-import { LauncherProgressModal } from "./modals/launcher-progress-modal.mjs";
+import { LauncherProgressModal } from "./modals/launcher-progress-modal.js";
 
 globalThis.callback_service = new CallbackService();
 
@@ -33,7 +33,7 @@ class App extends Element {
     globalThis.game_version = Window.this.xcall("get_game_version");
     globalThis.progress = new Progress();
     globalThis.news_items = [];
-    Window.this.xcall("fetch_resource", "https://ren-x.com/rss/1-recent-news.xml/", { "Referer": "https://ren-x.com/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache" }, globalThis.news_feed_callback, {});
+    Window.this.xcall("fetch_resource", "https://totemarts.games/forums/rss/1-recent-news.xml/", { "Referer": "https://totemarts.games/forums/forum/7-news/", "X-Requested-With": "XMLHttpRequest", "TE": "Trailers", "Pragma": "no-cache" }, globalThis.news_feed_callback, {});
   }
 
   pages = {

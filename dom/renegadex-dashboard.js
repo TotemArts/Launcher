@@ -1,6 +1,6 @@
-import { Servers } from "./servers.mjs";
+import { Servers } from "./servers.js";
 import { devicePixels } from "@sciter";
-import { Footer } from "./footer.mjs";
+import { Footer } from "./footer.js";
 
 export class RenegadeXDashboard extends Element 
 {
