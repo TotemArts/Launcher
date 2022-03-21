@@ -273,8 +273,10 @@ impl Handler {
   
   /// Get Server List as plain text
   fn get_servers(&self, callback: sciter::Value) {
+    let serverlist_url = self.configuration.get_serverlist_url();
+
     crate::spawn_wrapper::spawn_async(&self.runtime, async move {
-      let uri = "https://serverlist.ren-x.com/servers.jsp?id=launcher".parse::<download_async::http::Uri>()?;
+      let uri = format!("{}?id=launcher", &serverlist_url).parse::<download_async::http::Uri>()?;
       let mut downloader = download_async::Downloader::new();
       downloader.use_uri(uri);
       let headers = downloader.headers().expect("Could not unwrap headers");

@@ -22,6 +22,7 @@ impl Configuration {
               conf.with_section(Some("RenX_Launcher"))
                 .set("GameLocation", "../")
                 .set("VersionUrl", "https://static.ren-x.com/launcher_data/version/launcher.json")
+                .set("ServerListUrl", "https://serverlist.ren-x.com/servers.jsp")
                 .set("LauncherTheme", "dom");
                 conf.write_to_file("RenegadeX-Launcher.ini").expect("");
                 conf
@@ -155,5 +156,9 @@ impl Configuration {
 
     pub fn get_version_url(&self) -> String {
         self.get_local_setting("VersionUrl")
+    }
+
+    pub fn get_serverlist_url(&self) -> String {
+        self.get_local_setting("ServerListUrl")
     }
 }
