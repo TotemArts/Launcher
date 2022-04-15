@@ -167,9 +167,9 @@ class App extends Element {
     return <body>
       <div id="header" style="background-color: #0D1721; margin-top: 2px;">
         <div class="headerSpacer left">
-          <a class="facebook" href="https://www.facebook.com/RenXFirestorm/" target="@system"></a>
-          <a class="twitter" href="https://twitter.com/renxgame" target="@system"></a>
-          <a class="discord" href="https://ren-x.com/discord" target="@system"></a>
+          <a class="facebook" href="https://www.facebook.com/TotemArtsOfficial" target="@system"></a>
+          <a class="twitter" href="https://twitter.com/TotemArtsStudio" target="@system"></a>
+          <a class="discord" href="https://discord.gg/totemarts" target="@system"></a>
           <a class="youtube" href="https://www.youtube.com/channel/UCaiic-yEcwEv8VG6wRaHcDQ" target="@system"></a>
         </div>
         <div class="spacer" role="window-caption"></div>
