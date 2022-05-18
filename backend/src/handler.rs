@@ -157,20 +157,26 @@ impl Handler {
       
       
       patcher.set_progress_callback(Box::new(move |progress| {
-        let report_progress = || -> Result<(), Error> {
+        let mut old_bytes = 0_f64;
+        let mut report_progress = || -> Result<(), Error> {
           let progress_callback = progress_callback.clone();
-          
+          let current_bytes : f64 = progress.downloaded_bytes.0.load(Ordering::Relaxed) as f64;
+
           let json = format!(
-            "{{\"action\": \"{}\",\"hash\": [{},{}],\"download\": [{}.0,{}.0],\"patch\": [{},{}],\"download_speed\": \"{}\"}}",
+            "{{\"action\": \"{}\",\"hash\": {{\"value\":{}, \"maximum\":{}}},\"download\": {{\"bytes\": {{\"value\":{}.0, \"maximum\":{}.0}}, \"files\": {{\"value\":{}, \"maximum\":{}}} }},\"patch\": {{\"value\":{}, \"ready\": {}, \"maximum\":{}}},\"download_speed\": \"{}\"}}",
             progress.get_current_action()?,
             progress.processed_instructions.0.load(Ordering::Relaxed),
             progress.processed_instructions.1.load(Ordering::Relaxed),
             progress.downloaded_bytes.0.load(Ordering::Relaxed),
             progress.downloaded_bytes.1.load(Ordering::Relaxed),
+            progress.downloaded_files.0.load(Ordering::Relaxed),
+            progress.downloaded_files.1.load(Ordering::Relaxed),
             progress.patched_files.0.load(Ordering::Relaxed),
             progress.patched_files.1.load(Ordering::Relaxed),
-            "0 Mb/s"
+            progress.patched_files.2.load(Ordering::Relaxed),
+            format!("{}/s", crate::progress::convert((current_bytes - old_bytes)/4_f64))
           );
+          old_bytes = current_bytes;
           let me : Value = json.parse().or_else(|e| Err(Error::None(format!("Failed to parse Json, error \"{}\": {}", e, json))))?;
           crate::spawn_wrapper::spawn(move || -> Result<(), Error> {progress_callback.call(None, &make_args!(me), None)?; Ok(()) });
           Ok(())
@@ -573,6 +579,8 @@ impl Handler {
     }
     headers.insert("User-Agent".parse::<download_async::http::header::HeaderName>().unwrap(), format!("RenX-Launcher ({})", VERSION).parse::<download_async::http::header::HeaderValue>().unwrap());
     let uri = url.as_string().ok_or_else(|| Error::None(format!("Couldn't parse url as string.")))?.parse::<download_async::http::Uri>().unwrap();
+    
+    info!("Downloading uri: {}", &uri);
     downloader.use_uri(uri);
     downloader.allow_http();
     

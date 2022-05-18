@@ -28,14 +28,14 @@ export class Progress extends Object {
 
   process_progress(progress) {
     if(Object.keys(progress).length == 5) {
-      var download_progress = (progress["download"][1] != 0) ? progress["download"][0] * 100 / progress["download"][1] : 0.0;
+      var download_progress = (progress.download.bytes.maximum != 0) ? progress.download.bytes.value * 100 / progress.download.bytes.maximum : 0.0;
 
-      if (progress["download"][1] != 0 && progress["hash"][1] == 0) {
+      if (progress.download.bytes.maximum != 0 && progress.hash.maximum == 0) {
         var processed_instructions = 100;
       } else {
-        var processed_instructions = (progress["hash"][1] != 0) ? progress["hash"][0] * 100 / progress["hash"][1] : 0;
+        var processed_instructions = (progress.hash.maximum != 0) ? progress.hash.value * 100 / progress.hash.maximum : 0;
       }
-      var patch_progress = (progress["patch"][1] != 0) ? progress["patch"][0] * 100 / progress["patch"][1] : 0;
+      var patch_progress = (progress.patch.maximum != 0) ? progress.patch.value * 100 / progress.patch.maximum : 0;
       
       this.is_in_progress = true;
       this.current_action = progress["action"];

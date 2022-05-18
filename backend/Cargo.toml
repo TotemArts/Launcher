@@ -33,4 +33,5 @@ embed-resource = "1.6"
 
 [profile.release]
 opt-level = 'z'
+debug = 2
 lto = true
