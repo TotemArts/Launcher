@@ -73,7 +73,7 @@ class ServersTable extends Element {
   }
 
   getOrderOf(key) {
-    if(globalThis.server_list.sortBy != key || globalThis.server_list.sortOrder == "")
+    if (globalThis.server_list.sortBy != key || globalThis.server_list.sortOrder == "")
       return "";
     return globalThis.server_list.sortOrder == "Ascending"? "ascend" : "descend";
   }
