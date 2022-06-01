@@ -19,7 +19,7 @@ jobs:
       run: 
         version=$(cat backend/Cargo.toml | grep version | head -n1);
         version=${version//[*version| |=|\"]};
-        sed -i 's/launcher.json/${{ github.event.inputs.json }}.json/' src/*;
+        sed -i 's/release.json/${{ github.event.inputs.json }}.json/' src/*;
         echo '::set-output name=version::'${version};
         
     - run: cargo install cross
