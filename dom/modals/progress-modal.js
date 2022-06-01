@@ -49,7 +49,7 @@ export class ProgressModal extends Element
     render(props) {
         return <div id="progress" class="settings-modal">
         <div class="titlebar">
-          <h3 class="title center uppercase" style="width: *;">{this.current_action}</h3>
+          <h3 class="title center uppercase" style="width: *;">{this.current_state}</h3>
           <div class="minimize" close></div>
         </div>
         <div class="padding">
