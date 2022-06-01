@@ -20,18 +20,29 @@ export class ProgressModal extends Element
     get_progressbar_style(width) {
       return printf("width:%s%%", width);
     }
+
     actionOrProgressbars() {
       if (this.hash_progress_total != "0") { 
         return <div>
-          <p>Validating files: <span class="green hexpand">{this.hash_progress}%</span>{this.hash_progress_done}/{this.hash_progress_total} files</p>
+          <p>Validating files: <span class="green hexpand">{Math.floor(this.hash_progress * 10) / 10}%</span>{this.hash_progress_done}/{this.hash_progress_total} files</p>
           <div class="downloadBar"><progressbar class="indicator" style={this.get_progressbar_style(this.hash_progress)}></progressbar></div>
-          <p>Dowloading: <span class="green hexpand">{this.download_progress}%</span>{this.download_files_done}/{this.download_files_total} files, {this.download_speed}</p>
+          <p>Downloading: <span class="green hexpand">{Math.floor(this.download_progress * 10) / 10}%</span>{this.download_files_done}/{this.download_files_total} files, {this.download_speed}</p>
           <div class="downloadBar"><progressbar class="indicator" style={this.get_progressbar_style(this.download_progress)}></progressbar></div>
-          <p>Applying: <span class="green hexpand">{this.patch_progress}%</span>{this.patch_progress_done}/{this.patch_progress_total} files</p>
+          <p>Applying: <span class="green hexpand">{Math.floor(this.patch_progress * 10) / 10}%</span>{this.patch_progress_done}/{this.patch_progress_total} files</p>
           <div class="downloadBar"><progressbar class="indicator" style={this.get_progressbar_style(this.patch_progress)}></progressbar></div>
         </div>;
       } else {
         return <p>{this.current_state}</p>
+      }
+    }
+
+    getRightButtonText() {
+      if (!this.in_progress) {
+        return "Start";
+      } else if (this.paused) {
+        return "Resume";
+      } else {
+        return "Pause";
       }
     }
 
@@ -45,7 +56,7 @@ export class ProgressModal extends Element
           {this.actionOrProgressbars()}
           <div>
             <button id="left" class="orange">Cancel</button>
-            <button id="right" class="green">Start</button>
+            <button id="right" class="green">{this.getRightButtonText()}</button>
           </div>
         </div>
       </div>
@@ -96,6 +107,7 @@ export class ProgressModal extends Element
     ["on click at button#right"](evt, input) {
       if (!this.in_progress) {
         console.log("starting download");
+
         Window.this.xcall("start_download", globalThis.progress.callback, globalThis.progress.success_callback, globalThis.progress.failure_callback);
         this.in_progress = true;
         evt.target.content(<p>Pause</p>);
