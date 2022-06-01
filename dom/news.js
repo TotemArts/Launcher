@@ -90,7 +90,7 @@ globalThis.load_news_item = function (text) {
     }
   } catch (e) {
     console.error("load_news_item");
-    console.error(printf("Caught exception: %s\n%V", e, e.stacktrace));;
+    console.error(printf("Caught exception: %s\n%V", e, e.stacktrace));
   }
 }
 
@@ -223,7 +223,7 @@ export class News extends Element {
       if (this.current_news_id == item.id)
         classes += " current"
       list.push(<div class={classes} id={item.id}>
-        <pubDate><day> {(date.getDay() < 10 ? '0' : '') + date.getDay()}</day><month>{date.toUTCString().split(' ')[2]}</month></pubDate>
+        <pubDate><day> {(date.getDate() < 10 ? '0' : '') + date.getDate()}</day><month>{date.toUTCString().split(' ')[2]}</month></pubDate>
         <div class="vflow">
           <p class="news_type">{type_string}</p>
           <p class="news_title">{item.title}</p>
