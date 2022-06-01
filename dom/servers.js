@@ -89,7 +89,7 @@ class ServersTable extends Element {
     }
     return <tr class={classes} key={item.key}>
       <th class={this.isLocked(item)}></th>
-      <th>{item["Name"]}</th>
+      <th><span style="color: #CE5135;">{item["NamePrefix"]}</span>{(item.hasOwnProperty("NamePrefix") ? " " : "") + item["Name"]}</th>
       <th>{item["Current Map"]}</th>
       <th>{item["Players"]}</th>
       <th>{item["Latency"] ?? "-"}</th>
@@ -281,6 +281,7 @@ export class ServerList extends Object {
     /* Example entry of this.servers
       {
         "Name": "blabla",
+        "NamePrefix": "[TotemArts]",
         "Current Map": "CNC-LakeSide",
         "Bots": 1,
         "Players": 0,
@@ -385,12 +386,12 @@ export class Servers extends Element {
         <ServersTable />
       </div>
       <div class="titlebar">
-        <h3 class="title">{ this.selectedServer? this.selectedServer["Name"] : "No Server Selected" }</h3>
+        <h3 class="title"> <span style="color: #CE5135;">{ this.selectedServer && this.selectedServer["NamePrefix"] ? this.selectedServer["NamePrefix"] + " " : "" }</span> { this.selectedServer ? this.selectedServer["Name"] : "No Server Selected" }</h3>
         <div class="spacer"></div>
         <div class="dropdown_menu closed">PLAY ONLINE</div>
         <div style="position: relative;">
           <div class="menu child-padding" style="visibility: hidden;">
-            <div class="padding" overlay="ip"><h4>JOIN IP</h4></div>
+            <div class="padding" overlay="ip"><h4>JOIN BY IP</h4></div>
           </div>
         </div>
       </div>
