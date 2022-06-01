@@ -17,6 +17,8 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Update dependencies
-      run: sudo apt-get install libgtk-3-dev && (cargo update || (sh fix-build-issues.sh && cargo update))
+      working-directory: ./backend
+      run: sudo apt-get install libgtk-3-dev && cargo update
     - name: Build
-      run: cd backend && cargo build --release --verbose
+      working-directory: ./backend
+      run: cargo build --release --verbose
