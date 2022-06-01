@@ -26,7 +26,7 @@ flexi_logger = "0.22"
 download-async = "0.10"
 async-trait = "0.1"
 json = "0.12"
-quick-xml = "0.22"
+quick-xml = "0.23"
 
 [build-dependencies]
 embed-resource = "1.6"
