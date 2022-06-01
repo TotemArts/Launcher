@@ -15,7 +15,7 @@ export class LauncherProgressModal extends Element
           <div class="minimize" close></div>
         </div>
         <div class="padding">
-          <p>Dowloading: <span class="green hexpand">{Math.floor(download_progress * 10) / 10}%</span>{this.download_speed}</p>
+          <p>Downloading: <span class="green hexpand">{Math.floor(download_progress * 10) / 10}%</span>{this.download_speed}</p>
           <div class="downloadBar"><progressbar class="indicator" style={this.get_progressbar_style(download_progress)}></progressbar></div>
         </div>
       </div>
