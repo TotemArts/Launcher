@@ -44,7 +44,7 @@ class App extends Element {
   overlays = {
     settings: <SettingsModal />,
     username: <InputModal title="Welcome back commander!" key="Username" placeholder="" callback={this.set_username} />,
-    ip: <InputModal title="Join IP!" key="Hey there sarge!" placeholder="IP:port" callback={this.join_server} />,
+    ip: <InputModal title="Join by IP" key="Hey there sarge!" placeholder="IP:port" callback={this.join_server} />,
     progress: <ProgressModal />,
     clean_install: <ConfirmationModal title="Clean Game Install" message={<p>Are you sure you want to do this?<br />This will remove any additional content downloaded, and reset your settings!</p>} confirm="Clean!" confirm_callback={this.internal_clean_game} cancel="Uh..." />,
     validate_install: <ConfirmationModal title="Validate Game Install" message={<p>Are you sure you want to do this?<br />This will also reset your settings!</p>} confirm="Validate!" confirm_callback={this.internal_validate_game} cancel="Uh..." />,
