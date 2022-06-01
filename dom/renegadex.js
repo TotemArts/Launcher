@@ -6,8 +6,6 @@ export class RenegadeXState extends Object {
     running = true;
   }
 
-  
-
   on_game_exit() {
     this.running = false;
   }
