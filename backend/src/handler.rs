@@ -672,7 +672,7 @@ impl Handler {
                 true => ",".to_string(),
                 false => "".to_string()
               };
-              json = format!("{}{}\"{}\"", json, comma, &text.unescape_and_decode(&reader).unwrap()).replace("\"", "\\\"");
+              json = format!("{}{}\"{}\"", json, comma, String::from_utf8(text.into_inner().to_vec()).unwrap()).replace("\"", "\\\"");
               add_comma = true;
             },
             Event::Text(text) => {

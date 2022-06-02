@@ -57,18 +57,25 @@ globalThis.load_news_item = function (text) {
     text = text.replace(new RegExp("_" + topicID, "g"), "_topicID");
     // replace youtube videos with thumbnail links
     var youtube_regex = /<i?frame[^>]+?(?:src="(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com|youtu.be)\/(?:[\w\-\_]+\?v=|embed\/|v\/)?([\w\-\_]+)(?:\S+)?"[^>]*?)(?:\/>|>[^<>]*?<\/i?frame>)/g;
-    text = text.replace(youtube_regex, "<a.playable href=\"https://youtube.com/watch?v=$1\"><img src=\"https://img.youtube.com/vi_webp/$1/maxresdefault.webp\"/></a>");
+    text = text.replace(youtube_regex, "<a.playable target=\"@system\" href=\"https://youtube.com/watch?v=$1\"><img src=\"https://img.youtube.com/vi_webp/$1/maxresdefault.webp\"/></a>");
 
     // Disable iframe's
-    var iframe_regex = /<i?frame[^>]*?(?:\/>|>[^<>]*?<\/i?frame>)/g;
-    text = text.replace(iframe_regex, "External content hidden");
+    var iframe_regex = /<i?frame[^>]*?src=\"([^\"]+)\"[^>]*?(?:\/>|>[^<>]*?<\/i?frame>)/g;
+    text = text.replace(iframe_regex, "<a href=\"$1\">External content hidden, click here to open</a>");
 
+    // Make sure hyperlinks open in the browser
+    var link_regex = /<a ([^>]*?)>/g;
+    text = text.replace(link_regex, "<a target=\"@system\" $1>")
+
+    // Make sure there is always a self-closing tag : `/>`
     var image_regex = /<img([^>]*?)\/?>/g;
     text = text.replace(image_regex, "<img$1/>");
 
+    // Make sure there is always a self-closing tag : `/>`
     var horizontal_regex = /<hr([^>]*?)\/?>/g;
     text = text.replace(horizontal_regex, "<hr$1/>");
 
+    // Make sure there is always a self-closing tag : `/>`
     var break_regex = /<br([^>]*?)\/?>/g;
     text = text.replace(break_regex, "<br$1/>");
 
