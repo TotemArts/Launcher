@@ -167,6 +167,7 @@ class App extends Element {
     return <body>
       <div id="header" style="background-color: #0D1721; margin-top: 2px;">
         <div class="headerSpacer left">
+          <a class="website" href="https://totemarts.games" target="@system"></a>
           <a class="facebook" href="https://www.facebook.com/TotemArtsOfficial" target="@system"></a>
           <a class="twitter" href="https://twitter.com/TotemArtsStudio" target="@system"></a>
           <a class="discord" href="https://discord.gg/totemarts" target="@system"></a>
