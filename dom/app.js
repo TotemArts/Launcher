@@ -14,10 +14,10 @@ globalThis.callback_service = new CallbackService();
 debug.setUnhandledExeceptionHandler(function (err) {
   try {
     console.error("setUnhandledExceptionHandler:");
-    console.error(printf("Caught exception: %s\n%V", err, err.stacktrace));;
+    console.error(printf("Caught exception: %s\n%V", err, err.stacktrace));
   } catch (e) {
     console.error("setUnhandledExceptionHandler:");
-    console.error(printf("Caught exception: %s\n%V", e, e.stacktrace));;
+    console.error(printf("Caught exception: %s\n%V", e, e.stacktrace));
   }
 });
 
