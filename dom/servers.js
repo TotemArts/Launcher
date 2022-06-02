@@ -373,7 +373,7 @@ export class Servers extends Element {
         <h3 class="title">Servers</h3>
         <p class="nowrap padding" style="font-size: 7pt;">There are currently { this.server_list.current_players } players online</p>
         <div class="spacer"></div>
-        filter
+        Filters
         <div class="filter down"></div>
         <div class="refresh"></div>
       </div>

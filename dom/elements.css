@@ -192,6 +192,7 @@ button.close, div.close {
   background-position: center;
   background-repeat: no-repeat;
   background-size: auto auto;
+  cursor: pointer;
 }
 
 button.close:hover, div.close:hover {
@@ -261,6 +262,7 @@ button#update, button#launch {
   background-position: center;
   background-repeat: no-repeat;
   background-size: 8dip 8dip;
+  cursor: pointer;
 }
 
 .refresh:hover {
@@ -274,6 +276,7 @@ button#update, button#launch {
   background-repeat: no-repeat;
   background-size: auto 12dip;
   aspect: "filter";
+  cursor: pointer;
 }
 
 .filter.down {
@@ -320,6 +323,7 @@ checkmark {
   background-size: 9dip 9dip;
   background-color: #070e14;
   border-radius: 2dip;
+  cursor: pointer;
 }
 
 checkmark.big {
@@ -362,6 +366,7 @@ div.slider > div.handle {
   width: 5dip;
   height: 12dip;
   border-radius: 3dip;
+  cursor: pointer;
 }
 
 div.downloadBar {
