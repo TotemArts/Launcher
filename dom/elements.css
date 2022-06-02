@@ -203,6 +203,19 @@ button#update, button#launch {
   width:210dip;
 }
 
+.website {
+  width:22dip;
+  height:33dip;
+  background-image: url(images/WebsiteGrey.svg);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 12dip 12dip;
+}
+
+.website:hover {
+  background-image: url(images/WebsiteColour.svg);
+}
+
 .twitter {
   width:22dip;
   height:33dip;
