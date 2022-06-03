@@ -110,6 +110,10 @@ button.setting {
   background-color: #0c2e3f;
 }
 
+button.setting:hover {
+  background-color: #316782;
+}
+
 button.bool {
   width: 210dip;
   background-color: #4E545B;
