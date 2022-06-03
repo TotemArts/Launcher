@@ -11,7 +11,7 @@ impl AsString for json::JsonValue {
     match *self {
       json::JsonValue::Short(ref value)  => value.to_string(),
       json::JsonValue::String(ref value) => value.to_string(),
-      _                                  => {
+      _ => {
         error!("Expected a JSON String, however got: {}", self.dump());
         panic!("Expected a JSON String, however got: {}", self.dump())
       }
@@ -22,7 +22,7 @@ impl AsString for json::JsonValue {
     match *self {
       json::JsonValue::Short(ref value)  => Some(value.to_string()),
       json::JsonValue::String(ref value) => Some(value.to_string()),
-      _                                  => None
+      _ => None
     }
   }
 
