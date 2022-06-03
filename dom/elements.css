@@ -170,6 +170,7 @@ button.minimize, div.minimize {
   background-position: center;
   background-repeat: no-repeat;
   background-size: auto auto;
+  cursor: pointer;
 }
 
 button.minimize:hover, div.minimize:hover {
@@ -355,6 +356,33 @@ checkmark.checked {
 }
 
 checkmark.crossed {
+  background-image: url(images/Cross.svg);
+}
+
+checkmarknoinput {
+  display: inline-block;
+  width:14dip;
+  height:14dip;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: 9dip 9dip;
+  background-color: #070e14;
+  border-radius: 2dip;
+  cursor: unset;
+}
+
+checkmarknoinput.big {
+  width:20dip;
+  height:20dip;
+  background-size: 10dip 10dip;
+}
+
+checkmarknoinput.checked {
+  /*background-size: 12dip 12dip;*/
+  background-image: url(images/Tick.svg);
+}
+
+checkmarknoinput.crossed {
   background-image: url(images/Cross.svg);
 }
 

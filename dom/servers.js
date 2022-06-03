@@ -418,11 +418,11 @@ export class Servers extends Element {
           <p>Game Mode: <span>{mapName[0]}</span></p>
         </div>
         <div class="vflow expand child-padding">
-          <p><checkmark class={ entry["Variables"]["bSpawnCrates"]? "checked" : ""} id="crates" />Crates</p>
-          <p><checkmark class={ entry["Variables"]["bSteamRequired"]? "checked" : ""} id="steam" />Steam Required</p>
-          <p><checkmark class="checked" id="ranked" />Ranked</p>
-          <p><checkmark class={ entry["Variables"]["bAutoBalanceTeams"]? "checked" : ""} id="balance" />Auto Balance</p>
-          <p><checkmark class="" id="infantry" />Infantry Only</p>
+          <p><checkmarknoinput class={ entry["Variables"]["bSpawnCrates"]? "checked" : ""} id="crates" /> Crates</p>
+          <p><checkmarknoinput class={ entry["Variables"]["bSteamRequired"]? "checked" : ""} id="steam" /> Steam Required</p>
+          <p><checkmarknoinput class="checked" id="ranked" /> Ranked</p>
+          <p><checkmarknoinput class={ entry["Variables"]["bAutoBalanceTeams"]? "checked" : ""} id="balance" /> Auto Balance</p>
+          <p><checkmarknoinput class="" id="infantry" /> Infantry Only</p>
         </div>
       </div>
       <button class="green" style="bottom: 0px;" onclick="joinServer();">JOIN SERVER</button>
