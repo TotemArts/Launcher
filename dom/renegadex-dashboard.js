@@ -9,14 +9,14 @@ export class RenegadeXDashboard extends Element
     return  <div class="grid">
               <div class="logo hflow">
                 <div class="vflow vcenter">
-                  <p style="font-size: 7pt;">Welcome</p>
+                  <p style="font-size: 7pt;">WELCOME</p>
                   <h1 class="change" overlay="username">
                     {globalThis.username}
                   </h1>
                 </div>
                 <div style="width:*;"></div>
                 <div class="vflow vcenter" style="text-align: right;">
-                  <p style="font-size: 7pt; line-height:100%;">Version</p>
+                  <p style="font-size: 7pt; line-height:100%;">VERSION</p>
                   <h1>{globalThis.game_version}</h1>
                 </div>
               </div>

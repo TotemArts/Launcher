@@ -154,7 +154,7 @@ export class News extends Element {
     return <div class="news-grid">
       <div class="logo hflow">
         <div class="vflow vcenter">
-          <p style="font-size: 7pt;">Welcome</p>
+          <p style="font-size: 7pt;">WELCOME</p>
           <h1 class="change" overlay="username">
             {globalThis.username}
           </h1>
