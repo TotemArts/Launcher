@@ -24,11 +24,11 @@ export class ProgressModal extends Element
     actionOrProgressbars() {
       if (this.hash_progress_total != "0") { 
         return <div>
-          <p>Validating files: <span class="green hexpand">{Math.floor(this.hash_progress * 10) / 10}%</span>{this.hash_progress_done}/{this.hash_progress_total} files</p>
+          <p>Validating files: <span class="green hexpand">{ this.hash_progress }%</span>{this.hash_progress_done}/{this.hash_progress_total} files</p>
           <div class="downloadBar"><progressbar class="indicator" style={this.get_progressbar_style(this.hash_progress)}></progressbar></div>
-          <p>Downloading: <span class="green hexpand">{Math.floor(this.download_progress * 10) / 10}%</span>{this.download_files_done}/{this.download_files_total} files, {this.download_speed}</p>
+          <p>Downloading: <span class="green hexpand">{ this.download_progress }%</span>{this.download_files_done}/{this.download_files_total} files, {this.download_speed}</p>
           <div class="downloadBar"><progressbar class="indicator" style={this.get_progressbar_style(this.download_progress)}></progressbar></div>
-          <p>Applying: <span class="green hexpand">{Math.floor(this.patch_progress * 10) / 10}%</span>{this.patch_progress_done}/{this.patch_progress_total} files</p>
+          <p>Applying: <span class="green hexpand">{ this.patch_progress }%</span>{this.patch_progress_done}/{this.patch_progress_total} files</p>
           <div class="downloadBar"><progressbar class="indicator" style={this.get_progressbar_style(this.patch_progress)}></progressbar></div>
         </div>;
       } else {
@@ -82,14 +82,14 @@ export class ProgressModal extends Element
 
       this.componentUpdate({
         current_state: progress["action"],
-        hash_progress: processed_instructions,
+        hash_progress: printf("%.1f", processed_instructions),
         hash_progress_done: progress.hash.value,
         hash_progress_total: progress.hash.maximum,
         download_files_done: progress.download.files.value,
         download_files_total: progress.download.files.maximum,
         download_progress: printf("%.1f", download_progress),
         download_speed: progress["download_speed"],
-        patch_progress: (progress.patch.maximum != 0) ? progress.patch.value * 100 / progress.patch.maximum : 0,
+        patch_progress: (progress.patch.maximum != 0) ? printf("%.1f", progress.patch.value * 100 / progress.patch.maximum) : 0,
         patch_progress_done: progress.patch.value,
         patch_progress_total: progress.patch.maximum
       });
