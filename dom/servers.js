@@ -315,7 +315,7 @@ export class ServerList extends Object {
         "IP": "00.00.00.143"
       },
     */
-
+    this.current_players = 0;
     for (const server of this.servers) {
       this.current_players += server["Players"];
       if (
