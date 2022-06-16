@@ -72,15 +72,15 @@ class ServersTable extends Element {
         <thead>
           <tr>
             <th class="locked"></th>
-          <th sortable="Name" order={this.getOrderOf("Name")}>Server Name</th>
-          <th sortable="Current Map" order={this.getOrderOf("Current Map")}>Map</th>
-          <th sortable="Players" order={this.getOrderOf("Players")}>Players</th>
-          <th sortable="Latency" order={this.getOrderOf("Latency")}>Ping</th>
+            <th sortable="Name" order={this.getOrderOf("Name")}>Server Name</th>
+            <th sortable="Current Map" order={this.getOrderOf("Current Map")}>Map</th>
+            <th sortable="Players" order={this.getOrderOf("Players")}>Players</th>
+            <th sortable="Latency" order={this.getOrderOf("Latency")}>Ping</th>
           </tr>
         </thead>
         <tbody>
           {items}
-          </tbody>
+        </tbody>
       </table>;
   }
 
@@ -101,8 +101,8 @@ class ServersTable extends Element {
     }
     return <tr class={classes} key={item.key}>
         <th class={this.isLocked(item)}></th>
-      <th><span style="color: #CE5135;">{item["NamePrefix"]}</span>{(item.hasOwnProperty("NamePrefix") ? " " : "") + item["Name"]}</th>
-      <th>{item["Current Map"]}</th>
+        <th><span style="color: #CE5135;">{item["NamePrefix"]}</span>{(item.hasOwnProperty("NamePrefix") ? " " : "") + item["Name"]}</th>
+        <th>{item["Current Map"]}</th>
         <th>{item["Players"]}</th>
         <th>{item["Latency"] ?? "-"}</th>
       </tr>;
@@ -376,7 +376,7 @@ export class Servers extends Element {
     globalThis.callback_service.subscribe("game_running", this, this.callback);
   }
 
-  callback(server_list) {
+  callback() {
     var server_list_clone = Object.assign({}, globalThis.server_list);
     this.componentUpdate({ server_list: server_list_clone });
   }
@@ -386,35 +386,37 @@ export class Servers extends Element {
   }
 
   render(props) {
-    return <div {...this.props} id="not_chat" class="join_server">
-      <div class="titlebar">
-        <h3 class="title">Servers</h3>
-        <p class="nowrap padding" style="font-size: 7pt;">There are currently { this.server_list.current_players } players online</p>
-        <div class="spacer"></div>
-        Filters
-        <div class="filter down"></div>
-        <div class="refresh"></div>
-      </div>
-      <div class="filterbar">
-        <p class="nowrap">Players: { this.server_list.minimum_players } - { this.server_list.maximum_players }</p>
-        <Slider {...this.server_list} />
-        <checkmark class={"big" + (this.server_list.same_version? " checked": "")} toggle /><p class="nowrap">Same version</p>
-      </div>
-      <div class="body mheight">
-        <ServersTable />
-      </div>
-      <div class="titlebar">
-        <h3 class="title"> <span style="color: #CE5135;">{ this.selectedServer && this.selectedServer["NamePrefix"] ? this.selectedServer["NamePrefix"] + " " : "" }</span> { this.selectedServer ? this.selectedServer["Name"] : "No Server Selected" }</h3>
-        <div class="spacer"></div>
-        <div class="dropdown_menu closed">PLAY ONLINE</div>
-        <div style="position: relative;">
-          <div class="menu child-padding" style="visibility: hidden;">
-            <div class="padding" overlay="ip"><h4>JOIN BY IP</h4></div>
+    return (
+      <div {...this.props} id="not_chat" class="join_server">
+        <div class="titlebar">
+          <h3 class="title">Servers</h3>
+          <p class="nowrap padding" style="font-size: 7pt;">There are currently {this.server_list.current_players} players online</p>
+          <div class="spacer"></div>
+          Filters
+          <div class="filter down"></div>
+          <div class="refresh"></div>
+        </div>
+        <div class="filterbar">
+          <p class="nowrap">Players: {this.server_list.minimum_players} - {this.server_list.maximum_players}</p>
+          <Slider {...this.server_list} />
+          <checkmark class={"big" + (this.server_list.same_version ? " checked" : "")} toggle /><p class="nowrap">Same version</p>
+        </div>
+        <div class="body mheight">
+          <ServersTable />
+        </div>
+        <div class="titlebar">
+          <h3 class="title"> <span style="color: #CE5135;">{this.selectedServer && this.selectedServer["NamePrefix"] ? this.selectedServer["NamePrefix"] + " " : ""}</span> {this.selectedServer ? this.selectedServer["Name"] : "No Server Selected"}</h3>
+          <div class="spacer"></div>
+          <div class="dropdown_menu closed">PLAY ONLINE</div>
+          <div style="position: relative;">
+            <div class="menu child-padding" style="visibility: hidden;">
+              <div class="padding" overlay="ip"><h4>JOIN BY IP</h4></div>
+            </div>
           </div>
         </div>
+        {this.renderSelectedMap()}
       </div>
-      { this.renderSelectedMap() }
-    </div>
+    )
   }
 
   renderSelectedMap() {
@@ -427,7 +429,7 @@ export class Servers extends Element {
     return (
       <div id="map" class="body hflow">
         <div class="expand" style="margin-right: 10px; ">
-      <h3>MAP: <span style="color: #CE5135;">{mapName[1].replace("_", " ")}</span></h3>
+          <h3>MAP: <span style="color: #CE5135;">{mapName[1].replace("_", " ")}</span></h3>
           <div class="hflow" style=" height: *; vertical-align: bottom;">
             <div class="vflow expand child-padding">
               <p>Time Limit: <span>{entry["Variables"]["Time Limit"].toString()}</span></p>
@@ -437,11 +439,11 @@ export class Servers extends Element {
               <p>Game Mode: <span>{mapName[0]}</span></p>
             </div>
             <div class="vflow expand child-padding">
-          <p><checkmarknoinput class={ entry["Variables"]["bSpawnCrates"]? "checked" : ""} id="crates" /> Crates</p>
-          <p><checkmarknoinput class={ entry["Variables"]["bSteamRequired"]? "checked" : ""} id="steam" /> Steam Required</p>
-          <p><checkmarknoinput class="checked" id="ranked" /> Ranked</p>
-          <p><checkmarknoinput class={ entry["Variables"]["bAutoBalanceTeams"]? "checked" : ""} id="balance" /> Auto Balance</p>
-          <p><checkmarknoinput class="" id="infantry" /> Infantry Only</p>
+              <p><checkmarknoinput class={ entry["Variables"]["bSpawnCrates"]? "checked" : ""} id="crates" /> Crates</p>
+              <p><checkmarknoinput class={ entry["Variables"]["bSteamRequired"]? "checked" : ""} id="steam" /> Steam Required</p>
+              <p><checkmarknoinput class="checked" id="ranked" /> Ranked</p>
+              <p><checkmarknoinput class={ entry["Variables"]["bAutoBalanceTeams"]? "checked" : ""} id="balance" /> Auto Balance</p>
+              <p><checkmarknoinput class="" id="infantry" /> Infantry Only</p>
             </div>
           </div>
           <button class="green" id="launch_server" style="bottom: 0px;" disabled={globalThis.gameState}>
