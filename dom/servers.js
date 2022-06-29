@@ -45,8 +45,13 @@ class ServersTable extends Element {
       this.componentUpdate({ list: globalThis.server_list.get_servers() });
     }
     globalThis.callback_service.subscribe("servers", this, this.callback);
+    globalThis.callback_service.subscribe("game_running", this, this.callbackLauncher);
   }
 
+  callbackLauncher(gameState) {
+    globalThis.gameState = gameState;
+    this.componentUpdate({ gameState });
+  }
   callback(data) {
     this.componentUpdate({ list: data });
   }
@@ -55,30 +60,37 @@ class ServersTable extends Element {
     globalThis.callback_service.unsubscribe("servers", this, this.callback);
   }
 
+  handleLaunchServer() {
+    if(globalThis.game_running){
+      return;
+    }
+    globalThis.renegade_x_state.launch_to_server(this.currentItem);
+  }
+
   renderList(items) {
     return <table class="servers" {...this.props}>
-      <thead>
-        <tr>
-          <th class="locked"></th>
-          <th sortable="Name" order={this.getOrderOf("Name")}>Server Name</th>
-          <th sortable="Current Map" order={this.getOrderOf("Current Map")}>Map</th>
-          <th sortable="Players" order={this.getOrderOf("Players")}>Players</th>
-          <th sortable="Latency" order={this.getOrderOf("Latency")}>Ping</th>
-        </tr>
-      </thead>
-      <tbody>
-        {items}
-      </tbody>
-    </table>;
+        <thead>
+          <tr>
+            <th class="locked"></th>
+            <th sortable="Name" order={this.getOrderOf("Name")}>Server Name</th>
+            <th sortable="Current Map" order={this.getOrderOf("Current Map")}>Map</th>
+            <th sortable="Players" order={this.getOrderOf("Players")}>Players</th>
+            <th sortable="Latency" order={this.getOrderOf("Latency")}>Ping</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items}
+        </tbody>
+      </table>;
   }
 
   getOrderOf(key) {
     if (globalThis.server_list.sortBy != key || globalThis.server_list.sortOrder == "")
       return "";
-    return globalThis.server_list.sortOrder == "Ascending"? "ascend" : "descend";
+    return globalThis.server_list.sortOrder == "Ascending" ? "ascend" : "descend";
   }
 
-  ["on click at th[sortable]"](evt,target) {
+  ["on click at th[sortable]"](evt, target) {
     globalThis.server_list.sort_by(target.getAttribute("sortable"));
   }
 
@@ -88,25 +100,25 @@ class ServersTable extends Element {
       classes += "current";
     }
     return <tr class={classes} key={item.key}>
-      <th class={this.isLocked(item)}></th>
-      <th><span style="color: #CE5135;">{item["NamePrefix"]}</span>{(item.hasOwnProperty("NamePrefix") ? " " : "") + item["Name"]}</th>
-      <th>{item["Current Map"]}</th>
-      <th>{item["Players"]}</th>
-      <th>{item["Latency"] ?? "-"}</th>
-    </tr>;
+        <th class={this.isLocked(item)}></th>
+        <th><span style="color: #CE5135;">{item["NamePrefix"]}</span>{(item.hasOwnProperty("NamePrefix") ? " " : "") + item["Name"]}</th>
+        <th>{item["Current Map"]}</th>
+        <th>{item["Players"]}</th>
+        <th>{item["Latency"] ?? "-"}</th>
+      </tr>;
   }
 
-  ["on click at tr[key]"](evt,target) {
+  ["on click at tr[key]"](evt, target) {
     this.setCurrentOption(target);
   }
 
   ["on dblclick at tr[key]"](evt, target) {
-    globalThis.renegade_x_state.launch_to_server(this.currentItem);
+    this.handleLaunchServer();
   }
 
   isLocked(item) {
     if (item["Variables"]["bPassworded"])
-      return "locked";
+     return "locked";
     return "";
   }
 
@@ -306,24 +318,29 @@ export class ServerList extends Object {
     this.current_players = 0;
     for (const server of this.servers) {
       this.current_players += server["Players"];
-      if (server["Players"] >= this.minimum_players &&
+      if (
+        server["Players"] >= this.minimum_players &&
         server["Players"] <= this.maximum_players &&
-        (!this.same_version || server["Game Version"] == this.game_version)) {
-          server.key = server["IP"] + ":" + server["Port"];
-          list.push(server);
+        (!this.same_version || server["Game Version"] == this.game_version)
+      ) {
+        server.key = server["IP"] + ":" + server["Port"];
+        list.push(server);
       }
     }
-    if(this.sortOrder != "") {
-      console.log("Sorting server_list by " + this.sortBy + " in order " + this.sortOrder);
-      list.sort((first,second) => {
+    if (this.sortOrder != "") {
+      console.log(
+        "Sorting server_list by " + this.sortBy + " in order " + this.sortOrder
+      );
+      list.sort((first, second) => {
         try {
-          var sort = this.sortOrder=="Ascending"? -1 : 1;
-          if (first[this.sortBy] === undefined && second[this.sortBy] === undefined)
+          var sort = this.sortOrder == "Ascending" ? -1 : 1;
+          if (
+            first[this.sortBy] === undefined &&
+            second[this.sortBy] === undefined
+          )
             return 0;
-          if (first[this.sortBy] === undefined)
-            return 1;
-          if (second[this.sortBy] === undefined)
-            return -1;
+          if (first[this.sortBy] === undefined) return 1;
+          if (second[this.sortBy] === undefined) return -1;
 
           if (first[this.sortBy] > second[this.sortBy]) {
             return sort;
@@ -333,7 +350,7 @@ export class ServerList extends Object {
           }
           // a must be equal to b
           return 0;
-        } catch(e) {
+        } catch (e) {
           console.error(e);
           throw e;
         }
@@ -347,18 +364,19 @@ export class Servers extends Element {
   server_list;
 
   this() {
-    if(globalThis.server_list === undefined)
+    if (globalThis.server_list === undefined)
       globalThis.server_list = new ServerList();
     this.server_list = Object.assign({}, globalThis.server_list);
-    if(globalThis.renegade_x_state === undefined)
+    if (globalThis.renegade_x_state === undefined)
       globalThis.renegade_x_state = new RenegadeXState();
   }
 
   componentDidMount() {
     globalThis.callback_service.subscribe("servers", this, this.callback);
+    globalThis.callback_service.subscribe("game_running", this, this.callback);
   }
 
-  callback(server_list) {
+  callback() {
     var server_list_clone = Object.assign({}, globalThis.server_list);
     this.componentUpdate({ server_list: server_list_clone });
   }
@@ -368,35 +386,37 @@ export class Servers extends Element {
   }
 
   render(props) {
-    return <div {...this.props} id="not_chat" class="join_server">
-      <div class="titlebar">
-        <h3 class="title">Servers</h3>
-        <p class="nowrap padding" style="font-size: 7pt;">There are currently { this.server_list.current_players } players online</p>
-        <div class="spacer"></div>
-        Filters
-        <div class="filter down"></div>
-        <div class="refresh"></div>
-      </div>
-      <div class="filterbar">
-        <p class="nowrap">Players: { this.server_list.minimum_players } - { this.server_list.maximum_players }</p>
-        <Slider {...this.server_list} />
-        <checkmark class={"big" + (this.server_list.same_version? " checked": "")} toggle /><p class="nowrap">Same version</p>
-      </div>
-      <div class="body mheight">
-        <ServersTable />
-      </div>
-      <div class="titlebar">
-        <h3 class="title"> <span style="color: #CE5135;">{ this.selectedServer && this.selectedServer["NamePrefix"] ? this.selectedServer["NamePrefix"] + " " : "" }</span> { this.selectedServer ? this.selectedServer["Name"] : "No Server Selected" }</h3>
-        <div class="spacer"></div>
-        <div class="dropdown_menu closed">PLAY ONLINE</div>
-        <div style="position: relative;">
-          <div class="menu child-padding" style="visibility: hidden;">
-            <div class="padding" overlay="ip"><h4>JOIN BY IP</h4></div>
+    return (
+      <div {...this.props} id="not_chat" class="join_server">
+        <div class="titlebar">
+          <h3 class="title">Servers</h3>
+          <p class="nowrap padding" style="font-size: 7pt;">There are currently {this.server_list.current_players} players online</p>
+          <div class="spacer"></div>
+          Filters
+          <div class="filter down"></div>
+          <div class="refresh"></div>
+        </div>
+        <div class="filterbar">
+          <p class="nowrap">Players: {this.server_list.minimum_players} - {this.server_list.maximum_players}</p>
+          <Slider {...this.server_list} />
+          <checkmark class={"big" + (this.server_list.same_version ? " checked" : "")} toggle /><p class="nowrap">Same version</p>
+        </div>
+        <div class="body mheight">
+          <ServersTable />
+        </div>
+        <div class="titlebar">
+          <h3 class="title"> <span style="color: #CE5135;">{this.selectedServer && this.selectedServer["NamePrefix"] ? this.selectedServer["NamePrefix"] + " " : ""}</span> {this.selectedServer ? this.selectedServer["Name"] : "No Server Selected"}</h3>
+          <div class="spacer"></div>
+          <div class="dropdown_menu closed">PLAY ONLINE</div>
+          <div style="position: relative;">
+            <div class="menu child-padding" style="visibility: hidden;">
+              <div class="padding" overlay="ip"><h4>JOIN BY IP</h4></div>
+            </div>
           </div>
         </div>
+        {this.renderSelectedMap()}
       </div>
-      { this.renderSelectedMap() }
-    </div>
+    )
   }
 
   renderSelectedMap() {
@@ -404,37 +424,45 @@ export class Servers extends Element {
       return <div id="map" style="margin-bottom: 10dip;"></div>;
 
     let entry = this.selectedServer;
-    var mapName = entry["Current Map"].split("-",2);
+    var mapName = entry["Current Map"].split("-", 2);
 
-    return <div id="map" class="body hflow">
-    <div class="expand" style="margin-right: 10px; ">
-      <h3>MAP: <span style="color: #CE5135;">{mapName[1].replace("_", " ")}</span></h3>
-      <div class="hflow" style=" height: *; vertical-align: bottom;">
-        <div class="vflow expand child-padding">
-          <p>Time Limit: <span>{entry["Variables"]["Time Limit"].toString()}</span></p>
-          <p>Vehicle Limit: <span>{entry["Variables"]["Vehicle Limit"].toString()}</span></p>
-          <p>Player Limit: <span>{entry["Variables"]["Player Limit"].toString()}</span></p>
-          <p>Mine Limit: <span>{entry["Variables"]["Mine Limit"].toString()}</span></p>
-          <p>Game Mode: <span>{mapName[0]}</span></p>
+    return (
+      <div id="map" class="body hflow">
+        <div class="expand" style="margin-right: 10px; ">
+          <h3>MAP: <span style="color: #CE5135;">{mapName[1].replace("_", " ")}</span></h3>
+          <div class="hflow" style=" height: *; vertical-align: bottom;">
+            <div class="vflow expand child-padding">
+              <p>Time Limit: <span>{entry["Variables"]["Time Limit"].toString()}</span></p>
+              <p>Vehicle Limit: <span>{entry["Variables"]["Vehicle Limit"].toString()}</span></p>
+              <p>Player Limit: <span>{entry["Variables"]["Player Limit"].toString()}</span></p>
+              <p>Mine Limit: <span>{entry["Variables"]["Mine Limit"].toString()}</span></p>
+              <p>Game Mode: <span>{mapName[0]}</span></p>
+            </div>
+            <div class="vflow expand child-padding">
+              <p><checkmarknoinput class={ entry["Variables"]["bSpawnCrates"]? "checked" : ""} id="crates" /> Crates</p>
+              <p><checkmarknoinput class={ entry["Variables"]["bSteamRequired"]? "checked" : ""} id="steam" /> Steam Required</p>
+              <p><checkmarknoinput class="checked" id="ranked" /> Ranked</p>
+              <p><checkmarknoinput class={ entry["Variables"]["bAutoBalanceTeams"]? "checked" : ""} id="balance" /> Auto Balance</p>
+              <p><checkmarknoinput class="" id="infantry" /> Infantry Only</p>
+            </div>
+          </div>
+          <button class="green" id="launch_server" style="bottom: 0px;" disabled={globalThis.gameState}>
+            JOIN SERVER
+          </button>
         </div>
-        <div class="vflow expand child-padding">
-          <p><checkmarknoinput class={ entry["Variables"]["bSpawnCrates"]? "checked" : ""} id="crates" /> Crates</p>
-          <p><checkmarknoinput class={ entry["Variables"]["bSteamRequired"]? "checked" : ""} id="steam" /> Steam Required</p>
-          <p><checkmarknoinput class="checked" id="ranked" /> Ranked</p>
-          <p><checkmarknoinput class={ entry["Variables"]["bAutoBalanceTeams"]? "checked" : ""} id="balance" /> Auto Balance</p>
-          <p><checkmarknoinput class="" id="infantry" /> Infantry Only</p>
-        </div>
+        <video id="map_video" src={Window.this.xcall("get_video_location", entry["Current Map"])} loop />
       </div>
-      <button class="green" style="bottom: 0px;" onclick="joinServer();">JOIN SERVER</button>
-    </div>
-    <video id="map_video" src={Window.this.xcall("get_video_location", entry["Current Map"])} loop />
-  </div>;
+    );
   }
 
   ["on click at div.dropdown_menu"](evt, target) {
-    target.classList.toggle('open');
-    target.classList.toggle('closed');
-    document.$('div.menu').style['visibility'] = target.classList.contains('closed') ? 'collapse' : 'visible';
+    target.classList.toggle("open");
+    target.classList.toggle("closed");
+    document.$("div.menu").style["visibility"] = target.classList.contains(
+      "closed"
+    )
+      ? "collapse"
+      : "visible";
   }
 
   ["on click at div.refresh"](evt, target) {
@@ -450,7 +478,6 @@ export class Servers extends Element {
     }
   }
 
-
   ["on click at div.filterbar checkmark"](evt, target) {
     try {
       globalThis.server_list.toggle_versions();
@@ -458,10 +485,16 @@ export class Servers extends Element {
       console.error(e);
     }
   }
-
+  ["on click at #launch_server"](evt, target) {
+    if(globalThis.game_running){
+      return;
+    }
+    globalThis.renegade_x_state.launch_to_server(this.currentItem);
+  }
+  
   ["on input"](evt, target) {
-    if(this.$("#map.hidden")) {
-      this.$("#map.hidden").classList.toggle('hidden');
+    if (this.$("#map.hidden")) {
+      this.$("#map.hidden").classList.toggle("hidden");
     }
     this.componentUpdate({ selectedServer: target.value });
   }
@@ -500,20 +533,20 @@ class Slider extends Element {
 
   ["on mousemove"](evt, target) {
     try {
-      if(this.handle) {
-        var players = Math.round(evt.x / this.state.box("width","inner") * 64);
+      if (this.handle) {
+        var players = Math.round(
+          (evt.x / this.state.box("width", "inner")) * 64
+        );
         var start = this.handle.classList.contains("start");
         if (start) {
-          if(players >= globalThis.server_list.maximum_players)
+          if (players >= globalThis.server_list.maximum_players)
             players = globalThis.server_list.maximum_players - 1;
-          if(players < 0)
-            players = 0;
+          if (players < 0) players = 0;
           globalThis.server_list.set_minimum_players(players);
         } else {
-          if(players <= globalThis.server_list.minimum_players)
+          if (players <= globalThis.server_list.minimum_players)
             players = globalThis.server_list.minimum_players + 1;
-          if(players > 64)
-            players = 64;
+          if (players > 64) players = 64;
           globalThis.server_list.set_maximum_players(players);
         }
       }
