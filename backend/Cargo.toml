@@ -27,6 +27,7 @@ download-async = "0.10"
 async-trait = "0.1"
 json = "0.12"
 quick-xml = { version="0.23", features=["serialize"] }
+semver = "1.0.11"
 
 [build-dependencies]
 embed-resource = "1.6"
