@@ -347,11 +347,10 @@ impl Handler {
   /// Launch the game, if server variable it's value is "", then the game will be launched to the menu.
   fn launch_game(&self, server: Value, done: Value, error: Value) {
     let launch_info =  self.configuration.get_launch_info();
-    
-    crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
-      let launcher_dir = env::current_dir().unwrap();
-      let game_dir = launcher_dir.parent().unwrap();
+    let game_cmd = self.configuration.get_game_executable();
+    let game_dir = self.configuration.get_game_directory_abs();
 
+    crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
       let server = server.as_string().ok_or_else(|| Error::None(format!("{}", concat!(file!(),":",line!()))))?;
       let mut args = vec![];
       match server.as_str() {
@@ -364,11 +363,9 @@ impl Handler {
       }
       args.push("-UseAllAvailableCores".to_string());
       
-      let game_cmd = game_dir.join(format!("Binaries/Win{}/UDK.exe", launch_info.bit_version));
-      info!("Launching Game via {:?} {}", game_cmd, args.join(" "));
-
+      info!("Launching Game via {} {}", game_cmd, args.join(" "));
       match std::process::Command::new(game_cmd)
-      .current_dir(game_dir)
+      .current_dir(game_dir.as_os_str()) // Working Dir can contain an UNC path https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw
       .args(&args)	
       .stdout(std::process::Stdio::piped())
       .stderr(std::process::Stdio::inherit())
