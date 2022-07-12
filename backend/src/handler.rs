@@ -423,17 +423,16 @@ impl Handler {
       let cargo_ver = Version::parse(VERSION).unwrap();
 
       match Version::parse(&launcher_version.version) {
-          Ok(expected_launcher_version) => {
-            if cargo_ver < expected_launcher_version {
-              crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback.call(None, &make_args!(launcher_version.version), None)?; Ok(()) });
-            } else {
-              crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback.call(None, &make_args!(Value::null()), None)?; Ok(()) });
-            }
-          },
-          Err(error) => {
-            error!("Problem parsing the version from server: {:?}", error);
-            crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback.call(None, &make_args!(Value::null()), None)?; Ok(()) });
-          },
+        Ok(expected_launcher_version) => {
+          let should_update = (expected_launcher_version > cargo_ver) | (expected_launcher_version < cargo_ver && expected_launcher_version.pre.contains("rollback"));
+          info!("Cargo Version: {} :: Launcher Version {} :: Should Update? {}", cargo_ver.to_string(), expected_launcher_version.to_string(), should_update);
+          if should_update {
+            crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback.call(None, &make_args!(launcher_version.version), None)?; Ok(()) });
+          }
+        },
+        Err(error) => {
+          error!("Problem parsing the version `{}` from server: {:?}", launcher_version.version, error);
+        },
       }
       
       Ok::<(), Error>(())
