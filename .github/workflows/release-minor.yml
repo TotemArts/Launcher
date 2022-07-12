@@ -34,7 +34,7 @@ jobs:
       id: package
       shell: bash
       run: >
-        cp ./backend/target/i686-pc-windows-gnu/release/RenegadeX-Launcher.exe "./Renegade X Launcher.exe";
+        cp ./backend/target/i686-pc-windows-gnu/release/renegade-x-launcher.exe "./Renegade X Launcher.exe";
         zip -j9 RenX-Launcher "Renegade X Launcher.exe" "RenegadeX-folder-permissions.exe" "sciter.dll" "SelfUpdateExecutor.exe";
         zip -9 RenX-Launcher -r "dom";
         echo '::set-output name=hash::'$(sha256sum RenX-Launcher.zip | awk '{print toupper($1)}');
