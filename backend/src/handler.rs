@@ -11,6 +11,7 @@ use tokio::sync::Mutex;
 use quick_xml::Reader;
 use quick_xml::events::Event;
 
+use std::env;
 use std::net::ToSocketAddrs;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -345,10 +346,12 @@ impl Handler {
   
   /// Launch the game, if server variable it's value is "", then the game will be launched to the menu.
   fn launch_game(&self, server: Value, done: Value, error: Value) {
-    let game_location = self.configuration.get_game_location();
     let launch_info =  self.configuration.get_launch_info();
     
     crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
+      let launcher_dir = env::current_dir().unwrap();
+      let game_dir = launcher_dir.parent().unwrap();
+
       let server = server.as_string().ok_or_else(|| Error::None(format!("{}", concat!(file!(),":",line!()))))?;
       let mut args = vec![];
       match server.as_str() {
@@ -361,7 +364,11 @@ impl Handler {
       }
       args.push("-UseAllAvailableCores".to_string());
       
-      match std::process::Command::new(format!("{}/Binaries/Win{}/UDK.exe", game_location, launch_info.bit_version))
+      let game_cmd = game_dir.join(format!("Binaries/Win{}/UDK.exe", launch_info.bit_version));
+      info!("Launching Game via {:?} {}", game_cmd, args.join(" "));
+
+      match std::process::Command::new(game_cmd)
+      .current_dir(game_dir)
       .args(&args)	
       .stdout(std::process::Stdio::piped())
       .stderr(std::process::Stdio::inherit())

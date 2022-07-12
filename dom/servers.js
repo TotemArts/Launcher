@@ -489,7 +489,13 @@ export class Servers extends Element {
     if(globalThis.game_running){
       return;
     }
-    globalThis.renegade_x_state.launch_to_server(this.currentItem);
+
+    let { key } = this.selectedServer;
+    if (key === undefined || key === null) {
+      return;
+    }
+
+    globalThis.renegade_x_state.launch_to_server(key);
   }
   
   ["on input"](evt, target) {
