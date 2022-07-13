@@ -1,5 +1,23 @@
 use ini::Ini;
 use std::sync::{Arc, Mutex};
+use std::path::{Path};
+
+// https://stackoverflow.com/a/50323079
+#[cfg(not(target_os = "windows"))]
+fn adjust_canonicalization<P: AsRef<Path>>(p: P) -> String {
+    p.as_ref().display().to_string()
+}
+
+#[cfg(target_os = "windows")]
+fn adjust_canonicalization<P: AsRef<Path>>(p: P) -> String {
+    const VERBATIM_PREFIX: &str = r#"\\?\"#;
+    let p = p.as_ref().display().to_string();
+    if p.starts_with(VERBATIM_PREFIX) {
+        p[VERBATIM_PREFIX.len()..].to_string()
+    } else {
+        p
+    }
+}
 
 #[derive(Clone)]
 pub struct Configuration {
@@ -69,6 +87,27 @@ impl Configuration {
             "Not installed".to_string()
           }
         }
+    }
+
+    // Returns an absolute path to the UDK executable
+    pub fn get_game_executable(&self) -> String {
+        let mut game_dir = self.get_game_directory_abs();
+        let launch_info =  self.get_launch_info();
+
+        game_dir.push("Binaries");
+        game_dir.push(format!("Win{}", launch_info.bit_version));
+        game_dir.push("UDK");
+        game_dir.set_extension("exe");
+
+        // On Windows, adjust the path to strip out the UNC prefix (CreateProcess does not support it)
+        adjust_canonicalization(game_dir)
+    }
+
+    // Returns the absolute directory to the game
+    pub fn get_game_directory_abs(&self) -> std::path::PathBuf {
+        let game_location = self.get_game_location();
+        let game_dir_abs_path = std::path::PathBuf::from(game_location).canonicalize().expect("Couldn't create absolute path from relative one");
+        game_dir_abs_path
     }
 
     pub fn get_game_location(&self) -> String {

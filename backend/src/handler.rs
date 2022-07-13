@@ -11,6 +11,7 @@ use tokio::sync::Mutex;
 use quick_xml::Reader;
 use quick_xml::events::Event;
 
+use std::env;
 use std::net::ToSocketAddrs;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
@@ -345,9 +346,10 @@ impl Handler {
   
   /// Launch the game, if server variable it's value is "", then the game will be launched to the menu.
   fn launch_game(&self, server: Value, done: Value, error: Value) {
-    let game_location = self.configuration.get_game_location();
     let launch_info =  self.configuration.get_launch_info();
-    
+    let game_cmd = self.configuration.get_game_executable();
+    let game_dir = self.configuration.get_game_directory_abs();
+
     crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
       let server = server.as_string().ok_or_else(|| Error::None(format!("{}", concat!(file!(),":",line!()))))?;
       let mut args = vec![];
@@ -361,7 +363,9 @@ impl Handler {
       }
       args.push("-UseAllAvailableCores".to_string());
       
-      match std::process::Command::new(format!("{}/Binaries/Win{}/UDK.exe", game_location, launch_info.bit_version))
+      info!("Launching Game via {} {}", game_cmd, args.join(" "));
+      match std::process::Command::new(game_cmd)
+      .current_dir(game_dir.as_os_str()) // Working Dir can contain an UNC path https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessw
       .args(&args)	
       .stdout(std::process::Stdio::piped())
       .stderr(std::process::Stdio::inherit())
