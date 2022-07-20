@@ -45,7 +45,7 @@ jobs:
         path: backend/RenX-Launcher.zip
 
     - name: Git Commit/Push Changes
-      uses: actions-x/commit@v2
+      uses: actions-x/commit@v6
       with:
         message: Release minor version ${{ steps.minor_version.outputs.version }}
         files: backend/Cargo.toml
