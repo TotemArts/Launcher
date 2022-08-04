@@ -1,3 +1,6 @@
+import { FailureModal } from "./modals/failure-modal.js";
+import { SuccessModal } from "./modals/success-modal.js";
+
 export class Progress extends Object {
   is_in_progress=false;
   current_action = "";
@@ -10,14 +13,29 @@ export class Progress extends Object {
   constructor(props) {
       super(props);
   }
-  failure_callback() {
+  failure_callback(error) {
     globalThis.progress.is_in_progress = false;
     globalThis.callback_service.publish("progress", globalThis.progress);
+
+    // todo: this should ideally go through app.js or something
+    var message = <p>The update failed!<br/>{error}</p>;
+    var overlay = document.$("#overlay");
+    overlay.patch(<div id="overlay"><FailureModal title="Update failed" message={message} button="Negative!"></FailureModal></div>);
+    overlay.style["visibility"] = "visible";
+    document.$("div.menuEntries").state.disabled = true;
   }
 
   success_callback() {
     globalThis.progress.is_in_progress = false;
     globalThis.callback_service.publish("progress", globalThis.progress);
+
+    globalThis.renegadex.update.check_update();
+
+    // todo: this should ideally go through app.js or something
+    var overlay = document.$("#overlay");
+    overlay.patch(<div id="overlay"><SuccessModal title="Update succesfull" message="The update succeeded!" button="Affirmative!"></SuccessModal></div>);
+    overlay.style["visibility"] = "visible";
+    document.$("div.menuEntries").state.disabled = true;
   }
 
   callback(progress) {

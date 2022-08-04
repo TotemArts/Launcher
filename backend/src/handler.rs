@@ -127,10 +127,7 @@ impl Handler {
         if let Ok(info) = result {
           *version_information = Some(info);
         } else if let Err(e) = result {
-          //let failure_callback = failure_callback.clone();
-          //let error = e.to_string().clone();
-          //info!("{:?}", e);
-          let error = format!("{:?}", e);
+          let error = format!("{:#?}", e);
           crate::spawn_wrapper::spawn(move || -> Result<(), Error> {failure_callback.call(None, &make_args!(error), None)?; Ok(()) });
           return Ok(());
         }
@@ -145,7 +142,7 @@ impl Handler {
         let success_callback = success_callback.clone();
         info!("Calling download done");
         crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
-          success_callback.call(None, &make_args!(false,false), None)?;
+          success_callback.call(None, &make_args!(), None)?;
           Ok(())
         });
       }));

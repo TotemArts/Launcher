@@ -118,7 +118,7 @@ class App extends Element {
       overlay.style["visibility"] = "visible";
       globalThis.document.$("div.menuEntries").state.disabled = true;
     };
-    Window.this.xcall("start_download", globalThis.progress.callback, globalThis.progress.success_callback, globalThis.progress.failure_callback)
+    Window.this.xcall("start_download", globalThis.progress.callback, globalThis.progress.success_callback, globalThis.progress.failure_callback);
     console.log("Oh no, he wants to update!");
   }
 
