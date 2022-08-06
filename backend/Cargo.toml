@@ -1,6 +1,6 @@
 [package]
 name = "renegade-x-launcher"
-version = "0.9.35"
+version = "0.9.36"
 authors = ["SonnyX"]
 edition = "2021"
 build = "build.rs"
