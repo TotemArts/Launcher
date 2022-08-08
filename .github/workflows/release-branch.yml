@@ -24,6 +24,7 @@ jobs:
         declare -A BRANCHES;
         BRANCHES[${{ github.event.inputs.json }}]=${{ github.event.inputs.json }};
         while IFS='=' read -r -d '\n' n v; do
+            echo ${n}'='${v}
             BRANCHES[${n}]=${v};
         done <<< $VERSION_TABLE;
         branch_name=${BRANCHES[${{ github.event.inputs.json }}]};
