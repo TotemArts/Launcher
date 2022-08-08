@@ -14,7 +14,16 @@ jobs:
       run: 
         version=$(cat backend/Cargo.toml | grep version | head -n1);
         version=${version//[*version| |=|\"]};
+        declare -A BRANCHES;
+        BRANCHES[launcher]=launcher;
+        while IFS='=' read -r n v; do
+            BRANCHES[${n}]=${v};
+            echo '::add-mask::'${v};
+        done <<< $VERSION_TABLE;
+        branch_name=${BRANCHES[launcher]};
+        sed -i 's/release.json/'${branch_name}'.json/' backend/src/*;
         echo '::set-output name=version::'${version};
+        echo '::set-output name=branch_name::'${branch_name};
         
     - name: Bump minor version
       id: minor_version
@@ -59,14 +68,14 @@ jobs:
         user: ${{ secrets.FTP_USER }}
         password: ${{ secrets.FTP_PASSWORD }}
         src: RenX-Launcher.zip
-        dest: RenX-Launcher-${{ steps.minor_version.outputs.version }}.zip
+        dest: RenX-Launcher-${{ steps.minor_version.outputs.version }}-${{ steps.cargo_version.outputs.branch_name }}.zip
 
 
     - name: Update version file
       uses: garygrossgarten/github-action-ssh@release
       with:
         command: >
-         echo "$(jq '.launcher={"version_name":"${{ steps.minor_version.outputs.version }}","version_number":(.launcher.version_number + 1),"patch_url":"https://renxdownloads.b-cdn.net/RenX-Launcher-${{ steps.minor_version.outputs.version }}.zip","patch_hash":"${{ steps.package.outputs.hash }}","banners_url":.launcher.banners_url}' static.renegade-x.com/data/launcher_data/version/launcher.json)" > static.renegade-x.com/data/launcher_data/version/launcher.json
+         echo "$(jq '.launcher={"version_name":"${{ steps.minor_version.outputs.version }}","version_number":(.launcher.version_number + 1),"patch_url":"https://renxdownloads.b-cdn.net/RenX-Launcher-${{ steps.minor_version.outputs.version }}-${{ steps.cargo_version.outputs.branch_name }}.zip","patch_hash":"${{ steps.package.outputs.hash }}","banners_url":.launcher.banners_url}' static.renegade-x.com/data/launcher_data/version/launcher.json)" > static.renegade-x.com/data/launcher_data/version/launcher.json
         host: ${{ secrets.SSH_URL }}
         port: ${{ secrets.SSH_PORT }}
         username: ${{ secrets.SSH_USERNAME }}
