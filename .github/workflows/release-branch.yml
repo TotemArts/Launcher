@@ -24,7 +24,7 @@ jobs:
         version=${version//[*version| |=|\"]};
         declare -A BRANCHES;
         BRANCHES[${{ github.event.inputs.json }}]=${{ github.event.inputs.json }};
-        echo -E $VERSION_TABLE | sed 's/./& /g';
+        echo -E "${VERSION_TABLE@Q}" | sed 's/./& /g';
         echo "${VERSION_TABLE@Q}";
         while IFS='=' read -r -d '\n' n v; do
             echo '1'${n}'=='${v}
