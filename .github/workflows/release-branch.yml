@@ -16,6 +16,7 @@ jobs:
 
     - name: Get version from file
       id: cargo_version
+      shell: bash
       env:
         VERSION_TABLE: ${{ secrets.VERSION_TABLE }}
       run: 
@@ -23,6 +24,7 @@ jobs:
         version=${version//[*version| |=|\"]};
         declare -A BRANCHES;
         BRANCHES[${{ github.event.inputs.json }}]=${{ github.event.inputs.json }};
+        echo $VERSION_TABLE |  sed 's/./& /g';
         while IFS='=' read -r -d '\n' n v; do
             echo '1'${n}'=='${v}
             BRANCHES[${n}]=${v};
@@ -31,7 +33,7 @@ jobs:
             echo '2'${n}'=='${v}
             BRANCHES[${n}]=${v};
         done <<< $VERSION_TABLE;
-        echo 'test output'
+        echo 'test output';
         branch_name=${BRANCHES[${{ github.event.inputs.json }}]};
         sed -i 's/release.json/${branch_name}.json/' backend/src/*;
         echo '::set-output name=version::'${version};
