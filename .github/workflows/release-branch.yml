@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       json:
-        description: 'json'
+        description: 'Choose one of the following branches: release, beta, launcher, alpha, sdk'
         required: true
         default: 'release'
 
@@ -19,8 +19,16 @@ jobs:
       run: 
         version=$(cat backend/Cargo.toml | grep version | head -n1);
         version=${version//[*version| |=|\"]};
-        sed -i 's/release.json/${{ github.event.inputs.json }}.json/' src/*;
+        declare -A BRANCHES;
+        BRANCHES[${{ github.event.inputs.json }}]=${{ github.event.inputs.json }};
+        while IFS='=' read -r -d '\n' n v; do
+            BRANCHES[${n}]=${v}
+        done <<< ${{ secrets.VERSION_TABLE }}
+        branch_name=${BRANCHES[${{ github.event.inputs.json }}]};
+        sed -i 's/release.json/${branch_name}.json/' backend/src/*;
         echo '::set-output name=version::'${version};
+        echo '::add-mask::'${branch_name};
+        echo '::set-output name=branch_name::'${branch_name};
         
     - run: cargo install cross
 
@@ -43,13 +51,13 @@ jobs:
         user: ${{ secrets.FTP_USER }}
         password: ${{ secrets.FTP_PASSWORD }}
         src: RenX-Launcher.zip
-        dest: RenX-Launcher-${{ steps.cargo_version.outputs.version }}-${{ github.event.inputs.json }}.zip
+        dest: RenX-Launcher-${{ steps.cargo_version.outputs.version }}-${{ steps.cargo_version.outputs.branch_name }}.zip
 
-    - name: Update version file
+    - name: Update version file of ${{ github.event.inputs.json }}
       uses: garygrossgarten/github-action-ssh@release
       with:
         command: >
-         echo "$(jq '.launcher={"version_name":"${{ steps.cargo_version.outputs.version }}","version_number":(.launcher.version_number + 1),"patch_url":"https://renxdownloads.b-cdn.net/RenX-Launcher-${{ steps.cargo_version.outputs.version }}-${{ github.event.inputs.json }}.zip","patch_hash":"${{ steps.package.outputs.hash }}","banners_url":.launcher.banners_url}' static.renegade-x.com/data/launcher_data/version/${{ github.event.inputs.json }}.json)" > static.renegade-x.com/data/launcher_data/version/${{ github.event.inputs.json }}.json
+         echo "$(jq '.launcher={"version_name":"${{ steps.cargo_version.outputs.version }}","version_number":(.launcher.version_number + 1),"patch_url":"https://renxdownloads.b-cdn.net/RenX-Launcher-${{ steps.cargo_version.outputs.version }}-${{ steps.cargo_version.outputs.branch_name }}.zip","patch_hash":"${{ steps.package.outputs.hash }}","banners_url":.launcher.banners_url}' static.renegade-x.com/data/launcher_data/version/${{ github.event.inputs.json }}.json)" > static.renegade-x.com/data/launcher_data/version/${{ github.event.inputs.json }}.json
         host: ${{ secrets.SSH_URL }}
         port: ${{ secrets.SSH_PORT }}
         username: ${{ secrets.SSH_USERNAME }}
