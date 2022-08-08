@@ -23,9 +23,9 @@ jobs:
         version=${version//[*version| |=|\"]};
         declare -A BRANCHES;
         BRANCHES[${{ github.event.inputs.json }}]=${{ github.event.inputs.json }};
-        while IFS='=' read -r -d '\n' n v; do
-            BRANCHES[${n}]=${v}
-        done <<< $VERSION_TABLE
+        while IFS='=' read -r -d '\n' n v; do;
+            BRANCHES[${n}]=${v};
+        done <<< $VERSION_TABLE;
         branch_name=${BRANCHES[${{ github.event.inputs.json }}]};
         sed -i 's/release.json/${branch_name}.json/' backend/src/*;
         echo '::set-output name=version::'${version};
