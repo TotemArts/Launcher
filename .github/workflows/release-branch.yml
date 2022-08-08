@@ -29,7 +29,7 @@ jobs:
             echo '::add-mask::'${v};
         done <<< $VERSION_TABLE;
         branch_name=${BRANCHES[${{ github.event.inputs.json }}]};
-        sed -i 's/release.json/${branch_name}.json/' backend/src/*;
+        sed -i 's/release.json/'${branch_name}'.json/' backend/src/*;
         echo '::set-output name=version::'${version};
         echo '::set-output name=branch_name::'${branch_name};
         
