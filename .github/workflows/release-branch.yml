@@ -24,9 +24,14 @@ jobs:
         declare -A BRANCHES;
         BRANCHES[${{ github.event.inputs.json }}]=${{ github.event.inputs.json }};
         while IFS='=' read -r -d '\n' n v; do
-            echo ${n}'='${v}
+            echo '1'${n}'=='${v}
             BRANCHES[${n}]=${v};
         done <<< $VERSION_TABLE;
+        while IFS='=' read -r -d '' n v; do
+            echo '2'${n}'=='${v}
+            BRANCHES[${n}]=${v};
+        done <<< $VERSION_TABLE;
+        echo 'test output'
         branch_name=${BRANCHES[${{ github.event.inputs.json }}]};
         sed -i 's/release.json/${branch_name}.json/' backend/src/*;
         echo '::set-output name=version::'${version};
