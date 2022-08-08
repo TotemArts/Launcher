@@ -16,6 +16,8 @@ jobs:
 
     - name: Get version from file
       id: cargo_version
+      env:
+        VERSION_TABLE: ${{ secrets.VERSION_TABLE }}
       run: 
         version=$(cat backend/Cargo.toml | grep version | head -n1);
         version=${version//[*version| |=|\"]};
@@ -23,7 +25,7 @@ jobs:
         BRANCHES[${{ github.event.inputs.json }}]=${{ github.event.inputs.json }};
         while IFS='=' read -r -d '\n' n v; do
             BRANCHES[${n}]=${v}
-        done <<< ${{ secrets.VERSION_TABLE }}
+        done <<< $VERSION_TABLE
         branch_name=${BRANCHES[${{ github.event.inputs.json }}]};
         sed -i 's/release.json/${branch_name}.json/' backend/src/*;
         echo '::set-output name=version::'${version};
