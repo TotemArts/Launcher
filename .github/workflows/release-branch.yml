@@ -24,15 +24,13 @@ jobs:
         version=${version//[*version| |=|\"]};
         declare -A BRANCHES;
         BRANCHES[${{ github.event.inputs.json }}]=${{ github.event.inputs.json }};
-        echo -E "${VERSION_TABLE@Q}" | sed 's/./& /g';
         while IFS='=' read -r n v; do
-            echo '1'${n}'=='${v}
             BRANCHES[${n}]=${v};
+            echo '::add-mask::'${v};
         done <<< $VERSION_TABLE;
         branch_name=${BRANCHES[${{ github.event.inputs.json }}]};
         sed -i 's/release.json/${branch_name}.json/' backend/src/*;
         echo '::set-output name=version::'${version};
-        echo '::add-mask::'${branch_name};
         echo '::set-output name=branch_name::'${branch_name};
         
     - run: cargo install cross
