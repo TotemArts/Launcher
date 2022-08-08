@@ -6,7 +6,7 @@ on:
       json:
         description: 'Choose one of the following branches: release, beta, launcher, alpha, sdk'
         required: true
-        default: 'release'
+        default: 'launcher'
 
 jobs:
   publish:
@@ -25,6 +25,7 @@ jobs:
         declare -A BRANCHES;
         BRANCHES[${{ github.event.inputs.json }}]=${{ github.event.inputs.json }};
         echo -E $VERSION_TABLE | sed 's/./& /g';
+        echo "${VERSION_TABLE@Q}";
         while IFS='=' read -r -d '\n' n v; do
             echo '1'${n}'=='${v}
             BRANCHES[${n}]=${v};
