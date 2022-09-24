@@ -26,7 +26,7 @@ flexi_logger = "0.23"
 download-async = "0.10"
 async-trait = "0.1"
 json = "0.12"
-quick-xml = { version="0.24", features=["serialize"] }
+quick-xml = { version="0.25", features=["serialize"] }
 semver = "1.0.11"
 
 [build-dependencies]
