@@ -660,10 +660,10 @@ impl Handler {
     input = input.replace("\n","\\n").replace("\r","\\r");
     let mut reader = Reader::from_str(&input);
     let mut json = format!("");
-    let mut buf = Vec::new();
+    //let mut buf = Vec::new();
     let mut add_comma = false;
     loop {
-      match reader.read_event(&mut buf) {
+      match reader.read_event() {
         Ok(event) => {
           match event {
             Event::Start(ref e) => {
@@ -671,8 +671,8 @@ impl Handler {
                 true => ",".to_string(),
                 false => "".to_string()
               };
-              let attrs = e.attributes().filter(|attr| attr.is_ok()).map(|result| result.unwrap()).map(|attr| format!("\"{}\": \"{}\"", &std::str::from_utf8(&attr.key).unwrap(), &std::str::from_utf8(&attr.value).unwrap())).collect::<Vec<String>>().join(",");
-              json = format!("{}{}[\"{}\", {{ {} }}, [", json, comma, &std::str::from_utf8(e.name())?, attrs);
+              let attrs = e.attributes().filter(|attr| attr.is_ok()).map(|result| result.unwrap()).map(|attr| format!("\"{}\": \"{}\"", &std::str::from_utf8(attr.key.as_ref()).unwrap(), &std::str::from_utf8(attr.value.as_ref()).unwrap())).collect::<Vec<String>>().join(",");
+              json = format!("{}{}[\"{}\", {{ {} }}, [", json, comma, &std::str::from_utf8(e.name().as_ref())?, attrs);
               add_comma = false;
             },
             Event::End(ref _e) => {
@@ -689,7 +689,7 @@ impl Handler {
             },
             Event::Text(text) => {
               if !json.is_empty() {
-                let text = &reader.decode(&text).unwrap();
+                let text = &reader.decoder().decode(&text).unwrap();
                 if !text.is_empty() {
                   let comma = match add_comma {
                     true => ",".to_string(),
@@ -705,8 +705,8 @@ impl Handler {
                 true => ",".to_string(),
                 false => "".to_string()
               };
-              let attrs = e.attributes().filter(|attr| attr.is_ok()).map(|result| result.unwrap()).map(|attr| format!("\"{}\": \"{}\"", &std::str::from_utf8(&attr.key).unwrap(), &std::str::from_utf8(&attr.value).unwrap())).collect::<Vec<String>>().join(",");
-              json = format!("{}{}[\"{}\", {{ {} }}, []]", json, comma, &std::str::from_utf8(e.name())?, attrs);
+              let attrs = e.attributes().filter(|attr| attr.is_ok()).map(|result| result.unwrap()).map(|attr| format!("\"{}\": \"{}\"", &std::str::from_utf8(attr.key.as_ref()).unwrap(), &std::str::from_utf8(&attr.value).unwrap())).collect::<Vec<String>>().join(",");
+              json = format!("{}{}[\"{}\", {{ {} }}, []]", json, comma, &std::str::from_utf8(e.name().as_ref())?, attrs);
               add_comma = true;
             },
             Event::Eof => {
