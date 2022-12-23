@@ -16,6 +16,8 @@ pub enum Error {
   ParseError(url::ParseError),
   ParseIntError(std::num::ParseIntError),
   UnzipError(std::io::Error),
+  JsonError(json::Error),
+  DownloadTimeout(tokio::time::error::Elapsed)
 }
 
 impl std::error::Error for Error { }
@@ -38,6 +40,8 @@ impl std::fmt::Display for Error {
       Self::ParseError(e) => write!(f,"ParseError({:?})", e),
       Self::ParseIntError(e) => write!(f,"ParseIntError({:?})", e),
       Self::UnzipError(e) => write!(f,"UnzipError({:?})", e),
+      Self::JsonError(e) => write!(f,"JsonError({:?})", e),
+      Self::DownloadTimeout(e) => write!(f,"DownloadTimeout({:?})", e)
     }
   }
 }
@@ -78,6 +82,15 @@ impl From<renegadex_patcher::Error> for Error {
   fn from(error: renegadex_patcher::Error) -> Self {
     log_error(&error);
     Self::PatcherError(error)
+  }
+}
+
+impl From<json::Error> for Error {
+  #[track_caller]
+  #[inline(always)]
+  fn from(error: json::Error) -> Self {
+    log_error(&error);
+    Self::JsonError(error)
   }
 }
 
@@ -141,6 +154,15 @@ impl From<std::str::Utf8Error> for Error {
   fn from(error: std::str::Utf8Error) -> Self {
     log_error(&error);
     Self::Utf8Error(error)
+  }
+}
+
+impl From<tokio::time::error::Elapsed> for Error {
+  #[track_caller]
+  #[inline(always)]
+  fn from(error: tokio::time::error::Elapsed) -> Self {
+    log_error(&error);
+    Self::DownloadTimeout(error)
   }
 }
 

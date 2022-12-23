@@ -7,15 +7,15 @@ build = "build.rs"
 include = ["src/**/*", "Cargo.toml"]
 
 [dependencies]
-tokio = { version = "1.21.2", features = ["full"] }
-url = "2.3.1"
+tokio = { version = "1.23", features = ["full", "tracing"] }
+url = "2.3"
 sciter-rs = "0.5"
 renegadex_patcher = { git = "https://github.com/SonnyX/RenegadeX-patcher-lib" }
 rust-ini = "0.18"
 single-instance = "0.3"
 socket2 = { version="0.4", features=["all"]}
 rand = "0.8"
-percent-encoding = "2.2.0"
+percent-encoding = "2.2"
 unzip = { git = "https://github.com/SonnyX/unzip-rs" }
 dirs = "4.0"
 runas = { git = "https://github.com/SonnyX/rust-runas" }
@@ -26,11 +26,14 @@ flexi_logger = "0.24"
 download-async = "0.10"
 async-trait = "0.1"
 json = "0.12"
-quick-xml = { version="0.25" }
-semver = "1.0.14"
+quick-xml = { version="0.26" }
+semver = "1.0"
+console-subscriber="0.1.8"
+tracing-subscriber="0.3"
+tracing="0.1"
 
 [build-dependencies]
-embed-resource = "1.7.3"
+embed-resource = "1.8"
 
 [profile.release]
 opt-level = 'z'

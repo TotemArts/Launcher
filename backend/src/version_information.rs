@@ -1,9 +1,9 @@
 
 use std::time::Duration;
 
-use renegadex_patcher::{Error, NamedUrl};
+use renegadex_patcher::NamedUrl;
 
-use crate::as_string::AsString;
+use crate::{as_string::AsString, error::Error};
 
 #[derive(Clone)]
 pub struct VersionInformation {

@@ -1,4 +1,4 @@
-#![windows_subsystem="windows"]
+#![windows_subsystem="console"]
 #![warn(clippy::multiple_crate_versions)]
 extern crate tokio;
 #[macro_use] extern crate sciter;
@@ -15,6 +15,8 @@ extern crate hex;
 extern crate log;
 extern crate download_async;
 extern crate async_trait;
+extern crate tracing;
+extern crate tracing_subscriber;
 
 mod configuration;
 mod handler;
@@ -29,6 +31,7 @@ use flexi_logger::{Age, Criterion, Cleanup, Logger, Naming};
 use log::*;
 use single_instance::SingleInstance;
 use tokio::sync::Mutex;
+use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, Layer, util::SubscriberInitExt};
 use std::sync::Arc;
 use handler::Handler;
 
@@ -157,6 +160,13 @@ fn launch_ui(current_dir: String) -> std::thread::JoinHandle<Result<(),Error>> {
       }
     }
     let runtime : tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread().enable_all().thread_stack_size(2_usize.pow(22)).build().expect("");
+    let console_layer = console_subscriber::ConsoleLayer::builder().with_default_env().spawn();
+
+    tracing_subscriber::registry()
+      .with(console_layer)
+      .with(tracing_subscriber::fmt::layer().with_filter(tracing_subscriber::filter::LevelFilter::from_level(tracing::Level::DEBUG)))
+      .init();
+      
     if configuration.get_playername().eq("UnknownPlayer") {
       let mut frame = sciter::Window::new();
       frame.event_handler(Handler{patcher: Arc::new(Mutex::new(None)), version_information: Arc::new(Mutex::new(None)), configuration: configuration.clone(), runtime: runtime.handle().clone()});

@@ -1,6 +1,6 @@
 cd backend
-cross update
-cross build --release --target=i686-pc-windows-gnu
+cargo update
+cargo build --release
 cd ..
-echo F|xcopy /Y backend\target\i686-pc-windows-gnu\release\renegade-x-launcher.exe RenegadeX-Launcher.exe
+echo F|xcopy /Y backend\target\release\renegade-x-launcher.exe RenegadeX-Launcher.exe
 pause
