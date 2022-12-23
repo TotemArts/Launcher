@@ -132,7 +132,7 @@ impl Configuration {
         let game_location = self.get_game_location();
         let mut absolute_path = std::path::PathBuf::from(game_location).canonicalize().expect("Couldn't create absolute path from relative one");
         absolute_path.push("PreviewVids");
-        absolute_path.push(map_name);
+        absolute_path.push(&map_name);
         absolute_path.set_extension("avi");
         if !absolute_path.is_file() {
           absolute_path.pop();

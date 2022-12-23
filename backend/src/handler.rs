@@ -263,7 +263,7 @@ impl Handler {
   }
   
   fn get_video_location(&self, map_name: sciter::Value) -> String {
-    self.configuration.get_video_location(map_name.to_string())
+    self.configuration.get_video_location(map_name.as_string().unwrap())
   }
   
   /// Retrieve the playername

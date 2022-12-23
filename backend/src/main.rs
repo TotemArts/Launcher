@@ -1,4 +1,4 @@
-#![windows_subsystem="console"]
+#![windows_subsystem="windows"]
 #![warn(clippy::multiple_crate_versions)]
 extern crate tokio;
 #[macro_use] extern crate sciter;
@@ -27,7 +27,6 @@ mod version_information;
 mod as_string;
 
 use crate::error::Error;
-use flexi_logger::{Age, Criterion, Cleanup, Logger, Naming};
 use log::*;
 use single_instance::SingleInstance;
 use tokio::sync::Mutex;
@@ -110,13 +109,16 @@ fn main() -> Result<(), Error> {
   let configuration = configuration::Configuration::load_or_default();
   let log_directory = configuration.get_log_directory();
 
-  Logger::try_with_env_or_str("info").unwrap()
-    .format(flexi_logger::opt_format)
-    .log_to_file(flexi_logger::FileSpec::default().directory(&log_directory))
-    .rotate(Criterion::Age(Age::Day), Naming::Numbers, Cleanup::KeepLogFiles(5))
-    .print_message()
-    .start()
-    .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
+  let console_layer = console_subscriber::ConsoleLayer::builder().with_default_env().spawn();
+
+  let file_appender = tracing_appender::rolling::daily(&log_directory, "prefix.log");
+  let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+
+  tracing_subscriber::registry()
+    .with(console_layer)
+    .with(tracing_subscriber::fmt::layer().with_writer(non_blocking).with_ansi(false).with_filter(tracing_subscriber::filter::LevelFilter::from_level(tracing::Level::DEBUG)))
+    .with(tracing_subscriber::fmt::layer().with_filter(tracing_subscriber::filter::LevelFilter::from_level(tracing::Level::DEBUG)))
+    .init();
 
   std::panic::set_hook(Box::new(|panic_info| {
     log::logger().log(&Record::builder()
@@ -160,12 +162,6 @@ fn launch_ui(current_dir: String) -> std::thread::JoinHandle<Result<(),Error>> {
       }
     }
     let runtime : tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread().enable_all().thread_stack_size(2_usize.pow(22)).build().expect("");
-    let console_layer = console_subscriber::ConsoleLayer::builder().with_default_env().spawn();
-
-    tracing_subscriber::registry()
-      .with(console_layer)
-      .with(tracing_subscriber::fmt::layer().with_filter(tracing_subscriber::filter::LevelFilter::from_level(tracing::Level::DEBUG)))
-      .init();
       
     if configuration.get_playername().eq("UnknownPlayer") {
       let mut frame = sciter::Window::new();
