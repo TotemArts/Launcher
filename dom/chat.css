@@ -3,10 +3,6 @@
   width: *;
 }
 
-menu.chat_menu {
-  aspect: "Emu.chat_menu";
-}
-
 div.chat {
   height: *;
   min-height: 200dip;

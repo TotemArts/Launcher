@@ -165,10 +165,6 @@ div.titlebar > .title {
   height: *;
 }
 
-.footer-margin {
-  aspect: "footer_progress";
-}
-
 .join_server {
   min-width: 600dip;
   max-width: 700dip;
@@ -238,6 +234,10 @@ div.titlebar > .title {
 
 .mheight {
   height: *;
+}
+
+.mwidth {
+  width: *;
 }
 
 .menu {

@@ -4,7 +4,7 @@ export class LauncherProgressModal extends Element
     download_speed = "0";
 
     get_progressbar_style(width) {
-      return printf("width:%s%%", width);
+      return printf("width:%s%%%%", width);
     }
 
     render(props) {

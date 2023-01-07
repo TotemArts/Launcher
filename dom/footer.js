@@ -18,7 +18,7 @@ export class Footer extends Element {
     }
     
     get_progressbar_style(width) {
-        return printf("width:%s%%", width);
+        return printf("width:%s%%%%", width);
     }
 
     render(props) {

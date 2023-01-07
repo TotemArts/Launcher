@@ -18,7 +18,7 @@ export class ProgressModal extends Element
     in_progress = false;
 
     get_progressbar_style(width) {
-      return printf("width:%s%%", width);
+      return printf("width:%s%%%%", width);
     }
 
     actionOrProgressbars() {

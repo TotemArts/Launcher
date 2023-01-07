@@ -401,7 +401,7 @@ export class Servers extends Element {
           <Slider {...this.server_list} />
           <checkmark class={"big" + (this.server_list.same_version ? " checked" : "")} toggle /><p class="nowrap">Same version</p>
         </div>
-        <div class="body mheight">
+        <div class="body mheight mwidth">
           <ServersTable />
         </div>
         <div class="titlebar">

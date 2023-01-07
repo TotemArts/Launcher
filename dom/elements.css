@@ -31,11 +31,6 @@ output {
   text-overflow:inherit;
   text-transform: inherit;
   white-space: inherit;
-  aspect: "Emu.loadOutput";
-}
-
-progressbar {
-  aspect: "Emu.loadOutput";
 }
 
 input|text {
@@ -64,7 +59,6 @@ input|text {
 #map_video {
   width: 320;
   height: 180;
-  aspect: "Emu.videoHandler";
 }
 
 input|text.searchbar {
@@ -120,7 +114,6 @@ button.bool {
   background-position: 10dip center;
   background-repeat: no-repeat;
   background-size: auto 10dip;
-  aspect: "bool_setting";
 }
 
 button.bool.true {
@@ -293,7 +286,6 @@ button#update, button#launch {
   background-position: center;
   background-repeat: no-repeat;
   background-size: auto 12dip;
-  aspect: "filter";
   cursor: pointer;
 }
 
@@ -487,11 +479,11 @@ table.servers {
   }
   table:root > tbody > tr > td:nth-child(1) { max-width:5dip; color: rgba(0,0,0,0)}
 
-  table:root > thead > tr > th:nth-child(1) { width:5dip; }
-  table:root > thead > tr > th:nth-child(2) { width:50%; }
-  table:root > thead > tr > th:nth-child(3) { width:21%; }
-  table:root > thead > tr > th:nth-child(4) { width:12%; }
-  table:root > thead > tr > th:nth-child(5) { width:12%; }
+  table:root > thead > tr > th:nth-child(1) { width: 5dip; }
+  table:root > thead > tr > th:nth-child(2) { width: *; }
+  table:root > thead > tr > th:nth-child(3) { width: 150dip; }
+  table:root > thead > tr > th:nth-child(4) { width: 60dip; }
+  table:root > thead > tr > th:nth-child(5) { width: 60dip; }
 
   table:root th[order=ascend]  {
     foreground-image:url(stock:arrow-down);

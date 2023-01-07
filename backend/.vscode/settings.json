@@ -1,0 +1,4 @@
+{
+    "cross-rust-analyzer.target": "i686-pc-windows-gnu",
+    "lldb.cargo": "cross"
+}

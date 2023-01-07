@@ -1,0 +1,47 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'renegade-x-launcher'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--target=i686-pc-windows-gnu",
+                    "--bin=renegade-x-launcher",
+                    "--package=renegade-x-launcher"
+                ],
+                "filter": {
+                    "name": "renegade-x-launcher",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'renegade-x-launcher'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--target=i686-pc-windows-gnu",
+                    "--no-run",
+                    "--bin=renegade-x-launcher",
+                    "--package=renegade-x-launcher"
+                ],
+                "filter": {
+                    "name": "renegade-x-launcher",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
