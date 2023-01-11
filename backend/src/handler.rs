@@ -237,29 +237,92 @@ impl Handler {
   }
   
   /// Removes files inside of the subdirectories that are not part of the instructions.json
-  fn remove_unversioned(&self, callback_done: sciter::Value, error: sciter::Value) {
-    /*
-    let patcher = self.patcher.remove_unversioned();
-    crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
-      let result : Result<(), renegadex_patcher::Error>;
-      {
-        let mut locked_patcher = patcher.lock().or_else(|e| Err(Error::MutexPoisoned(format!("A poisoned Mutex: {}", e))))?;
-        locked_patcher.rank_mirrors()?;
-        result = locked_patcher.remove_unversioned();
+  fn factory_reset(&self, progress_callback: sciter::Value, success_callback: sciter::Value, failure_callback: sciter::Value) {
+    let configuration = self.configuration.clone();
+    let version_information = self.version_information.clone();
+    let patcher_mutex = self.patcher.clone();
+    
+    //    let progress = self.patcher.clone().lock().or_else(|_| Err(Error::MutexPoisoned(format!(""))))?.get_progress();
+    crate::spawn_wrapper::spawn_async(&self.runtime, async move {
+      let patcher = patcher_mutex.lock().await;
+      if (*patcher).is_some() && (*patcher).as_ref().map(|patcher| patcher.in_progress.clone()).unwrap().load(Ordering::Relaxed) {
+        
+        return Ok(());
       }
-      match result {
-        Ok(()) => {
-          info!("Calling remove unversioned done");
-          crate::spawn_wrapper::spawn(move || -> Result<(), Error> {callback_done.call(None, &make_args!("validate"), None)?; Ok(()) });
-        },
-        Err(e) => {
-          error!("Error in remove_unversioned(): {:#?}", &e);
-          crate::spawn_wrapper::spawn(move || -> Result<(), Error> {error.call(None, &make_args!(e.to_string()), None)?; Ok(()) });
+      drop(patcher);
+      
+      let mut version_information = version_information.lock().await;
+      if version_information.is_none() {
+        // download version information
+        let result = VersionInformation::retrieve(&configuration.get_version_url()).await;
+        if let Ok(info) = result {
+          *version_information = Some(info);
+        } else if let Err(e) = result {
+          let error = format!("{:#?}", e);
+          crate::spawn_wrapper::spawn(move || -> Result<(), Error> {failure_callback.call(None, &make_args!(error), None)?; Ok(()) });
+          return Ok(());
         }
-      };
+      }
+      let software_version = version_information.clone().unwrap().software;
+      
+      let mut patcher = PatcherBuilder::new();
+      patcher.set_software_information(software_version.mirrors, software_version.version, software_version.instructions_hash);
+      patcher.set_software_location(configuration.get_game_location());
+      
+      patcher.set_success_callback(Box::new(move || {
+        let success_callback = success_callback.clone();
+        info!("Calling download done");
+        crate::spawn_wrapper::spawn(move || -> Result<(), Error> {
+          success_callback.call(None, &make_args!(), None)?;
+          Ok(())
+        });
+      }));
+      
+      
+      patcher.set_failure_callback(Box::new(move |e| {
+        let failure_callback = failure_callback.clone();
+        error!("failure_callback {:#?}", &e);
+        crate::spawn_wrapper::spawn(move || -> Result<(), Error> {failure_callback.call(None, &make_args!(e.to_string()), None)?; Ok(()) });
+      }));
+      
+      let old_bytes = Arc::new(std::sync::atomic::AtomicU64::new(0_u64));
+      patcher.set_progress_callback(Box::new(move |progress| {
+        let progress_callback = progress_callback.clone();
+
+        let report_progress = || -> Result<(), Error> {
+          let current_bytes = progress.downloaded_bytes.0.load(Ordering::Relaxed);
+
+          let json = format!(
+            "{{\"action\": \"{}\",\"hash\": {{\"value\":{}, \"maximum\":{}}},\"download\": {{\"bytes\": {{\"value\":{}.0, \"maximum\":{}.0}}, \"files\": {{\"value\":{}, \"maximum\":{}}} }},\"patch\": {{\"value\":{}, \"ready\": {}, \"maximum\":{}}},\"download_speed\": \"{}\"}}",
+            progress.get_current_action()?,
+            progress.processed_instructions.0.load(Ordering::Relaxed),
+            progress.processed_instructions.1.load(Ordering::Relaxed),
+            current_bytes,
+            progress.downloaded_bytes.1.load(Ordering::Relaxed),
+            progress.downloaded_files.0.load(Ordering::Relaxed),
+            progress.downloaded_files.1.load(Ordering::Relaxed),
+            progress.patched_files.0.load(Ordering::Relaxed),
+            progress.patched_files.1.load(Ordering::Relaxed),
+            progress.patched_files.2.load(Ordering::Relaxed),
+            format!("{}/s", crate::progress::convert((current_bytes as f64 - old_bytes.load(Ordering::Relaxed) as f64) * 4_f64))
+          );
+          old_bytes.store(current_bytes, Ordering::Relaxed);
+          let me : Value = json.parse().or_else(|e| Err(Error::None(format!("Failed to parse Json, error \"{}\": {}", e, json))))?;
+          crate::spawn_wrapper::spawn(move || -> Result<(), Error> {progress_callback.call(None, &make_args!(me), None)?; Ok(()) });
+          Ok(())
+        };
+        if let Err(e) = report_progress() {
+          error!("progress_callback: {}", e.to_string());
+        }
+      }));
+      
+      let mut patcher = patcher.build()?;
+      patcher.factory_reset().await;
+      
+      let mut patcher_option = patcher_mutex.lock().await;
+      (*patcher_option) = Some(patcher);
       Ok(())
     });
-    */
   }
   
   fn get_video_location(&self, map_name: sciter::Value) -> String {
@@ -741,7 +804,7 @@ impl sciter::EventHandler for Handler {
     fn resume_patcher();
     fn pause_patcher();
     
-    fn remove_unversioned(Value, Value);
+    fn factory_reset(Value, Value, Value);
     
     fn get_playername();
     
