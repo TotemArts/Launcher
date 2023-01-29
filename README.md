@@ -1,5 +1,7 @@
 # RenegadeX Launcher
 
+⚠ Note: The source code for this launcher is for an *alternative* launcher that was never finished. Due to other circumstances, the electron launcher was rushed into service. ⚠
+
 ![screenshot](screenshot.png)
 
 ### Makes use of the following dependencies of the same developer (SonnyX):
