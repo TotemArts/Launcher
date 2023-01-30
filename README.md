@@ -1,5 +1,7 @@
 # RenegadeX Launcher
 
+⚠ Note: The source code provided here is **NOT** the currently released Totem Arts launcher. ⚠
+
 ![screenshot](screenshot.png)
 
 ### Makes use of the following dependencies of the same developer (SonnyX):
