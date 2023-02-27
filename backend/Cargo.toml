@@ -13,7 +13,7 @@ sciter-rs = { git = "https://github.com/SonnyX/rust-sciter" }
 renegadex_patcher = { git = "https://github.com/SonnyX/RenegadeX-patcher-lib" }
 rust-ini = "0.18"
 single-instance = "0.3"
-socket2 = { version="0.4", features=["all"]}
+socket2 = { version="0.5", features=["all"]}
 rand = "0.8"
 percent-encoding = "2.2"
 unzip = { git = "https://github.com/SonnyX/unzip-rs" }
