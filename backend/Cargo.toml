@@ -11,7 +11,7 @@ tokio = { version = "1.23", features = ["full", "tracing"] }
 url = "2.3"
 sciter-rs = { git = "https://github.com/SonnyX/rust-sciter" }
 renegadex_patcher = { git = "https://github.com/SonnyX/RenegadeX-patcher-lib" }
-rust-ini = "0.19"
+rust-ini = "0.20"
 single-instance = "0.3"
 socket2 = { version="0.5", features=["all"]}
 rand = "0.8"
