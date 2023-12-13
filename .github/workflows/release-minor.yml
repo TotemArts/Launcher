@@ -7,7 +7,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Get version from file
       id: cargo_version
@@ -22,8 +22,8 @@ jobs:
         done <<< $VERSION_TABLE;
         branch_name=${BRANCHES[launcher]};
         sed -i 's/release.json/'${branch_name}'.json/' backend/src/*;
-        echo '::set-output name=version::'${version};
-        echo '::set-output name=branch_name::'${branch_name};
+        echo 'version='${version} >> $GITHUB_OUTPUT;
+        echo 'branch_name='${branch_name} >> $GITHUB_OUTPUT;
         
     - name: Bump minor version
       id: minor_version
@@ -32,7 +32,7 @@ jobs:
         version=$((${ver[0]})).$((${ver[1]})).$((${ver[2]}+1));
         echo 'Bumping project from version '${{ steps.cargo_version.outputs.version }}' to version '$version;
         sed -i '0,/version[ |=|\"|0-9|.]*/s//version = "'$version'"/' backend/Cargo.toml;
-        echo '::set-output name=version::'${version};
+        echo 'version='${version} >> $GITHUB_OUTPUT;
         
     - run: cargo install cross
 
@@ -46,12 +46,12 @@ jobs:
         cp ./backend/target/i686-pc-windows-gnu/release/renegade-x-launcher.exe "./Renegade X Launcher.exe";
         zip -j9 RenX-Launcher "Renegade X Launcher.exe" "RenegadeX-folder-permissions.exe" "sciter.dll" "SelfUpdateExecutor.exe";
         zip -9 RenX-Launcher -r "dom";
-        echo '::set-output name=hash::'$(sha256sum RenX-Launcher.zip | awk '{print toupper($1)}');
+        echo 'hash='$(sha256sum RenX-Launcher.zip | awk '{print toupper($1)}') >> $GITHUB_OUTPUT;
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: RenX-Launcher
-        path: backend/RenX-Launcher.zip
+        path: RenX-Launcher.zip
 
     - name: Git Commit/Push Changes
       uses: actions-x/commit@v6
@@ -62,7 +62,7 @@ jobs:
         email: randy@vonderweide.nl
 
     - name: Upload ftp
-      uses: bayssmekanique/action-simple-file-upload@v1
+      uses: bayssmekanique/action-simple-file-upload@v2
       with:
         host: ${{ secrets.FTP_URL }}
         user: ${{ secrets.FTP_USER }}

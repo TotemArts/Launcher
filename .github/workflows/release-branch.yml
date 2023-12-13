@@ -12,7 +12,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Get version from file
       id: cargo_version
@@ -30,8 +30,8 @@ jobs:
         done <<< $VERSION_TABLE;
         branch_name=${BRANCHES[${{ github.event.inputs.json }}]};
         sed -i 's/release.json/'${branch_name}'.json/' backend/src/*;
-        echo '::set-output name=version::'${version};
-        echo '::set-output name=branch_name::'${branch_name};
+        echo 'version='${version} >> $GITHUB_OUTPUT;
+        echo 'branch_name='${branch_name} >> $GITHUB_OUTPUT;
         
     - run: cargo install cross
 
@@ -45,10 +45,10 @@ jobs:
         cp ./backend/target/i686-pc-windows-gnu/release/renegade-x-launcher.exe "./Renegade X Launcher.exe";
         zip -j9 RenX-Launcher "Renegade X Launcher.exe" "RenegadeX-folder-permissions.exe" "sciter.dll" "SelfUpdateExecutor.exe";
         zip -9 RenX-Launcher -r "dom";
-        echo '::set-output name=hash::'$(sha256sum RenX-Launcher.zip | awk '{print toupper($1)}');
+        echo 'hash='$(sha256sum RenX-Launcher.zip | awk '{print toupper($1)}') >> $GITHUB_OUTPUT;
 
     - name: Upload ftp
-      uses: bayssmekanique/action-simple-file-upload@v1
+      uses: bayssmekanique/action-simple-file-upload@v2
       with:
         host: ${{ secrets.FTP_URL }}
         user: ${{ secrets.FTP_USER }}
