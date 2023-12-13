@@ -4,6 +4,6 @@ use std::env;
 
 fn main() {
   if env::var("CARGO_CFG_TARGET_OS").unwrap().eq("windows") {
-    embed_resource::compile("manifest.rc");
+    embed_resource::compile("manifest.rc", embed_resource::NONE);
   }
 }

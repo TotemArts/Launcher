@@ -16,9 +16,22 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Update dependencies
-      working-directory: ./backend
-      run: sudo apt-get install libgtk-3-dev && cargo update
-    - name: Build
-      working-directory: ./backend
-      run: cargo build --release --verbose
+
+    - run: cargo install cross
+
+    - name: build
+      run: cd backend && cross update && cross build --target=i686-pc-windows-gnu --release
+
+    - name: Package Files
+      id: package
+      shell: bash
+      run: >
+        cp ./backend/target/i686-pc-windows-gnu/release/renegade-x-launcher.exe "./Renegade X Launcher.exe";
+        zip -j9 RenX-Launcher "Renegade X Launcher.exe" "RenegadeX-folder-permissions.exe" "sciter.dll" "SelfUpdateExecutor.exe";
+        zip -9 RenX-Launcher -r "dom";
+        echo '::set-output name=hash::'$(sha256sum RenX-Launcher.zip | awk '{print toupper($1)}');
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: RenX-Launcher
+        path: backend/RenX-Launcher.zip
