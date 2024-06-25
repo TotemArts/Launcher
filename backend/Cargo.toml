@@ -25,7 +25,7 @@ log = "0.4"
 download-async = "0.10"
 async-trait = "0.1"
 json = "0.12"
-quick-xml = { version="0.31" }
+quick-xml = { version="0.34" }
 semver = "1.0"
 console-subscriber="0.2.0"
 tracing-subscriber="0.3"
