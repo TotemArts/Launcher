@@ -19,7 +19,7 @@ percent-encoding = "2.2"
 unzip = { git = "https://github.com/SonnyX/unzip-rs" }
 dirs = "5.0"
 runas = { git = "https://github.com/SonnyX/rust-runas" }
-sha2 = "0.10"
+sha2 = "0.11"
 hex = "0.4"
 log = "0.4"
 download-async = "0.10"
