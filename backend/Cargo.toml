@@ -33,7 +33,7 @@ tracing-appender="0.2"
 tracing="0.1"
 
 [build-dependencies]
-embed-resource = "2.4"
+embed-resource = "3.0"
 
 [profile.release]
 opt-level = 'z'
